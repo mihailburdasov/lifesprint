@@ -42,9 +42,9 @@ export const isReflectionDay = (dayNumber: number): boolean => {
 
 // Get the start date of the current month's sprint
 export const getCurrentMonthSprintStart = (): Date => {
-  // Set the start date to April 1st of the current year
+  // Set the start date to the first day of the current month
   const today = new Date();
-  return new Date(today.getFullYear(), 3, 1); // Month is 0-indexed, so 3 is April
+  return new Date(today.getFullYear(), today.getMonth(), 1); // Use current month instead of fixed April
 };
 
 // Get the day title based on the day number

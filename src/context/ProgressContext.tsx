@@ -70,24 +70,42 @@ const defaultWeekReflection: WeekReflection = {
 export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Initialize state with data from localStorage or defaults
   const [progress, setProgress] = useState<UserProgress>(() => {
+    // Get the current month's start date
+    const currentMonthStart = getCurrentMonthSprintStart();
+    
     const savedProgress = localStorage.getItem('lifesprint_progress');
     if (savedProgress) {
       const parsed = JSON.parse(savedProgress);
       // Convert string dates back to Date objects
       parsed.startDate = new Date(parsed.startDate);
+      
+      // Check if we need to update the start date to the current month
+      const savedStartMonth = parsed.startDate.getMonth();
+      const currentMonth = currentMonthStart.getMonth();
+      
+      // If the saved start date is from a different month, update it
+      if (savedStartMonth !== currentMonth) {
+        parsed.startDate = currentMonthStart;
+        
+        // Recalculate current day based on the new start date
+        const today = new Date();
+        const diffTime = today.getTime() - currentMonthStart.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        parsed.currentDay = Math.min(Math.max(diffDays, 1), 28); // Ensure between 1-28
+      }
+      
       return parsed;
     }
     
-    // Calculate current day based on April 1st start date
-    const startDate = getCurrentMonthSprintStart(); // April 1st
+    // Calculate current day based on the first day of the current month
     const today = new Date();
-    const diffTime = today.getTime() - startDate.getTime();
+    const diffTime = today.getTime() - currentMonthStart.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
     const currentDay = Math.min(Math.max(diffDays, 1), 28); // Ensure between 1-28
     
     // Default initial state
     return {
-      startDate: startDate,
+      startDate: currentMonthStart,
       currentDay: currentDay,
       days: {},
       weekReflections: {}
@@ -98,6 +116,48 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     localStorage.setItem('lifesprint_progress', JSON.stringify(progress));
   }, [progress]);
+  
+  // Update current day based on the current date
+  useEffect(() => {
+    // Function to update the current day
+    const updateCurrentDay = () => {
+      const today = new Date();
+      const diffTime = today.getTime() - progress.startDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      const newCurrentDay = Math.min(Math.max(diffDays, 1), 28); // Ensure between 1-28
+      
+      // Only update if the current day has changed
+      if (newCurrentDay !== progress.currentDay) {
+        setProgress(prev => ({
+          ...prev,
+          currentDay: newCurrentDay
+        }));
+      }
+    };
+    
+    // Update immediately
+    updateCurrentDay();
+    
+    // Set up an interval to check for date changes
+    // This will run at midnight to update the current day
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+    
+    // Set timeout to run at midnight
+    const midnightTimeout = setTimeout(() => {
+      updateCurrentDay();
+      
+      // Then set up a daily interval
+      const dailyInterval = setInterval(updateCurrentDay, 24 * 60 * 60 * 1000);
+      
+      // Clean up the interval on unmount
+      return () => clearInterval(dailyInterval);
+    }, timeUntilMidnight);
+    
+    // Clean up the timeout on unmount
+    return () => clearTimeout(midnightTimeout);
+  }, [progress.startDate, progress.currentDay]);
   
   // Update day progress
   const updateDayProgress = (dayNumber: number, data: Partial<DayProgress>) => {
