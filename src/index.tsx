@@ -9,12 +9,25 @@ const addDevToolsProtection = () => {
     // Disable right-click
     document.addEventListener('contextmenu', (e) => e.preventDefault());
     
-    // Function to detect DevTools
+    // Function to detect DevTools with improved mobile compatibility
     const detectDevTools = () => {
-      const widthThreshold = window.outerWidth - window.innerWidth > 160;
-      const heightThreshold = window.outerHeight - window.innerHeight > 160;
+      // Enhanced mobile detection - check multiple indicators
+      const userAgentMobile = /iPhone|iPad|iPod|Android|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(navigator.userAgent);
+      const screenMobile = window.screen.width < 768; // Common mobile breakpoint
+      const touchEnabled = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
       
-      if (widthThreshold || heightThreshold) {
+      // If ANY mobile indicator is true, skip detection completely
+      if (userAgentMobile || screenMobile || touchEnabled) {
+        return;
+      }
+      
+      // More conservative thresholds to reduce false positives
+      const widthThreshold = window.outerWidth - window.innerWidth > 250;
+      const heightThreshold = window.outerHeight - window.innerHeight > 250;
+      
+      // Only trigger if both dimensions suggest DevTools are open
+      // This reduces false positives significantly
+      if (widthThreshold && heightThreshold) {
         // If DevTools is detected, you can take action
         document.body.innerHTML = '<h1>Developer tools detected!</h1><p>This action has been logged.</p>';
       }
@@ -23,8 +36,8 @@ const addDevToolsProtection = () => {
     // Check on resize events
     window.addEventListener('resize', detectDevTools);
     
-    // Check periodically
-    setInterval(detectDevTools, 1000);
+    // Check periodically but less frequently to reduce performance impact
+    setInterval(detectDevTools, 2000);
     
     // Additional protection: disable various debugging functions
     const disableDebugging = () => {
