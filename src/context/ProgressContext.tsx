@@ -141,18 +141,19 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [progress, isAuthenticated, user]);
   
-  // Update current day based on the current date
+  // Update current day to always show the current calendar day
   useEffect(() => {
     if (!progress) return;
     
-    // Function to update the current day
+    // Function to update the current day to match the calendar day
     const updateCurrentDay = () => {
       if (!progress) return;
       
       const today = new Date();
-      const diffTime = today.getTime() - progress.startDate.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-      const newCurrentDay = Math.min(Math.max(diffDays, 1), 28); // Ensure between 1-28
+      // Get the current day of the month (1-31)
+      const calendarDay = today.getDate();
+      // Ensure it's between 1-28 for our app's purposes
+      const newCurrentDay = Math.min(Math.max(calendarDay, 1), 28);
       
       // Only update if the current day has changed
       if (newCurrentDay !== progress.currentDay) {

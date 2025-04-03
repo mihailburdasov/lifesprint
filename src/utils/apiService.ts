@@ -226,10 +226,9 @@ export const apiService = {
     const today = new Date();
     const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
     
-    // Вычисление текущего дня спринта
-    const diffTime = today.getTime() - startDate.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    const currentDay = Math.min(Math.max(diffDays, 1), 28); // Между 1 и 28
+    // Использование текущего календарного дня
+    const calendarDay = today.getDate();
+    const currentDay = Math.min(Math.max(calendarDay, 1), 28); // Между 1 и 28
     
     // Создание нового прогресса
     const newProgress: UserProgress = {

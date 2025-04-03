@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 
-// Protection against developer tools
+// Protection against developer tools - modified to be less aggressive
 const addDevToolsProtection = () => {
   if (process.env.NODE_ENV === 'production') {
     // Disable right-click
@@ -21,15 +21,14 @@ const addDevToolsProtection = () => {
         return;
       }
       
-      // More conservative thresholds to reduce false positives
-      const widthThreshold = window.outerWidth - window.innerWidth > 250;
-      const heightThreshold = window.outerHeight - window.innerHeight > 250;
+      // Much more conservative thresholds to reduce false positives
+      const widthThreshold = window.outerWidth - window.innerWidth > 350;
+      const heightThreshold = window.outerHeight - window.innerHeight > 350;
       
-      // Only trigger if both dimensions suggest DevTools are open
-      // This reduces false positives significantly
+      // Only trigger if both dimensions suggest DevTools are open AND the difference is very significant
       if (widthThreshold && heightThreshold) {
-        // If DevTools is detected, you can take action
-        document.body.innerHTML = '<h1>Developer tools detected!</h1><p>This action has been logged.</p>';
+        // Log warning instead of replacing entire page content
+        console.warn('Developer tools may be open');
       }
     };
     
@@ -37,35 +36,20 @@ const addDevToolsProtection = () => {
     window.addEventListener('resize', detectDevTools);
     
     // Check periodically but less frequently to reduce performance impact
-    setInterval(detectDevTools, 2000);
+    setInterval(detectDevTools, 5000);
     
-    // Additional protection: disable various debugging functions
+    // Simplified debugging protection that won't break the app
     const disableDebugging = () => {
-      // Override console methods
+      // Only disable non-critical console methods
       const noop = () => {};
       
-      // Store original console methods
-      const originalConsole = {
-        log: console.log,
-        warn: console.warn,
-        error: console.error,
-        info: console.info,
-        debug: console.debug
-      };
-      
-      // In production, disable console methods
-      console.log = noop;
-      console.warn = noop;
-      console.info = noop;
-      console.debug = noop;
-      // Keep error for critical issues
-      
-      // Detect if someone tries to restore console
-      setInterval(() => {
-        if (console.log !== noop) {
-          console.log = noop;
-        }
-      }, 1000);
+      // In production, disable some console methods but keep critical ones
+      if (!window.location.hostname.includes('localhost')) {
+        console.log = noop;
+        console.info = noop;
+        console.debug = noop;
+        // Keep warn and error for critical issues
+      }
     };
     
     disableDebugging();
