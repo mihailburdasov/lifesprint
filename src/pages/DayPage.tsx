@@ -58,27 +58,31 @@ const DayPage: React.FC = () => {
   // Handle navigation to previous/next day
   const goToPreviousDay = () => {
     if (dayNumber > 1) {
+      // Set active state
       setIsPrevButtonActive(true);
       
-      // Reset active state after 300ms
+      // Navigate immediately
+      navigate(`/day/${dayNumber - 1}`);
+      
+      // Reset active state after a short delay
       setTimeout(() => {
         setIsPrevButtonActive(false);
-      }, 300);
-      
-      navigate(`/day/${dayNumber - 1}`);
+      }, 150);
     }
   };
   
   const goToNextDay = () => {
     if (dayNumber < 28) {
+      // Set active state
       setIsNextButtonActive(true);
       
-      // Reset active state after 300ms
+      // Navigate immediately
+      navigate(`/day/${dayNumber + 1}`);
+      
+      // Reset active state after a short delay
       setTimeout(() => {
         setIsNextButtonActive(false);
-      }, 300);
-      
-      navigate(`/day/${dayNumber + 1}`);
+      }, 150);
     }
   };
   

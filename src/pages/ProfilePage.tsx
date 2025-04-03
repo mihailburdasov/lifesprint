@@ -32,6 +32,7 @@ const ProfilePage: React.FC = () => {
     thanksCount: 0,
     achievementsCount: 0,
     goalsCount: 0,
+    goalsCompletedCount: 0,
     streak: 0,
     completionPercentage: 0
   });
@@ -67,6 +68,8 @@ const ProfilePage: React.FC = () => {
     const totalAccessibleDays = Math.min(daysSinceStart, 28); // Максимум 28 дней в спринте
     
     // Подсчет благодарностей, достижений и целей из обычных дней
+    let goalsCompletedCount = 0;
+    
     Object.entries(progress.days).forEach(([dayNumberStr, day]) => {
       const typedDay = day as DayProgress;
       const dayNumber = parseInt(dayNumberStr, 10);
@@ -79,6 +82,9 @@ const ProfilePage: React.FC = () => {
       
       // Подсчет целей
       goalsCount += typedDay.goals.filter(goal => goal.text.trim() !== '').length;
+      
+      // Подсчет выполненных целей
+      goalsCompletedCount += typedDay.goals.filter(goal => goal.completed).length;
       
       // Проверяем, заполнен ли день
       const dayCompletion = getDayCompletion(dayNumber);
@@ -124,6 +130,7 @@ const ProfilePage: React.FC = () => {
       thanksCount,
       achievementsCount,
       goalsCount,
+      goalsCompletedCount,
       streak,
       completionPercentage
     });
@@ -250,7 +257,7 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-sm font-medium">Прогресс спринта</div>
@@ -271,6 +278,41 @@ const ProfilePage: React.FC = () => {
                    userStats.streak >= 2 && userStats.streak <= 4 ? 'Дня подряд' : 
                    'Дней подряд'}
                 </div>
+              </div>
+              
+              <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-2xl font-bold text-primary">{userStats.goalsCompletedCount}</div>
+                    <div className="text-sm text-text-light-light dark:text-text-light-dark">
+                      {userStats.goalsCompletedCount === 1 ? 'Задача выполнена' : 
+                       userStats.goalsCompletedCount >= 2 && userStats.goalsCompletedCount <= 4 ? 'Задачи выполнены' : 
+                       'Задач выполнено'}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-gray-500">{userStats.goalsCount}</div>
+                    <div className="text-sm text-text-light-light dark:text-text-light-dark">
+                      {userStats.goalsCount === 1 ? 'Задача поставлена' : 
+                       userStats.goalsCount >= 2 && userStats.goalsCount <= 4 ? 'Задачи поставлены' : 
+                       'Задач поставлено'}
+                    </div>
+                  </div>
+                </div>
+                
+                {userStats.goalsCount > 0 && (
+                  <div className="mt-2">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                      <div 
+                        className="bg-green-500 h-2.5 rounded-full shadow-sm" 
+                        style={{ width: `${(userStats.goalsCompletedCount / userStats.goalsCount) * 100}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-right mt-1 text-text-light-light dark:text-text-light-dark">
+                      {Math.round((userStats.goalsCompletedCount / userStats.goalsCount) * 100)}% выполнено
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
