@@ -45,30 +45,43 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Проверка наличия пользователя при загрузке
   useEffect(() => {
-    // Проверяем, есть ли сохраненный ID пользователя в localStorage
-    const storedUserId = localStorage.getItem('lifesprint_current_user_id');
-    
-    if (storedUserId) {
-      // Если ID пользователя найден, получаем данные пользователя из API
-      apiService.updateUser(storedUserId, {})
-        .then(response => {
-          if (response.success && response.data) {
-            setUser(response.data);
-          } else {
-            // Если пользователь не найден, удаляем ID из localStorage
-            localStorage.removeItem('lifesprint_current_user_id');
-          }
-        })
-        .catch(error => {
-          console.error('Ошибка при получении данных пользователя:', error);
-          localStorage.removeItem('lifesprint_current_user_id');
-        })
-        .finally(() => {
+    const loadUser = async () => {
+      try {
+        // Проверяем, есть ли сохраненный ID пользователя в localStorage
+        const storedUserId = localStorage.getItem('lifesprint_current_user_id');
+        
+        if (!storedUserId) {
           setIsLoading(false);
-        });
-    } else {
-      setIsLoading(false);
-    }
+          return;
+        }
+        
+        // Если ID пользователя найден, получаем данные пользователя из API
+        const response = await apiService.updateUser(storedUserId, {});
+        
+        if (response.success && response.data) {
+          setUser(response.data);
+        } else {
+          // Если пользователь не найден, удаляем ID из localStorage
+          localStorage.removeItem('lifesprint_current_user_id');
+        }
+      } catch (error) {
+        console.error('Ошибка при получении данных пользователя:', error);
+        // В случае ошибки, не удаляем ID из localStorage, чтобы избежать проблем с аутентификацией
+        // Вместо этого, создаем базовый объект пользователя
+        const storedUserId = localStorage.getItem('lifesprint_current_user_id');
+        if (storedUserId) {
+          setUser({
+            id: storedUserId,
+            name: 'Пользователь',
+            email: 'user@example.com'
+          });
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadUser();
   }, []);
 
   // Регистрация пользователя

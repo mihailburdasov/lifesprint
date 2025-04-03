@@ -74,8 +74,8 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
             </li>
             <li>
               <Link 
-                to="/day/1" 
-                className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive('/day/1')}`}
+                to={`/day/${new Date().getDate() <= 28 ? new Date().getDate() : 28}`}
+                className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive('/day/' + (new Date().getDate() <= 28 ? new Date().getDate() : 28))}`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <FaCalendarAlt className="mr-3" />
