@@ -216,109 +216,10 @@ const ProfilePage: React.FC = () => {
       ) : !isAuthenticated ? null : (
         <div className="content flex-1 md:ml-64 p-3 sm:p-4 md:p-6 pt-16 md:pt-6">
         <div className="bg-surface-light dark:bg-surface-dark rounded-xl shadow-md p-6">
-          <h1 className="text-2xl font-bold mb-6">Профиль пользователя</h1>
-          
-          {message && (
-            <div 
-              className={`mb-6 p-4 rounded-md ${
-                message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-1">
-                Имя
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                disabled={!isEditing}
-                className={`input w-full ${!isEditing ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                disabled={!isEditing}
-                className={`input w-full ${!isEditing ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="telegramNickname" className="block text-sm font-medium mb-1">
-                Никнейм в Telegram
-              </label>
-              <input
-                type="text"
-                id="telegramNickname"
-                name="telegramNickname"
-                value={formData.telegramNickname}
-                onChange={handleChange}
-                disabled={!isEditing}
-                className={`input w-full ${!isEditing ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-                placeholder="@username"
-              />
-            </div>
-            
-            <div className="flex justify-end space-x-3">
-              {isEditing ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setFormData({
-                        name: user?.name || '',
-                        email: user?.email || '',
-                        telegramNickname: user?.telegramNickname || '',
-                      });
-                      setMessage(null);
-                    }}
-                  >
-                    Отмена
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    disabled={isSaving}
-                  >
-                    {isSaving ? 'Сохранение...' : 'Сохранить'}
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={() => {
-                    setIsEditing(true);
-                    setMessage(null);
-                  }}
-                >
-                  Редактировать
-                </Button>
-              )}
-            </div>
-          </form>
+          <h1 className="text-2xl font-bold mb-6">Ваша статистика: {user?.name}</h1>
           
           {/* Статистика пользователя */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <h2 className="text-lg font-semibold mb-4">Ваша статистика</h2>
+          <div className="mb-6">
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
@@ -355,9 +256,9 @@ const ProfilePage: React.FC = () => {
                   <div className="text-sm font-medium">Прогресс спринта</div>
                   <div className="text-sm font-bold">{userStats.completionPercentage}%</div>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
                   <div 
-                    className="bg-primary h-2.5 rounded-full" 
+                    className="bg-primary h-2.5 rounded-full shadow-sm" 
                     style={{ width: `${userStats.completionPercentage}%` }}
                   ></div>
                 </div>
@@ -370,43 +271,6 @@ const ProfilePage: React.FC = () => {
                    userStats.streak >= 2 && userStats.streak <= 4 ? 'Дня подряд' : 
                    'Дней подряд'}
                 </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Настройки аккаунта */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <h2 className="text-lg font-semibold mb-4">Настройки аккаунта</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-base font-medium mb-2">Изменить пароль</h3>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    // В реальном приложении здесь был бы переход на страницу смены пароля
-                    alert('Функция смены пароля будет доступна в следующей версии');
-                  }}
-                >
-                  Сменить пароль
-                </Button>
-              </div>
-              
-              <div>
-                <h3 className="text-base font-medium mb-2">Удаление аккаунта</h3>
-                <Button
-                  type="button"
-                  variant="danger"
-                  onClick={() => {
-                    // В реальном приложении здесь был бы запрос на удаление аккаунта
-                    if (window.confirm('Вы уверены, что хотите удалить аккаунт? Это действие нельзя отменить.')) {
-                      alert('Функция удаления аккаунта будет доступна в следующей версии');
-                    }
-                  }}
-                >
-                  Удалить аккаунт
-                </Button>
               </div>
             </div>
           </div>

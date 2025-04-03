@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaCalendarAlt, FaUser, FaBars, FaTimes, FaSun, FaMoon, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaCalendarAlt, FaUser, FaBars, FaTimes, FaSun, FaMoon, FaSignOutAlt, FaCog } from 'react-icons/fa';
 import { useTheme } from '../../context/ThemeContext';
 import { useUser } from '../../context/UserContext';
 
@@ -44,7 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
         <div className="px-6 mb-8">
           <Link to="/" className="block">
             <h1 className="text-xl font-bold text-primary">LifeSprint</h1>
-            <p className="text-sm text-text-light">28-дневный путь трансформации</p>
+            <p className="text-sm text-text-light">31-дневный путь трансформации</p>
           </Link>
           
           {isAuthenticated && user && (
@@ -103,6 +103,19 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                 </Link>
               )}
             </li>
+            
+            {isAuthenticated && (
+              <li>
+                <Link 
+                  to="/settings" 
+                  className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive('/settings')}`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <FaCog className="mr-3" />
+                  <span>Настройки</span>
+                </Link>
+              </li>
+            )}
             
             {isAuthenticated && (
               <li>

@@ -84,6 +84,12 @@ const DayPage: React.FC = () => {
   };
   
   const handleGoalToggle = (index: number) => {
+    // Prevent toggling completion for empty goals
+    if (!dayData.goals[index].text.trim()) {
+      alert('Пожалуйста, заполните текст задачи перед тем, как отметить её выполненной.');
+      return;
+    }
+    
     const newGoals = [...dayData.goals];
     newGoals[index] = { ...newGoals[index], completed: !newGoals[index].completed };
     updateDayProgress(dayNumber, { goals: newGoals });
@@ -513,12 +519,13 @@ const DayPage: React.FC = () => {
                 </h1>
                 
                 <div className="mt-2 flex items-center">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                  <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3 border border-gray-300 dark:border-gray-600">
                     <div 
                       className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium"
                       style={{
-                        background: `conic-gradient(#4F46E5 ${getDayCompletion(dayNumber)}%, #f3f4f6 0)`,
-                        color: getDayCompletion(dayNumber) > 50 ? 'white' : 'inherit'
+                        background: `conic-gradient(#4F46E5 ${getDayCompletion(dayNumber)}%, transparent 0)`,
+                        color: getDayCompletion(dayNumber) > 50 ? 'white' : 'inherit',
+                        boxShadow: '0 0 0 1px rgba(0,0,0,0.05) inset'
                       }}
                     >
                       {getDayCompletion(dayNumber)}%
@@ -550,27 +557,14 @@ const DayPage: React.FC = () => {
             
         {isReflection ? renderReflectionDayContent() : renderRegularDayContent()}
         
-        {/* Show "Go to Main" button only when the day is filled */}
-        {((isReflection && reflectionData && 
-           reflectionData.gratitudeSelf && 
-           reflectionData.gratitudeOthers && 
-           reflectionData.gratitudeWorld && 
-           reflectionData.achievements.some(a => a) && 
-           reflectionData.improvements.some(i => i) && 
-           reflectionData.insights.some(i => i) && 
-           reflectionData.rules.some(r => r)) || 
-          (!isReflection && 
-           dayData.gratitude.some(g => g) && 
-           dayData.achievements.some(a => a) && 
-           dayData.goals.some(g => g.text))) && (
-          <div className="mt-8 text-center">
-            <Link to="/">
-              <Button variant="outline">
-                Перейти на главную
-              </Button>
-            </Link>
-          </div>
-        )}
+        {/* "I'm done!" button at the bottom of each day */}
+        <div className="mt-8 text-center">
+          <Link to="/">
+            <Button variant="primary">
+              Я все!
+            </Button>
+          </Link>
+        </div>
           </>
         )}
       </div>

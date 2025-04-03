@@ -68,12 +68,13 @@ const Dashboard: React.FC = () => {
               </div>
               
               <div className="ml-1 sm:ml-2">
-                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-gray-100 flex items-center justify-center">
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center border border-gray-300 dark:border-gray-600">
                   <div 
                     className="w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-medium"
                     style={{
-                      background: `conic-gradient(#4F46E5 0%, #f3f4f6 0)`,
-                      color: 'inherit'
+                      background: `conic-gradient(#4F46E5 0%, transparent 0)`,
+                      color: 'inherit',
+                      boxShadow: '0 0 0 1px rgba(0,0,0,0.05) inset'
                     }}
                   >
                     0%
@@ -130,12 +131,13 @@ const Dashboard: React.FC = () => {
             </div>
             
             <div className="ml-1 sm:ml-2">
-              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-gray-100 flex items-center justify-center">
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center border border-gray-300 dark:border-gray-600">
                 <div 
                   className="w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-medium"
                   style={{
-                    background: `conic-gradient(#4F46E5 ${completion}%, #f3f4f6 0)`,
-                    color: completion > 50 ? 'white' : 'inherit'
+                    background: `conic-gradient(#4F46E5 ${completion}%, transparent 0)`,
+                    color: completion > 50 ? 'white' : 'inherit',
+                    boxShadow: '0 0 0 1px rgba(0,0,0,0.05) inset'
                   }}
                 >
                   {completion}%
@@ -162,12 +164,13 @@ const Dashboard: React.FC = () => {
               </div>
               
               <div className="ml-1 sm:ml-2">
-                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-gray-100 flex items-center justify-center">
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center border border-gray-300 dark:border-gray-600">
                   <div 
                     className="w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-medium"
                     style={{
-                      background: `conic-gradient(#4F46E5 ${completion}%, #f3f4f6 0)`,
-                      color: completion > 50 ? 'white' : 'inherit'
+                      background: `conic-gradient(#4F46E5 ${completion}%, transparent 0)`,
+                      color: completion > 50 ? 'white' : 'inherit',
+                      boxShadow: '0 0 0 1px rgba(0,0,0,0.05) inset'
                     }}
                   >
                     {completion}%
@@ -205,6 +208,12 @@ const Dashboard: React.FC = () => {
       exerciseCompleted: false
     };
     
+    // Prevent toggling completion for empty goals
+    if (!dayProgress.goals[index].text.trim()) {
+      alert('Пожалуйста, заполните текст задачи перед тем, как отметить её выполненной.');
+      return;
+    }
+    
     const newGoals = [...dayProgress.goals];
     newGoals[index] = { ...newGoals[index], completed: !newGoals[index].completed };
     updateDayProgress(dayNumber, { goals: newGoals });
@@ -240,12 +249,13 @@ const Dashboard: React.FC = () => {
             </span>
           </h2>
           
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-100 flex items-center justify-center">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center border border-gray-300 dark:border-gray-600">
             <div 
               className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm font-medium"
               style={{
-                background: `conic-gradient(#4F46E5 ${completion}%, #f3f4f6 0)`,
-                color: completion > 50 ? 'white' : 'inherit'
+                background: `conic-gradient(#4F46E5 ${completion}%, transparent 0)`,
+                color: completion > 50 ? 'white' : 'inherit',
+                boxShadow: '0 0 0 1px rgba(0,0,0,0.05) inset'
               }}
             >
               {completion}%
