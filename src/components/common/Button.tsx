@@ -22,7 +22,7 @@ const Button: React.FC<ButtonProps> = ({
   const variantClasses = {
     primary: `bg-primary text-white hover:bg-opacity-90 ${isActive ? 'bg-opacity-80' : ''}`,
     secondary: `bg-secondary text-white hover:bg-opacity-90 ${isActive ? 'bg-opacity-80' : ''}`,
-    outline: `border border-gray-300 dark:border-gray-600 text-text hover:bg-gray-50 ${isActive ? 'bg-gray-100 dark:bg-gray-800' : ''}`,
+    outline: `border border-gray-300 dark:border-gray-600 text-text dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 ${isActive ? 'bg-gray-100 dark:bg-gray-800' : ''}`,
     danger: `bg-red-600 text-white hover:bg-red-700 ${isActive ? 'bg-red-700' : ''}`,
   };
   

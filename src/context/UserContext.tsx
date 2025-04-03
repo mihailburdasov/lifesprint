@@ -49,31 +49,24 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const storedUserId = localStorage.getItem('lifesprint_current_user_id');
     
     if (storedUserId) {
-      // Если ID пользователя найден, получаем данные пользователя из API
-      apiService.updateUser(storedUserId, {})
-        .then(response => {
-          if (response.success && response.data) {
-            setUser(response.data);
-          } else {
-            // Если пользователь не найден, удаляем ID из localStorage
-            localStorage.removeItem('lifesprint_current_user_id');
-          }
-        })
-        .catch(error => {
-          console.error('Ошибка при получении данных пользователя:', error);
-          // Создаем базовый объект пользователя в случае ошибки
-          setUser({
-            id: storedUserId,
-            name: 'Пользователь',
-            email: 'user@example.com'
-          });
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    } else {
-      setIsLoading(false);
+      // Получаем пользователя напрямую из localStorage вместо вызова API
+      const userJson = localStorage.getItem(`lifesprint_user_${storedUserId}`);
+      
+      if (userJson) {
+        try {
+          const userData = JSON.parse(userJson);
+          setUser(userData);
+        } catch (error) {
+          console.error('Ошибка при парсинге данных пользователя:', error);
+          localStorage.removeItem('lifesprint_current_user_id');
+        }
+      } else {
+        // Если данные пользователя не найдены, удаляем ID из localStorage
+        localStorage.removeItem('lifesprint_current_user_id');
+      }
     }
+    
+    setIsLoading(false);
   }, []);
 
   // Регистрация пользователя

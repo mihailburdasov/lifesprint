@@ -148,13 +148,12 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '' }) => {
           >
             <div 
               className="h-3 group-hover:h-4 bg-primary rounded-full transition-all duration-300 ease-in-out relative"
-              style={{ width: `${(currentTime / duration) * 100}%` }}
+              style={{ width: duration ? `${(currentTime / duration) * 100}%` : '0%' }}
             >
-              {currentTime > 0 && (
-                <div 
-                  className="absolute top-1/2 right-0 w-3 h-3 group-hover:w-4 group-hover:h-4 bg-white border-2 border-primary rounded-full shadow-md transform translate-x-1/2 -translate-y-1/2 transition-all duration-300"
-                />
-              )}
+              <div 
+                className="absolute top-1/2 right-0 w-3 h-3 group-hover:w-4 group-hover:h-4 bg-white border-2 border-primary rounded-full shadow-md transform translate-x-1/2 -translate-y-1/2 transition-all duration-300"
+                style={{ display: currentTime > 0 ? 'block' : 'none' }}
+              />
             </div>
           </div>
           
