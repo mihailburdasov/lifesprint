@@ -3,12 +3,10 @@ const TerserPlugin = require('terser-webpack-plugin');
 module.exports = {
   webpack: {
     configure: (webpackConfig) => {
-      // Disable source maps in production
-      if (process.env.NODE_ENV === 'production') {
-        webpackConfig.devtool = false;
-      }
+      // Включаем source maps для отладки
+      webpackConfig.devtool = 'source-map';
 
-      // Configure optimization
+      // Настраиваем оптимизацию с более мягкими параметрами
       webpackConfig.optimization = {
         ...webpackConfig.optimization,
         minimize: true,
@@ -16,21 +14,23 @@ module.exports = {
           new TerserPlugin({
             terserOptions: {
               compress: {
-                drop_console: true,
-                drop_debugger: true,
-                pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn']
+                // Сохраняем console.log для отладки
+                drop_console: false,
+                drop_debugger: false
               },
               mangle: {
                 safari10: true,
-                keep_classnames: false,
-                keep_fnames: false,
-                toplevel: true,
+                // Сохраняем имена классов и функций для лучшей отладки
+                keep_classnames: true,
+                keep_fnames: true,
+                toplevel: false,
                 reserved: []
               },
               output: {
-                comments: false,
+                // Сохраняем комментарии и форматирование для лучшей читаемости
+                comments: true,
                 ascii_only: true,
-                beautify: false
+                beautify: true
               }
             },
             extractComments: false
@@ -41,19 +41,6 @@ module.exports = {
       return webpackConfig;
     }
   },
-  // Disable source maps in production
-  plugins: [
-    {
-      plugin: {
-        overrideWebpackConfig: ({ webpackConfig }) => {
-          if (process.env.NODE_ENV === 'production') {
-            webpackConfig.plugins = webpackConfig.plugins.filter(
-              (plugin) => plugin.constructor.name !== 'SourceMapDevToolPlugin'
-            );
-          }
-          return webpackConfig;
-        }
-      }
-    }
-  ]
+  // Включаем source maps
+  plugins: []
 };
