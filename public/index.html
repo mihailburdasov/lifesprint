@@ -9,10 +9,11 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="LifeSprint" />
-    <!-- Отключение кэширования -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <!-- Агрессивное отключение кэширования -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
+    <meta http-equiv="Clear-Site-Data" content="cache" />
     <meta
       name="description"
       content="LifeSprint - Improve your life one sprint at a time"
@@ -33,6 +34,36 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>LifeSprint</title>
+    <!-- Скрипт для принудительной перезагрузки страницы при проблемах с кэшем -->
+    <script>
+      // Функция для обнаружения пустой страницы
+      function detectEmptyPage() {
+        setTimeout(function() {
+          var rootElement = document.getElementById('root');
+          // Если корневой элемент пуст или содержит только комментарии
+          if (rootElement && (!rootElement.children || rootElement.children.length === 0)) {
+            console.log('Обнаружена пустая страница, перезагрузка...');
+            // Добавляем параметр к URL для обхода кэша
+            var timestamp = new Date().getTime();
+            var separator = window.location.search ? '&' : '?';
+            window.location.href = window.location.pathname + window.location.search + 
+                                   separator + 'nocache=' + timestamp + window.location.hash;
+          }
+        }, 3000); // Даем 3 секунды на загрузку
+      }
+      
+      // Запускаем обнаружение пустой страницы при загрузке
+      window.addEventListener('load', detectEmptyPage);
+      
+      // Отменяем регистрацию Service Worker, если он есть
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (var i = 0; i < registrations.length; i++) {
+            registrations[i].unregister();
+          }
+        });
+      }
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
