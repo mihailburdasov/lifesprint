@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
 import Button from '../components/common/Button';
 import { useUser } from '../context/UserContext';
-import { useProgress } from '../context/ProgressContext';
+import { useProgress, DayProgress, WeekReflection } from '../context/ProgressContext';
+import { apiService } from '../utils/apiService';
 
 interface ProfileFormData {
   name: string;
@@ -82,16 +83,17 @@ const ProfilePage: React.FC = () => {
     
     // Подсчет благодарностей, достижений и целей из обычных дней
     Object.entries(progress.days).forEach(([dayNumberStr, day]) => {
+      const typedDay = day as DayProgress;
       const dayNumber = parseInt(dayNumberStr, 10);
       
       // Подсчет благодарностей
-      thanksCount += day.gratitude.filter(item => item.trim() !== '').length;
+      thanksCount += typedDay.gratitude.filter(item => item.trim() !== '').length;
       
       // Подсчет достижений
-      achievementsCount += day.achievements.filter(item => item.trim() !== '').length;
+      achievementsCount += typedDay.achievements.filter(item => item.trim() !== '').length;
       
       // Подсчет целей
-      goalsCount += day.goals.filter(goal => goal.text.trim() !== '').length;
+      goalsCount += typedDay.goals.filter(goal => goal.text.trim() !== '').length;
       
       // Проверяем, заполнен ли день
       const dayCompletion = getDayCompletion(dayNumber);
@@ -114,13 +116,15 @@ const ProfilePage: React.FC = () => {
     
     // Подсчет благодарностей из дней рефлексии
     Object.values(progress.weekReflections).forEach(reflection => {
+      const typedReflection = reflection as WeekReflection;
+      
       // Благодарности в дни рефлексии (себе, другим, миру)
-      if (reflection.gratitudeSelf.trim() !== '') thanksCount++;
-      if (reflection.gratitudeOthers.trim() !== '') thanksCount++;
-      if (reflection.gratitudeWorld.trim() !== '') thanksCount++;
+      if (typedReflection.gratitudeSelf.trim() !== '') thanksCount++;
+      if (typedReflection.gratitudeOthers.trim() !== '') thanksCount++;
+      if (typedReflection.gratitudeWorld.trim() !== '') thanksCount++;
       
       // Достижения в дни рефлексии
-      achievementsCount += reflection.achievements.filter(item => item.trim() !== '').length;
+      achievementsCount += typedReflection.achievements.filter(item => item.trim() !== '').length;
     });
     
     // Вычисляем процент заполнения профиля
@@ -155,48 +159,54 @@ const ProfilePage: React.FC = () => {
   };
   
   // Функция для сохранения данных пользователя
-  const saveUserData = (data: ProfileFormData) => {
-    // Обновляем данные в localStorage
-    const updatedUser = {
-      ...user,
-      name: data.name,
-      email: data.email,
-      telegramNickname: data.telegramNickname,
-    };
+  const saveUserData = async (data: ProfileFormData) => {
+    if (!user) return;
     
-    localStorage.setItem('lifesprint_user', JSON.stringify(updatedUser));
+    try {
+      // Обновляем данные пользователя через API
+      const response = await apiService.updateUser(user.id, {
+        name: data.name,
+        email: data.email,
+        telegramNickname: data.telegramNickname,
+      });
+      
+      if (!response.success) {
+        console.error('Ошибка при сохранении данных пользователя:', response.error);
+      }
+    } catch (error) {
+      console.error('Ошибка при сохранении данных пользователя:', error);
+    }
   };
   
   // Обработка отправки формы
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!user) return;
+    
     setIsSaving(true);
     
     try {
-      // Имитация запроса к API для обновления профиля
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // В реальном приложении здесь был бы запрос к API
-      // Для демонстрации просто обновляем данные в localStorage
-      const updatedUser = {
-        ...user,
+      // Обновляем данные пользователя через API
+      const response = await apiService.updateUser(user.id, {
         name: formData.name,
         email: formData.email,
         telegramNickname: formData.telegramNickname,
-      };
-      
-      localStorage.setItem('lifesprint_user', JSON.stringify(updatedUser));
-      
-      setMessage({
-        text: 'Профиль успешно обновлен',
-        type: 'success',
       });
       
-      setIsEditing(false);
-      
-      // Перезагрузка страницы для обновления данных пользователя
-      window.location.reload();
+      if (response.success && response.data) {
+        setMessage({
+          text: 'Профиль успешно обновлен',
+          type: 'success',
+        });
+        
+        setIsEditing(false);
+      } else {
+        setMessage({
+          text: response.error || 'Ошибка при обновлении профиля',
+          type: 'error',
+        });
+      }
     } catch (error) {
       console.error('Ошибка обновления профиля:', error);
       setMessage({

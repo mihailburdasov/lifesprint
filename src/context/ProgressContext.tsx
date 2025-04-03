@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getCurrentMonthSprintStart } from '../utils/dateUtils';
+import { apiService } from '../utils/apiService';
+import { useUser } from './UserContext';
 
 // Define types for our context
-interface DayProgress {
+export interface DayProgress {
   completed: boolean;
   gratitude: string[];
   achievements: string[];
@@ -10,7 +12,7 @@ interface DayProgress {
   exerciseCompleted: boolean;
 }
 
-interface WeekReflection {
+export interface WeekReflection {
   gratitudeSelf: string;
   gratitudeOthers: string;
   gratitudeWorld: string;
@@ -68,59 +70,85 @@ const defaultWeekReflection: WeekReflection = {
 
 // Provider component
 export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize state with data from localStorage or defaults
-  const [progress, setProgress] = useState<UserProgress>(() => {
-    // Get the current month's start date
-    const currentMonthStart = getCurrentMonthSprintStart();
-    
-    const savedProgress = localStorage.getItem('lifesprint_progress');
-    if (savedProgress) {
-      const parsed = JSON.parse(savedProgress);
-      // Convert string dates back to Date objects
-      parsed.startDate = new Date(parsed.startDate);
-      
-      // Check if we need to update the start date to the current month
-      const savedStartMonth = parsed.startDate.getMonth();
-      const currentMonth = currentMonthStart.getMonth();
-      
-      // If the saved start date is from a different month, update it
-      if (savedStartMonth !== currentMonth) {
-        parsed.startDate = currentMonthStart;
-        
-        // Recalculate current day based on the new start date
-        const today = new Date();
-        const diffTime = today.getTime() - currentMonthStart.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        parsed.currentDay = Math.min(Math.max(diffDays, 1), 28); // Ensure between 1-28
-      }
-      
-      return parsed;
-    }
-    
-    // Calculate current day based on the first day of the current month
-    const today = new Date();
-    const diffTime = today.getTime() - currentMonthStart.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    const currentDay = Math.min(Math.max(diffDays, 1), 28); // Ensure between 1-28
-    
-    // Default initial state
-    return {
-      startDate: currentMonthStart,
-      currentDay: currentDay,
-      days: {},
-      weekReflections: {}
-    };
-  });
+  const { user, isAuthenticated } = useUser();
+  const [progress, setProgress] = useState<UserProgress | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   
-  // Save to localStorage whenever progress changes
+  // Загрузка прогресса пользователя при авторизации
   useEffect(() => {
-    localStorage.setItem('lifesprint_progress', JSON.stringify(progress));
-  }, [progress]);
+    if (isAuthenticated && user) {
+      setIsLoading(true);
+      
+      // Получаем прогресс пользователя из API
+      apiService.getUserProgress(user.id)
+        .then(response => {
+          if (response.success && response.data) {
+            setProgress(response.data);
+          } else {
+            // Если прогресс не найден, создаем новый
+            const currentMonthStart = getCurrentMonthSprintStart();
+            const today = new Date();
+            const diffTime = today.getTime() - currentMonthStart.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            const currentDay = Math.min(Math.max(diffDays, 1), 28); // Между 1 и 28
+            
+            const newProgress: UserProgress = {
+              startDate: currentMonthStart,
+              currentDay: currentDay,
+              days: {},
+              weekReflections: {}
+            };
+            
+            setProgress(newProgress);
+          }
+        })
+        .catch(error => {
+          console.error('Ошибка при получении прогресса пользователя:', error);
+          
+          // В случае ошибки создаем новый прогресс
+          const currentMonthStart = getCurrentMonthSprintStart();
+          const today = new Date();
+          const diffTime = today.getTime() - currentMonthStart.getTime();
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+          const currentDay = Math.min(Math.max(diffDays, 1), 28); // Между 1 и 28
+          
+          const newProgress: UserProgress = {
+            startDate: currentMonthStart,
+            currentDay: currentDay,
+            days: {},
+            weekReflections: {}
+          };
+          
+          setProgress(newProgress);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else {
+      // Если пользователь не авторизован, сбрасываем прогресс
+      setProgress(null);
+      setIsLoading(false);
+    }
+  }, [isAuthenticated, user]);
+  
+  // Сохранение прогресса пользователя при изменении
+  useEffect(() => {
+    if (isAuthenticated && user && progress) {
+      apiService.updateUserProgress(user.id, progress)
+        .catch(error => {
+          console.error('Ошибка при сохранении прогресса пользователя:', error);
+        });
+    }
+  }, [progress, isAuthenticated, user]);
   
   // Update current day based on the current date
   useEffect(() => {
+    if (!progress) return;
+    
     // Function to update the current day
     const updateCurrentDay = () => {
+      if (!progress) return;
+      
       const today = new Date();
       const diffTime = today.getTime() - progress.startDate.getTime();
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
@@ -128,10 +156,13 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       // Only update if the current day has changed
       if (newCurrentDay !== progress.currentDay) {
-        setProgress(prev => ({
-          ...prev,
-          currentDay: newCurrentDay
-        }));
+        setProgress(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            currentDay: newCurrentDay
+          };
+        });
       }
     };
     
@@ -157,11 +188,15 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     // Clean up the timeout on unmount
     return () => clearTimeout(midnightTimeout);
-  }, [progress.startDate, progress.currentDay]);
+  }, [progress]);
   
-  // Update day progress
+  // Обновление прогресса дня
   const updateDayProgress = (dayNumber: number, data: Partial<DayProgress>) => {
+    if (!progress) return;
+    
     setProgress(prev => {
+      if (!prev) return null;
+      
       const currentDayProgress = prev.days[dayNumber] || { ...defaultDayProgress };
       const updatedDayProgress = { ...currentDayProgress, ...data };
       
@@ -175,9 +210,13 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
   
-  // Update week reflection
+  // Обновление недельной рефлексии
   const updateWeekReflection = (weekNumber: number, data: Partial<WeekReflection>) => {
+    if (!progress) return;
+    
     setProgress(prev => {
+      if (!prev) return null;
+      
       const currentReflection = prev.weekReflections[weekNumber] || { ...defaultWeekReflection };
       const updatedReflection = { ...currentReflection, ...data };
       
@@ -191,8 +230,10 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
   
-  // Calculate day completion percentage
+  // Вычисление процента заполнения дня
   const getDayCompletion = (dayNumber: number): number => {
+    if (!progress) return 0;
+    
     const dayProgress = progress.days[dayNumber];
     if (!dayProgress) return 0;
     
@@ -263,20 +304,30 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
   
-  // Check if a day is a reflection day
+  // Проверка, является ли день днем рефлексии
   const isReflectionDay = (dayNumber: number): boolean => {
     return dayNumber % 7 === 0;
   };
   
-  // Check if a day is accessible (only days 1-7 are accessible)
+  // Проверка, доступен ли день (только дни 1-7 доступны)
   const isDayAccessible = (dayNumber: number): boolean => {
     return dayNumber <= 7;
   };
   
-  // Check if a week is accessible (only week 1 is accessible)
+  // Проверка, доступна ли неделя (только неделя 1 доступна)
   const isWeekAccessible = (weekNumber: number): boolean => {
     return weekNumber === 1;
   };
+  
+  // Если прогресс загружается, показываем пустой провайдер
+  if (isLoading) {
+    return <>{children}</>;
+  }
+  
+  // Если прогресс не загружен (пользователь не авторизован), показываем пустой провайдер
+  if (!progress) {
+    return <>{children}</>;
+  }
   
   return (
     <ProgressContext.Provider 

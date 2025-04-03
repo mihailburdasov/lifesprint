@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiService } from '../utils/apiService';
 
 // Определение типов для пользователя
 export interface User {
@@ -44,16 +45,30 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Проверка наличия пользователя при загрузке
   useEffect(() => {
-    const storedUser = localStorage.getItem('lifesprint_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Ошибка при парсинге данных пользователя:', e);
-        localStorage.removeItem('lifesprint_user');
-      }
+    // Проверяем, есть ли сохраненный ID пользователя в localStorage
+    const storedUserId = localStorage.getItem('lifesprint_current_user_id');
+    
+    if (storedUserId) {
+      // Если ID пользователя найден, получаем данные пользователя из API
+      apiService.updateUser(storedUserId, {})
+        .then(response => {
+          if (response.success && response.data) {
+            setUser(response.data);
+          } else {
+            // Если пользователь не найден, удаляем ID из localStorage
+            localStorage.removeItem('lifesprint_current_user_id');
+          }
+        })
+        .catch(error => {
+          console.error('Ошибка при получении данных пользователя:', error);
+          localStorage.removeItem('lifesprint_current_user_id');
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   // Регистрация пользователя
@@ -62,21 +77,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     
     try {
-      // Имитация запроса к API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Вызов API для регистрации пользователя
+      const response = await apiService.register(
+        data.name,
+        data.email,
+        data.password,
+        data.telegramNickname
+      );
       
-      // В реальном приложении здесь был бы запрос к API для регистрации
-      // Генерируем уникальный ID для пользователя (в реальном приложении это делал бы сервер)
-      const newUser: User = {
-        id: Date.now().toString(),
-        name: data.name,
-        email: data.email,
-        telegramNickname: data.telegramNickname
-      };
-      
-      // Сохраняем пользователя в localStorage (в реальном приложении использовали бы токены)
-      localStorage.setItem('lifesprint_user', JSON.stringify(newUser));
-      setUser(newUser);
+      if (response.success && response.data) {
+        // Сохраняем ID пользователя в localStorage
+        localStorage.setItem('lifesprint_current_user_id', response.data.id);
+        setUser(response.data);
+      } else {
+        setError(response.error || 'Ошибка при регистрации. Пожалуйста, попробуйте снова.');
+      }
     } catch (e) {
       setError('Ошибка при регистрации. Пожалуйста, попробуйте снова.');
       console.error('Ошибка регистрации:', e);
@@ -91,25 +106,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     
     try {
-      // Имитация запроса к API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Вызов API для входа пользователя
+      const response = await apiService.login(data.email, data.password);
       
-      // В реальном приложении здесь был бы запрос к API для входа
-      // Для демонстрации просто проверяем, что email содержит @ и пароль не пустой
-      if (!data.email.includes('@') || !data.password) {
-        throw new Error('Неверные учетные данные');
+      if (response.success && response.data) {
+        // Сохраняем ID пользователя в localStorage
+        localStorage.setItem('lifesprint_current_user_id', response.data.id);
+        setUser(response.data);
+      } else {
+        setError(response.error || 'Неверный email или пароль.');
       }
-      
-      // Создаем тестового пользователя (в реальном приложении получали бы от сервера)
-      const loggedInUser: User = {
-        id: '1',
-        name: 'Тестовый пользователь',
-        email: data.email
-      };
-      
-      // Сохраняем пользователя в localStorage
-      localStorage.setItem('lifesprint_user', JSON.stringify(loggedInUser));
-      setUser(loggedInUser);
     } catch (e) {
       setError('Неверный email или пароль.');
       console.error('Ошибка входа:', e);
@@ -120,7 +126,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Выход пользователя
   const logout = (): void => {
-    localStorage.removeItem('lifesprint_user');
+    localStorage.removeItem('lifesprint_current_user_id');
     setUser(null);
   };
 
