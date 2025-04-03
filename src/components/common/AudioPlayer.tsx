@@ -14,6 +14,19 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '' }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
 
+  // Handle play/pause
+  const togglePlay = React.useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      audio.play();
+    }
+    setIsPlaying(!isPlaying);
+  }, [isPlaying]);
+
   // Update audio duration when metadata is loaded
   useEffect(() => {
     const audio = audioRef.current;
@@ -38,18 +51,25 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '' }) => {
     };
   }, []);
 
-  // Handle play/pause
-  const togglePlay = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
+  // Add keyboard shortcut for play/pause (spacebar)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle spacebar if the focus is not on an input, textarea, or button
+      if (e.code === 'Space' && 
+          !(e.target instanceof HTMLInputElement) && 
+          !(e.target instanceof HTMLTextAreaElement) && 
+          !(e.target instanceof HTMLButtonElement)) {
+        e.preventDefault(); // Prevent page scrolling
+        togglePlay();
+      }
+    };
 
-    if (isPlaying) {
-      audio.pause();
-    } else {
-      audio.play();
-    }
-    setIsPlaying(!isPlaying);
-  };
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [togglePlay]); // Re-add event listener when togglePlay changes
 
   // Handle mute/unmute
   const toggleMute = () => {
@@ -74,10 +94,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '' }) => {
   };
 
   // Format time in MM:SS
-  const formatTime = (time: number) => {
+  const formatTime = (time: number, showMinus = false) => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    return `${showMinus ? '-' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
   return (
@@ -96,19 +116,25 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '' }) => {
         <div className="flex-1">
           <div 
             ref={progressRef}
-            className="h-3 bg-gray-300 dark:bg-gray-600 rounded-full cursor-pointer"
+            className="h-3 bg-gray-300 dark:bg-gray-600 rounded-full cursor-pointer relative group"
             onClick={handleProgressChange}
             onTouchStart={handleProgressChange}
           >
             <div 
-              className="h-full bg-primary rounded-full"
+              className="h-3 group-hover:h-4 bg-primary rounded-full transition-all duration-300 ease-in-out relative"
               style={{ width: `${(currentTime / duration) * 100}%` }}
-            />
+            >
+              {currentTime > 0 && (
+                <div 
+                  className="absolute top-1/2 right-0 w-3 h-3 group-hover:w-4 group-hover:h-4 bg-white border-2 border-primary rounded-full shadow-md transform translate-x-1/2 -translate-y-1/2 transition-all duration-300"
+                />
+              )}
+            </div>
           </div>
           
           <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
             <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
+            <span>{formatTime(duration - currentTime, true)}</span>
           </div>
         </div>
         

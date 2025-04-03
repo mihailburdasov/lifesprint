@@ -51,15 +51,33 @@ const DayPage: React.FC = () => {
     exerciseCompleted: false
   }) : null;
   
+  // State to track button active states
+  const [isPrevButtonActive, setIsPrevButtonActive] = useState(false);
+  const [isNextButtonActive, setIsNextButtonActive] = useState(false);
+  
   // Handle navigation to previous/next day
   const goToPreviousDay = () => {
     if (dayNumber > 1) {
+      setIsPrevButtonActive(true);
+      
+      // Reset active state after 300ms
+      setTimeout(() => {
+        setIsPrevButtonActive(false);
+      }, 300);
+      
       navigate(`/day/${dayNumber - 1}`);
     }
   };
   
   const goToNextDay = () => {
     if (dayNumber < 28) {
+      setIsNextButtonActive(true);
+      
+      // Reset active state after 300ms
+      setTimeout(() => {
+        setIsNextButtonActive(false);
+      }, 300);
+      
       navigate(`/day/${dayNumber + 1}`);
     }
   };
@@ -505,6 +523,7 @@ const DayPage: React.FC = () => {
                   size="sm"
                   onClick={goToPreviousDay}
                   className="w-full sm:w-auto"
+                  isActive={isPrevButtonActive}
                 >
                   Пред. день
                 </Button>
@@ -543,6 +562,7 @@ const DayPage: React.FC = () => {
                 onClick={goToNextDay}
                 disabled={dayNumber >= 28}
                 className="w-full sm:w-auto"
+                isActive={isNextButtonActive}
               >
                 След. день
               </Button>

@@ -38,7 +38,13 @@ module.exports = {
         'xl': '1rem',
         '2xl': '1.5rem',
       },
+      transitionProperty: {
+        'width': 'width',
+      },
     },
   },
   plugins: [],
+  corePlugins: {
+    transitionProperty: true,
+  },
 }
