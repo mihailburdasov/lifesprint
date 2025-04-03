@@ -58,38 +58,24 @@ const AuthPage: React.FC = () => {
     }
   };
 
-  // Валидация формы
+  // Упрощенная валидация формы
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};
     
-    // Проверка email
+    // Базовая проверка email (только на заполненность)
     if (!formData.email) {
       newErrors.email = 'Email обязателен';
-    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
-      newErrors.email = 'Некорректный формат email';
     }
     
-    // Проверка пароля
+    // Базовая проверка пароля (только на заполненность)
     if (!formData.password) {
       newErrors.password = 'Пароль обязателен';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Пароль должен содержать минимум 8 символов';
-    } else if (!/(?=.*[a-z])/.test(formData.password)) {
-      newErrors.password = 'Пароль должен содержать хотя бы одну строчную букву';
-    } else if (!/(?=.*[A-Z])/.test(formData.password)) {
-      newErrors.password = 'Пароль должен содержать хотя бы одну заглавную букву';
-    } else if (!/(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'Пароль должен содержать хотя бы одну цифру';
-    } else if (!/(?=.*[!@#$%^&*])/.test(formData.password)) {
-      newErrors.password = 'Пароль должен содержать хотя бы один специальный символ (!@#$%^&*)';
     }
     
     // Проверка имени при регистрации
     if (mode === 'register' && !formData.name) {
       newErrors.name = 'Имя обязательно';
     }
-    
-    // Telegram никнейм не обязателен, поэтому не проверяем
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -232,18 +218,6 @@ const AuthPage: React.FC = () => {
               />
               {errors.password && (
                 <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-              )}
-              {mode === 'register' && (
-                <div className="mt-2 text-xs text-gray-500">
-                  <p>Пароль должен содержать:</p>
-                  <ul className="list-disc pl-5 mt-1">
-                    <li className={formData.password.length >= 8 ? 'text-green-500' : ''}>Минимум 8 символов</li>
-                    <li className={/(?=.*[a-z])/.test(formData.password) ? 'text-green-500' : ''}>Строчную букву</li>
-                    <li className={/(?=.*[A-Z])/.test(formData.password) ? 'text-green-500' : ''}>Заглавную букву</li>
-                    <li className={/(?=.*\d)/.test(formData.password) ? 'text-green-500' : ''}>Цифру</li>
-                    <li className={/(?=.*[!@#$%^&*])/.test(formData.password) ? 'text-green-500' : ''}>Специальный символ (!@#$%^&*)</li>
-                  </ul>
-                </div>
               )}
             </div>
             
