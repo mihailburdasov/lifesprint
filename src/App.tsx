@@ -17,7 +17,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   // Проверяем, есть ли пользователь в localStorage
-  const isAuthenticated = localStorage.getItem('lifesprint_user') !== null;
+  const isAuthenticated = localStorage.getItem('lifesprint_current_user_id') !== null;
   
   if (!isAuthenticated) {
     // Если пользователь не авторизован, перенаправляем на страницу входа
