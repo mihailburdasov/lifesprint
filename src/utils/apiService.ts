@@ -52,8 +52,13 @@ export const apiService = {
         telegramNickname
       };
       
-      // Сохранение пользователя
-      localStorage.setItem(`${USER_PREFIX}${newUser.id}`, JSON.stringify(newUser));
+      // Сохранение пользователя и пароля (в реальном приложении пароль должен быть хэширован)
+      const userData = {
+        ...newUser,
+        password // Добавляем пароль для проверки при входе
+      };
+      
+      localStorage.setItem(`${USER_PREFIX}${newUser.id}`, JSON.stringify(userData));
       
       // Создание пустого прогресса для пользователя
       this.initUserProgress(newUser.id);
@@ -79,30 +84,47 @@ export const apiService = {
       // Имитация задержки сети
       await delay(800);
       
-      // В реальном приложении здесь была бы проверка email и пароля на сервере
-      // Для демонстрации просто ищем пользователя по email
-      const users = this.getAllUsers();
-      const user = users.find(u => u.email === email);
+      // Получаем всех пользователей
+      const users = [];
       
-      if (!user) {
-        return {
-          success: false,
-          error: 'Пользователь с таким email не найден'
-        };
+      // Перебор всех ключей в localStorage
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        
+        // Проверка, является ли ключ ключом пользователя
+        if (key && key.startsWith(USER_PREFIX)) {
+          const userJson = localStorage.getItem(key);
+          
+          if (userJson) {
+            try {
+              const userData = JSON.parse(userJson);
+              // Проверяем совпадение email и пароля
+              if (userData.email === email && userData.password === password) {
+                // Возвращаем пользователя без пароля
+                const { password: _, ...userWithoutPassword } = userData;
+                return {
+                  success: true,
+                  data: userWithoutPassword as User
+                };
+              }
+              // Если email совпадает, но пароль нет
+              if (userData.email === email) {
+                return {
+                  success: false,
+                  error: 'Неверный пароль'
+                };
+              }
+            } catch (error) {
+              console.error('Ошибка при парсинге данных пользователя:', error);
+            }
+          }
+        }
       }
       
-      // В реальном приложении здесь была бы проверка пароля
-      // Для демонстрации просто проверяем, что пароль не пустой
-      if (!password) {
-        return {
-          success: false,
-          error: 'Неверный пароль'
-        };
-      }
-      
+      // Если пользователь не найден
       return {
-        success: true,
-        data: user
+        success: false,
+        error: 'Пользователь с таким email не найден'
       };
     } catch (error) {
       console.error('Ошибка при входе:', error);
@@ -131,20 +153,23 @@ export const apiService = {
         };
       }
       
-      const currentUser = JSON.parse(userJson) as User;
+      const currentUserData = JSON.parse(userJson);
       
-      // Обновление данных пользователя
-      const updatedUser = {
-        ...currentUser,
+      // Обновление данных пользователя, сохраняя пароль
+      const updatedUserData = {
+        ...currentUserData,
         ...userData
       };
       
       // Сохранение обновленных данных
-      localStorage.setItem(`${USER_PREFIX}${userId}`, JSON.stringify(updatedUser));
+      localStorage.setItem(`${USER_PREFIX}${userId}`, JSON.stringify(updatedUserData));
+      
+      // Возвращаем пользователя без пароля
+      const { password: _, ...userWithoutPassword } = updatedUserData;
       
       return {
         success: true,
-        data: updatedUser
+        data: userWithoutPassword as User
       };
     } catch (error) {
       console.error('Ошибка при обновлении пользователя:', error);
@@ -260,8 +285,10 @@ export const apiService = {
         
         if (userJson) {
           try {
-            const user = JSON.parse(userJson) as User;
-            users.push(user);
+            const userData = JSON.parse(userJson);
+            // Удаляем пароль из данных пользователя
+            const { password: _, ...userWithoutPassword } = userData;
+            users.push(userWithoutPassword as User);
           } catch (error) {
             console.error('Ошибка при парсинге данных пользователя:', error);
           }
