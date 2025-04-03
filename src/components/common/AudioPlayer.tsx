@@ -152,7 +152,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '' }) => {
             >
               <div 
                 className="absolute top-1/2 right-0 w-3 h-3 group-hover:w-4 group-hover:h-4 bg-white border-2 border-primary rounded-full shadow-md transform translate-x-1/2 -translate-y-1/2 transition-all duration-300"
-                style={{ display: currentTime > 0 ? 'block' : 'none' }}
               />
             </div>
           </div>

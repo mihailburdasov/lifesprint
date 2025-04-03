@@ -11,13 +11,31 @@ import ProfilePage from './pages/ProfilePage';
 import OnboardingPage from './pages/OnboardingPage';
 import SettingsPage from './pages/SettingsPage';
 
-// Простой компонент для защиты маршрутов
+// Улучшенный компонент для защиты маршрутов
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   // Проверяем, есть ли пользователь в localStorage
-  const isAuthenticated = localStorage.getItem('lifesprint_current_user_id') !== null;
+  const userId = localStorage.getItem('lifesprint_current_user_id');
   
-  if (!isAuthenticated) {
-    // Если пользователь не авторизован, перенаправляем на страницу входа
+  // Проверяем, существуют ли данные пользователя
+  let userExists = false;
+  
+  if (userId) {
+    try {
+      const userJson = localStorage.getItem(`lifesprint_user_${userId}`);
+      userExists = userJson !== null;
+    } catch (error) {
+      console.error('Ошибка при проверке данных пользователя:', error);
+    }
+  }
+  
+  // Если пользователь не авторизован или данные пользователя не найдены
+  if (!userId || !userExists) {
+    // Очищаем ID пользователя, если данные не найдены
+    if (userId && !userExists) {
+      localStorage.removeItem('lifesprint_current_user_id');
+    }
+    
+    // Перенаправляем на страницу входа
     return <Navigate to="/auth" replace />;
   }
   

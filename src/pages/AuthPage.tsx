@@ -82,7 +82,7 @@ const AuthPage: React.FC = () => {
   };
 
   // Обработка отправки формы
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -93,12 +93,14 @@ const AuthPage: React.FC = () => {
     
     try {
       if (mode === 'login') {
-        await login({
+        const loginResult = login({
           email: formData.email,
           password: formData.password
         });
+        
+        // Если вход успешен, перенаправление произойдет автоматически через useEffect
       } else if (mode === 'register') {
-        const result = await register({
+        const result = register({
           name: formData.name || '',
           email: formData.email,
           password: formData.password,

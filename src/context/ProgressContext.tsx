@@ -79,33 +79,14 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (isAuthenticated && user) {
       setIsLoading(true);
       
-      // Получаем прогресс пользователя из API
-      apiService.getUserProgress(user.id)
-        .then(response => {
-          if (response.success && response.data) {
-            setProgress(response.data);
-          } else {
-            // Если прогресс не найден, создаем новый
-            const currentMonthStart = getCurrentMonthSprintStart();
-            const today = new Date();
-            const diffTime = today.getTime() - currentMonthStart.getTime();
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-            const currentDay = Math.min(Math.max(diffDays, 1), 28); // Между 1 и 28
-            
-            const newProgress: UserProgress = {
-              startDate: currentMonthStart,
-              currentDay: currentDay,
-              days: {},
-              weekReflections: {}
-            };
-            
-            setProgress(newProgress);
-          }
-        })
-        .catch(error => {
-          console.error('Ошибка при получении прогресса пользователя:', error);
-          
-          // В случае ошибки создаем новый прогресс
+      try {
+        // Получаем прогресс пользователя из локального хранилища
+        const response = apiService.getUserProgress(user.id);
+        
+        if (response.success && response.data) {
+          setProgress(response.data);
+        } else {
+          // Если прогресс не найден, создаем новый
           const currentMonthStart = getCurrentMonthSprintStart();
           const today = new Date();
           const diffTime = today.getTime() - currentMonthStart.getTime();
@@ -120,10 +101,28 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           };
           
           setProgress(newProgress);
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
+        }
+      } catch (error) {
+        console.error('Ошибка при получении прогресса пользователя:', error);
+        
+        // В случае ошибки создаем новый прогресс
+        const currentMonthStart = getCurrentMonthSprintStart();
+        const today = new Date();
+        const diffTime = today.getTime() - currentMonthStart.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        const currentDay = Math.min(Math.max(diffDays, 1), 28); // Между 1 и 28
+        
+        const newProgress: UserProgress = {
+          startDate: currentMonthStart,
+          currentDay: currentDay,
+          days: {},
+          weekReflections: {}
+        };
+        
+        setProgress(newProgress);
+      } finally {
+        setIsLoading(false);
+      }
     } else {
       // Если пользователь не авторизован, сбрасываем прогресс
       setProgress(null);
@@ -134,10 +133,11 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Сохранение прогресса пользователя при изменении
   useEffect(() => {
     if (isAuthenticated && user && progress) {
-      apiService.updateUserProgress(user.id, progress)
-        .catch(error => {
-          console.error('Ошибка при сохранении прогресса пользователя:', error);
-        });
+      try {
+        apiService.updateUserProgress(user.id, progress);
+      } catch (error) {
+        console.error('Ошибка при сохранении прогресса пользователя:', error);
+      }
     }
   }, [progress, isAuthenticated, user]);
   
@@ -320,22 +320,32 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return weekNumber === 1;
   };
   
-  // Если прогресс загружается, показываем пустой провайдер
-  if (isLoading) {
-    return <>{children}</>;
-  }
+  // Создаем безопасный прогресс, даже если настоящий прогресс не загружен
+  const safeProgress: UserProgress = progress || {
+    startDate: new Date(),
+    currentDay: 1,
+    days: {},
+    weekReflections: {}
+  };
   
-  // Если прогресс не загружен (пользователь не авторизован), показываем пустой провайдер
-  if (!progress) {
-    return <>{children}</>;
-  }
+  // Безопасные функции, которые работают даже если прогресс не загружен
+  const safeUpdateDayProgress = (dayNumber: number, data: Partial<DayProgress>) => {
+    if (!progress) return;
+    updateDayProgress(dayNumber, data);
+  };
   
+  const safeUpdateWeekReflection = (weekNumber: number, data: Partial<WeekReflection>) => {
+    if (!progress) return;
+    updateWeekReflection(weekNumber, data);
+  };
+  
+  // Всегда предоставляем контекст, даже если прогресс загружается или не загружен
   return (
     <ProgressContext.Provider 
       value={{ 
-        progress, 
-        updateDayProgress, 
-        updateWeekReflection, 
+        progress: safeProgress, 
+        updateDayProgress: safeUpdateDayProgress, 
+        updateWeekReflection: safeUpdateWeekReflection, 
         getDayCompletion,
         isReflectionDay,
         isDayAccessible,

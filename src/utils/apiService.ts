@@ -1,14 +1,10 @@
 /**
- * Сервис для работы с API
- * В реальном приложении здесь были бы настоящие запросы к серверу
- * Для демонстрации используем localStorage с имитацией задержки сети
+ * Локальный сервис для работы с данными пользователя
+ * Все данные хранятся в localStorage без имитации сетевых запросов
  */
 
 import { User } from '../context/UserContext';
 import { UserProgress } from '../context/ProgressContext';
-
-// Имитация задержки сети
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Префиксы для ключей в localStorage
 const USER_PREFIX = 'lifesprint_user_';
@@ -22,17 +18,14 @@ interface ApiResponse<T> {
 }
 
 /**
- * Сервис для работы с API
+ * Сервис для работы с локальными данными
  */
 export const apiService = {
   /**
    * Регистрация пользователя
    */
-  async register(name: string, email: string, password: string, telegramNickname?: string): Promise<ApiResponse<User>> {
+  register(name: string, email: string, password: string, telegramNickname?: string): ApiResponse<User> {
     try {
-      // Имитация задержки сети
-      await delay(800);
-      
       // Проверка, существует ли пользователь с таким email
       const existingUsers = this.getAllUsers();
       const userExists = existingUsers.some(user => user.email === email);
@@ -52,10 +45,10 @@ export const apiService = {
         telegramNickname
       };
       
-      // Сохранение пользователя и пароля (в реальном приложении пароль должен быть хэширован)
+      // Сохранение пользователя и пароля
       const userData = {
         ...newUser,
-        password // Добавляем пароль для проверки при входе
+        password
       };
       
       localStorage.setItem(`${USER_PREFIX}${newUser.id}`, JSON.stringify(userData));
@@ -79,14 +72,8 @@ export const apiService = {
   /**
    * Вход пользователя
    */
-  async login(email: string, password: string): Promise<ApiResponse<User>> {
+  login(email: string, password: string): ApiResponse<User> {
     try {
-      // Имитация задержки сети
-      await delay(800);
-      
-      // Получаем всех пользователей
-      const users = [];
-      
       // Перебор всех ключей в localStorage
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -138,11 +125,8 @@ export const apiService = {
   /**
    * Обновление данных пользователя
    */
-  async updateUser(userId: string, userData: Partial<User>): Promise<ApiResponse<User>> {
+  updateUser(userId: string, userData: Partial<User>): ApiResponse<User> {
     try {
-      // Имитация задержки сети
-      await delay(500);
-      
       // Получение текущих данных пользователя
       const userJson = localStorage.getItem(`${USER_PREFIX}${userId}`);
       
@@ -183,11 +167,8 @@ export const apiService = {
   /**
    * Получение прогресса пользователя
    */
-  async getUserProgress(userId: string): Promise<ApiResponse<UserProgress>> {
+  getUserProgress(userId: string): ApiResponse<UserProgress> {
     try {
-      // Имитация задержки сети
-      await delay(500);
-      
       // Получение прогресса пользователя
       const progressJson = localStorage.getItem(`${PROGRESS_PREFIX}${userId}`);
       
@@ -222,11 +203,8 @@ export const apiService = {
   /**
    * Обновление прогресса пользователя
    */
-  async updateUserProgress(userId: string, progressData: UserProgress): Promise<ApiResponse<UserProgress>> {
+  updateUserProgress(userId: string, progressData: UserProgress): ApiResponse<UserProgress> {
     try {
-      // Имитация задержки сети
-      await delay(300);
-      
       // Сохранение прогресса пользователя
       localStorage.setItem(`${PROGRESS_PREFIX}${userId}`, JSON.stringify(progressData));
       

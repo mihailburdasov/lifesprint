@@ -555,19 +555,7 @@ const DayPage: React.FC = () => {
         ) : (
           // Render regular day content
           <>
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 space-y-3 sm:space-y-0">
-              {dayNumber > 1 && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={goToPreviousDay}
-                  className="w-full sm:w-auto"
-                  isActive={isPrevButtonActive}
-                >
-                  Пред. день
-                </Button>
-              )}
-              
+            <div className="flex flex-col mb-4 sm:mb-6 space-y-4">
               <div className="flex flex-col items-center">
                 <h1 className="text-xl sm:text-2xl font-bold text-center">
                   День {dayNumber}: {getDayTitle(dayNumber)}
@@ -595,16 +583,32 @@ const DayPage: React.FC = () => {
                 </div>
               </div>
               
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={goToNextDay}
-                disabled={dayNumber >= 28}
-                className="w-full sm:w-auto"
-                isActive={isNextButtonActive}
-              >
-                След. день
-              </Button>
+              <div className="flex justify-between items-center gap-4 px-2">
+                {dayNumber > 1 ? (
+                  <Button 
+                    variant="outline" 
+                    size="md"
+                    onClick={goToPreviousDay}
+                    className="flex-1"
+                    isActive={isPrevButtonActive}
+                  >
+                    Пред. день
+                  </Button>
+                ) : (
+                  <div className="flex-1"></div>
+                )}
+                
+                <Button 
+                  variant="outline" 
+                  size="md"
+                  onClick={goToNextDay}
+                  disabled={dayNumber >= 28}
+                  className="flex-1"
+                  isActive={isNextButtonActive}
+                >
+                  След. день
+                </Button>
+              </div>
             </div>
             
             <div className="audio-player-container mb-4 sm:mb-6">
