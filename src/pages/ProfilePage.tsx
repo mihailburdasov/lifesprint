@@ -248,42 +248,9 @@ const ProfilePage: React.FC = () => {
               </div>
               
               <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
-                <div className="text-3xl font-bold text-primary mb-2">{userStats.goalsCount}</div>
-                <div className="text-sm text-text-light-light dark:text-text-light-dark">
-                  {userStats.goalsCount === 1 ? 'Цель' : 
-                   userStats.goalsCount >= 2 && userStats.goalsCount <= 4 ? 'Цели' : 
-                   'Целей'}
-                </div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-              <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-medium">Прогресс спринта</div>
-                  <div className="text-sm font-bold">{userStats.completionPercentage}%</div>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                  <div 
-                    className="bg-primary h-2.5 rounded-full shadow-sm" 
-                    style={{ width: `${userStats.completionPercentage}%` }}
-                  ></div>
-                </div>
-              </div>
-              
-              <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
-                <div className="text-3xl font-bold text-primary mb-2">{userStats.streak}</div>
-                <div className="text-sm text-text-light-light dark:text-text-light-dark">
-                  {userStats.streak === 1 ? 'День подряд' : 
-                   userStats.streak >= 2 && userStats.streak <= 4 ? 'Дня подряд' : 
-                   'Дней подряд'}
-                </div>
-              </div>
-              
-              <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
                 <div className="flex justify-between items-center">
                   <div>
-                    <div className="text-2xl font-bold text-primary">{userStats.goalsCompletedCount}</div>
+                    <div className="text-3xl font-bold text-primary">{userStats.goalsCompletedCount}</div>
                     <div className="text-sm text-text-light-light dark:text-text-light-dark">
                       {userStats.goalsCompletedCount === 1 ? 'Задача выполнена' : 
                        userStats.goalsCompletedCount >= 2 && userStats.goalsCompletedCount <= 4 ? 'Задачи выполнены' : 
@@ -291,7 +258,7 @@ const ProfilePage: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-gray-500">{userStats.goalsCount}</div>
+                    <div className="text-3xl font-bold text-gray-500">{userStats.goalsCount}</div>
                     <div className="text-sm text-text-light-light dark:text-text-light-dark">
                       {userStats.goalsCount === 1 ? 'Задача поставлена' : 
                        userStats.goalsCount >= 2 && userStats.goalsCount <= 4 ? 'Задачи поставлены' : 
@@ -313,6 +280,30 @@ const ProfilePage: React.FC = () => {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-medium">Прогресс спринта</div>
+                  <div className="text-sm font-bold">{userStats.completionPercentage}%</div>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                  <div 
+                    className="bg-primary h-2.5 rounded-full shadow-sm" 
+                    style={{ width: `${userStats.completionPercentage}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+              <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
+                <div className="text-3xl font-bold text-primary mb-2">{userStats.streak}</div>
+                <div className="text-sm text-text-light-light dark:text-text-light-dark">
+                  {userStats.streak === 1 ? 'День подряд' : 
+                   userStats.streak >= 2 && userStats.streak <= 4 ? 'Дня подряд' : 
+                   'Дней подряд'}
+                </div>
               </div>
             </div>
           </div>
