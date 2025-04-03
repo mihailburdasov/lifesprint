@@ -53,15 +53,41 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '' }) => {
 
   // Add keyboard shortcut for play/pause (spacebar)
   useEffect(() => {
+    // Create a unique ID for this audio player instance
+    const playerId = `audio-player-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Store the player ID in a data attribute for identification
+    if (audioRef.current) {
+      audioRef.current.dataset.playerId = playerId;
+    }
+    
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle spacebar if the focus is not on an input, textarea, or button
+      // Only handle spacebar if:
+      // 1. The key is Space
+      // 2. The target is not an input, textarea, or button
+      // 3. This audio player is visible in the viewport
       if (e.code === 'Space' && 
           !(e.target instanceof HTMLInputElement) && 
           !(e.target instanceof HTMLTextAreaElement) && 
           !(e.target instanceof HTMLButtonElement)) {
-        e.preventDefault(); // Prevent page scrolling
-        togglePlay();
+        
+        // Check if this audio player is in the viewport
+        if (audioRef.current && isElementInViewport(audioRef.current)) {
+          e.preventDefault(); // Prevent page scrolling
+          togglePlay();
+        }
       }
+    };
+    
+    // Helper function to check if an element is in the viewport
+    const isElementInViewport = (el: HTMLElement) => {
+      const rect = el.getBoundingClientRect();
+      return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+      );
     };
 
     window.addEventListener('keydown', handleKeyDown);

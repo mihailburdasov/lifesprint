@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
 import AudioPlayer from '../components/common/AudioPlayer';
@@ -55,9 +55,31 @@ const DayPage: React.FC = () => {
   const [isPrevButtonActive, setIsPrevButtonActive] = useState(false);
   const [isNextButtonActive, setIsNextButtonActive] = useState(false);
   
+  // References to store timeout IDs
+  const prevButtonTimeoutRef = useRef<number | null>(null);
+  const nextButtonTimeoutRef = useRef<number | null>(null);
+  
+  // Clean up timeouts when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clear any active timeouts
+      if (prevButtonTimeoutRef.current) {
+        window.clearTimeout(prevButtonTimeoutRef.current);
+      }
+      if (nextButtonTimeoutRef.current) {
+        window.clearTimeout(nextButtonTimeoutRef.current);
+      }
+    };
+  }, []);
+  
   // Handle navigation to previous/next day
   const goToPreviousDay = () => {
     if (dayNumber > 1) {
+      // Clear any existing timeout
+      if (prevButtonTimeoutRef.current) {
+        window.clearTimeout(prevButtonTimeoutRef.current);
+      }
+      
       // Set active state
       setIsPrevButtonActive(true);
       
@@ -65,14 +87,23 @@ const DayPage: React.FC = () => {
       navigate(`/day/${dayNumber - 1}`);
       
       // Reset active state after a short delay
-      setTimeout(() => {
+      const timeoutId = window.setTimeout(() => {
         setIsPrevButtonActive(false);
+        prevButtonTimeoutRef.current = null;
       }, 150);
+      
+      // Store the timeout ID
+      prevButtonTimeoutRef.current = timeoutId;
     }
   };
   
   const goToNextDay = () => {
     if (dayNumber < 28) {
+      // Clear any existing timeout
+      if (nextButtonTimeoutRef.current) {
+        window.clearTimeout(nextButtonTimeoutRef.current);
+      }
+      
       // Set active state
       setIsNextButtonActive(true);
       
@@ -80,9 +111,13 @@ const DayPage: React.FC = () => {
       navigate(`/day/${dayNumber + 1}`);
       
       // Reset active state after a short delay
-      setTimeout(() => {
+      const timeoutId = window.setTimeout(() => {
         setIsNextButtonActive(false);
+        nextButtonTimeoutRef.current = null;
       }, 150);
+      
+      // Store the timeout ID
+      nextButtonTimeoutRef.current = timeoutId;
     }
   };
   
