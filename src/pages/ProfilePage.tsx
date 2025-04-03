@@ -418,10 +418,3 @@ const ProfilePage: React.FC = () => {
 };
 
 export default ProfilePage;
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default ProfilePage;
