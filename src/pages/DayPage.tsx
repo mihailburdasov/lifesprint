@@ -523,7 +523,7 @@ const DayPage: React.FC = () => {
                     <div 
                       className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium"
                       style={{
-                        background: `conic-gradient(#4F46E5 ${getDayCompletion(dayNumber)}%, transparent 0)`,
+                        background: `conic-gradient(#4F46E5 ${getDayCompletion(dayNumber)}%, #f3f4f6 0)`,
                         color: getDayCompletion(dayNumber) > 50 ? 'white' : 'inherit',
                         boxShadow: '0 0 0 1px rgba(0,0,0,0.05) inset'
                       }}

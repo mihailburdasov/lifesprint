@@ -72,7 +72,7 @@ const Dashboard: React.FC = () => {
                   <div 
                     className="w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-medium"
                     style={{
-                      background: `conic-gradient(#4F46E5 0%, transparent 0)`,
+                      background: `conic-gradient(#4F46E5 0%, #f3f4f6 0)`,
                       color: 'inherit',
                       boxShadow: '0 0 0 1px rgba(0,0,0,0.05) inset'
                     }}
@@ -135,7 +135,7 @@ const Dashboard: React.FC = () => {
                 <div 
                   className="w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-medium"
                   style={{
-                    background: `conic-gradient(#4F46E5 ${completion}%, transparent 0)`,
+                background: `conic-gradient(#4F46E5 ${completion}%, #f3f4f6 0)`,
                     color: completion > 50 ? 'white' : 'inherit',
                     boxShadow: '0 0 0 1px rgba(0,0,0,0.05) inset'
                   }}
@@ -168,7 +168,7 @@ const Dashboard: React.FC = () => {
                   <div 
                     className="w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-medium"
                     style={{
-                      background: `conic-gradient(#4F46E5 ${completion}%, transparent 0)`,
+                background: `conic-gradient(#4F46E5 ${completion}%, #f3f4f6 0)`,
                       color: completion > 50 ? 'white' : 'inherit',
                       boxShadow: '0 0 0 1px rgba(0,0,0,0.05) inset'
                     }}
@@ -253,7 +253,7 @@ const Dashboard: React.FC = () => {
             <div 
               className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm font-medium"
               style={{
-                background: `conic-gradient(#4F46E5 ${completion}%, transparent 0)`,
+                background: `conic-gradient(#4F46E5 ${completion}%, #f3f4f6 0)`,
                 color: completion > 50 ? 'white' : 'inherit',
                 boxShadow: '0 0 0 1px rgba(0,0,0,0.05) inset'
               }}
