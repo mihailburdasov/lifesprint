@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
 import Button from '../components/common/Button';
 import { useUser } from '../context/UserContext';
+import { useProgress } from '../context/ProgressContext';
 
 interface ProfileFormData {
   name: string;
@@ -44,13 +45,126 @@ const ProfilePage: React.FC = () => {
     );
   }
   
+  // Получаем данные о прогрессе пользователя
+  const { progress, getDayCompletion } = useProgress();
+  
+  // Статистика пользователя
+  const [userStats, setUserStats] = useState({
+    thanksCount: 0,
+    achievementsCount: 0,
+    goalsCount: 0,
+    streak: 0,
+    completionPercentage: 0
+  });
+  
+  // Вычисляем статистику при загрузке и при изменении прогресса
+  useEffect(() => {
+    if (!progress) return;
+    
+    let thanksCount = 0;
+    let achievementsCount = 0;
+    let goalsCount = 0;
+    let completedDays = 0;
+    let streak = 0;
+    let currentStreak = 0;
+    
+    // Получаем текущую дату
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Получаем дату начала спринта
+    const startDate = new Date(progress.startDate);
+    startDate.setHours(0, 0, 0, 0);
+    
+    // Вычисляем количество дней с начала спринта
+    const daysSinceStart = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const totalAccessibleDays = Math.min(daysSinceStart, 28); // Максимум 28 дней в спринте
+    
+    // Подсчет благодарностей, достижений и целей из обычных дней
+    Object.entries(progress.days).forEach(([dayNumberStr, day]) => {
+      const dayNumber = parseInt(dayNumberStr, 10);
+      
+      // Подсчет благодарностей
+      thanksCount += day.gratitude.filter(item => item.trim() !== '').length;
+      
+      // Подсчет достижений
+      achievementsCount += day.achievements.filter(item => item.trim() !== '').length;
+      
+      // Подсчет целей
+      goalsCount += day.goals.filter(goal => goal.text.trim() !== '').length;
+      
+      // Проверяем, заполнен ли день
+      const dayCompletion = getDayCompletion(dayNumber);
+      if (dayCompletion >= 50) { // Считаем день заполненным, если выполнено хотя бы 50%
+        completedDays++;
+        
+        // Проверяем, является ли день частью текущей серии
+        const dayDate = new Date(startDate);
+        dayDate.setDate(startDate.getDate() + dayNumber - 1);
+        
+        // Если день сегодняшний или вчерашний, увеличиваем текущую серию
+        const isToday = dayDate.getTime() === today.getTime();
+        const isYesterday = dayDate.getTime() === today.getTime() - 24 * 60 * 60 * 1000;
+        
+        if (isToday || isYesterday || currentStreak > 0) {
+          currentStreak++;
+        }
+      }
+    });
+    
+    // Подсчет благодарностей из дней рефлексии
+    Object.values(progress.weekReflections).forEach(reflection => {
+      // Благодарности в дни рефлексии (себе, другим, миру)
+      if (reflection.gratitudeSelf.trim() !== '') thanksCount++;
+      if (reflection.gratitudeOthers.trim() !== '') thanksCount++;
+      if (reflection.gratitudeWorld.trim() !== '') thanksCount++;
+      
+      // Достижения в дни рефлексии
+      achievementsCount += reflection.achievements.filter(item => item.trim() !== '').length;
+    });
+    
+    // Вычисляем процент заполнения профиля
+    const completionPercentage = totalAccessibleDays > 0 
+      ? Math.round((completedDays / totalAccessibleDays) * 100) 
+      : 0;
+    
+    // Устанавливаем серию дней
+    streak = currentStreak;
+    
+    setUserStats({
+      thanksCount,
+      achievementsCount,
+      goalsCount,
+      streak,
+      completionPercentage
+    });
+  }, [progress, getDayCompletion]);
+  
   // Обработка изменений в полях формы
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData({
+    const updatedFormData = {
       ...formData,
       [name]: value,
-    });
+    };
+    
+    setFormData(updatedFormData);
+    
+    // Сохраняем данные при изменении
+    saveUserData(updatedFormData);
+  };
+  
+  // Функция для сохранения данных пользователя
+  const saveUserData = (data: ProfileFormData) => {
+    // Обновляем данные в localStorage
+    const updatedUser = {
+      ...user,
+      name: data.name,
+      email: data.email,
+      telegramNickname: data.telegramNickname,
+    };
+    
+    localStorage.setItem('lifesprint_user', JSON.stringify(updatedUser));
   };
   
   // Обработка отправки формы
@@ -200,6 +314,65 @@ const ProfilePage: React.FC = () => {
             </div>
           </form>
           
+          {/* Статистика пользователя */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <h2 className="text-lg font-semibold mb-4">Ваша статистика</h2>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
+                <div className="text-3xl font-bold text-primary mb-2">{userStats.thanksCount}</div>
+                <div className="text-sm text-text-light-light dark:text-text-light-dark">
+                  {userStats.thanksCount === 1 ? 'Благодарность' : 
+                   userStats.thanksCount >= 2 && userStats.thanksCount <= 4 ? 'Благодарности' : 
+                   'Благодарностей'}
+                </div>
+              </div>
+              
+              <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
+                <div className="text-3xl font-bold text-primary mb-2">{userStats.achievementsCount}</div>
+                <div className="text-sm text-text-light-light dark:text-text-light-dark">
+                  {userStats.achievementsCount === 1 ? 'Достижение' : 
+                   userStats.achievementsCount >= 2 && userStats.achievementsCount <= 4 ? 'Достижения' : 
+                   'Достижений'}
+                </div>
+              </div>
+              
+              <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
+                <div className="text-3xl font-bold text-primary mb-2">{userStats.goalsCount}</div>
+                <div className="text-sm text-text-light-light dark:text-text-light-dark">
+                  {userStats.goalsCount === 1 ? 'Цель' : 
+                   userStats.goalsCount >= 2 && userStats.goalsCount <= 4 ? 'Цели' : 
+                   'Целей'}
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-medium">Прогресс спринта</div>
+                  <div className="text-sm font-bold">{userStats.completionPercentage}%</div>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                  <div 
+                    className="bg-primary h-2.5 rounded-full" 
+                    style={{ width: `${userStats.completionPercentage}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+              <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
+                <div className="text-3xl font-bold text-primary mb-2">{userStats.streak}</div>
+                <div className="text-sm text-text-light-light dark:text-text-light-dark">
+                  {userStats.streak === 1 ? 'День подряд' : 
+                   userStats.streak >= 2 && userStats.streak <= 4 ? 'Дня подряд' : 
+                   'Дней подряд'}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Настройки аккаунта */}
           <div className="mt-8 pt-6 border-t border-gray-200">
             <h2 className="text-lg font-semibold mb-4">Настройки аккаунта</h2>
             
