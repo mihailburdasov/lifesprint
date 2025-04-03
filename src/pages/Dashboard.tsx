@@ -8,22 +8,25 @@ import { formatDate, getDayTitle } from '../utils/dateUtils';
 import Button from '../components/common/Button';
 
 const Dashboard: React.FC = () => {
-  // Создаем состояние для expandedWeeks здесь, чтобы оно было доступно даже при ошибках
+  // Вызываем хук useProgress на верхнем уровне компонента
+  const { progress, getDayCompletion, isReflectionDay, updateDayProgress, isDayAccessible, isWeekAccessible } = useProgress();
+  
+  // Создаем состояние для expandedWeeks
   const [expandedWeeks, setExpandedWeeks] = useState<number[]>([1]); // Start with week 1 expanded
   
-  // Оборачиваем в try-catch для предотвращения ошибок при рендеринге
+  // Create a default empty progress object that matches the UserProgress interface
+  const emptyProgress: UserProgress = {
+    startDate: new Date(),
+    currentDay: 1,
+    days: {},
+    weekReflections: {}
+  };
+  
+  // Use the progress from context or the empty progress if it's undefined
+  const safeProgress = progress || emptyProgress;
+  
+  // Оборачиваем в try-catch только рендеринг, но не вызов хуков
   try {
-    const { progress, getDayCompletion, isReflectionDay, updateDayProgress, isDayAccessible, isWeekAccessible } = useProgress();
-    
-    // Create a default empty progress object that matches the UserProgress interface
-    const emptyProgress: UserProgress = {
-      startDate: new Date(),
-      currentDay: 1,
-      days: {},
-      weekReflections: {}
-    };
-    // Use the progress from context or the empty progress if it's undefined
-    const safeProgress = progress || emptyProgress;
     
     // Toggle week expansion
     const toggleWeek = (weekNumber: number) => {
