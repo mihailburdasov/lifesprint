@@ -5,7 +5,7 @@ import Button from '../components/common/Button';
 import { useUser } from '../context/UserContext';
 
 // Типы для формы авторизации
-type AuthMode = 'login' | 'register';
+type AuthMode = 'login' | 'register' | 'verification';
 
 interface FormData {
   email: string;
@@ -18,6 +18,7 @@ const AuthPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading, error: authError, login, register } = useUser();
   const [mode, setMode] = useState<AuthMode>('login');
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
@@ -64,15 +65,23 @@ const AuthPage: React.FC = () => {
     // Проверка email
     if (!formData.email) {
       newErrors.email = 'Email обязателен';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Некорректный email';
+    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
+      newErrors.email = 'Некорректный формат email';
     }
     
     // Проверка пароля
     if (!formData.password) {
       newErrors.password = 'Пароль обязателен';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Пароль должен содержать минимум 6 символов';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Пароль должен содержать минимум 8 символов';
+    } else if (!/(?=.*[a-z])/.test(formData.password)) {
+      newErrors.password = 'Пароль должен содержать хотя бы одну строчную букву';
+    } else if (!/(?=.*[A-Z])/.test(formData.password)) {
+      newErrors.password = 'Пароль должен содержать хотя бы одну заглавную букву';
+    } else if (!/(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Пароль должен содержать хотя бы одну цифру';
+    } else if (!/(?=.*[!@#$%^&*])/.test(formData.password)) {
+      newErrors.password = 'Пароль должен содержать хотя бы один специальный символ (!@#$%^&*)';
     }
     
     // Проверка имени при регистрации
@@ -102,13 +111,19 @@ const AuthPage: React.FC = () => {
           email: formData.email,
           password: formData.password
         });
-      } else {
-        await register({
+      } else if (mode === 'register') {
+        const result = await register({
           name: formData.name || '',
           email: formData.email,
           password: formData.password,
           telegramNickname: formData.telegramNickname
         });
+        
+        // Если регистрация прошла успешно, показываем экран подтверждения
+        if (result) {
+          setRegistrationSuccess(true);
+          navigate('/onboarding');
+        }
       }
     } catch (error) {
       console.error('Ошибка авторизации:', error);
@@ -117,17 +132,36 @@ const AuthPage: React.FC = () => {
     }
   };
 
-  return (
-    <div className="auth-page flex min-h-screen bg-background iphone11pro-fix">
-      <Sidebar />
-      
-      <div className="content flex-1 md:ml-64 p-4 md:p-8 flex justify-center items-center pt-16 md:pt-0 safe-area-inset">
-        <div className="auth-card bg-surface rounded-xl shadow-lg p-5 md:p-8 w-full max-w-md mx-auto">
-          <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-center">
-            {mode === 'login' ? 'Вход в аккаунт' : 'Регистрация'}
-          </h1>
+  // Рендер формы в зависимости от режима
+  const renderForm = () => {
+    if (mode === 'verification') {
+      return (
+        <div className="text-center py-6">
+          <div className="text-5xl mb-4">✅</div>
+          <h2 className="text-xl font-bold mb-3">Регистрация успешна!</h2>
+          <p className="mb-6">Ваш аккаунт успешно создан. Теперь вы можете войти в систему.</p>
+          <Button
+            type="button"
+            variant="primary"
+            fullWidth
+            onClick={() => {
+              setMode('login');
+              setRegistrationSuccess(false);
+            }}
+          >
+            Перейти к входу
+          </Button>
+        </div>
+      );
+    }
+    
+    return (
+      <>
+        <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-center">
+          {mode === 'login' ? 'Вход в аккаунт' : 'Регистрация'}
+        </h1>
           
-          <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
             {mode === 'register' && (
               <>
                 <div>
@@ -199,6 +233,18 @@ const AuthPage: React.FC = () => {
               {errors.password && (
                 <p className="text-red-500 text-xs mt-1">{errors.password}</p>
               )}
+              {mode === 'register' && (
+                <div className="mt-2 text-xs text-gray-500">
+                  <p>Пароль должен содержать:</p>
+                  <ul className="list-disc pl-5 mt-1">
+                    <li className={formData.password.length >= 8 ? 'text-green-500' : ''}>Минимум 8 символов</li>
+                    <li className={/(?=.*[a-z])/.test(formData.password) ? 'text-green-500' : ''}>Строчную букву</li>
+                    <li className={/(?=.*[A-Z])/.test(formData.password) ? 'text-green-500' : ''}>Заглавную букву</li>
+                    <li className={/(?=.*\d)/.test(formData.password) ? 'text-green-500' : ''}>Цифру</li>
+                    <li className={/(?=.*[!@#$%^&*])/.test(formData.password) ? 'text-green-500' : ''}>Специальный символ (!@#$%^&*)</li>
+                  </ul>
+                </div>
+              )}
             </div>
             
             <div className="pt-3">
@@ -212,43 +258,54 @@ const AuthPage: React.FC = () => {
                 {isLoading ? 'Загрузка...' : mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
               </Button>
             </div>
-          </form>
-          
-          {authError && (
-            <div className="mt-3 md:mt-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
-              {authError}
-            </div>
-          )}
-          
-          <div className="mt-4 md:mt-6 text-center">
-            <p className="text-text-light">
-              {mode === 'login' ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}
-              <button
-                type="button"
-                onClick={toggleMode}
-                className="ml-2 text-primary hover:underline focus:outline-none min-h-[44px] inline-flex items-center"
-              >
-                {mode === 'login' ? 'Зарегистрироваться' : 'Войти'}
-              </button>
-            </p>
+        </form>
+        
+        {authError && (
+          <div className="mt-3 md:mt-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+            {authError}
           </div>
-          
-          {mode === 'login' && (
-            <div className="mt-3 md:mt-4 text-center">
-              <button
-                type="button"
-                className="text-sm text-primary hover:underline focus:outline-none min-h-[44px] inline-flex items-center justify-center px-2"
-              >
-                Забыли пароль?
-              </button>
-            </div>
-          )}
-          
-          <div className="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200">
-            <p className="text-xs text-text-light text-center">
-              Продолжая, вы соглашаетесь с условиями использования и политикой конфиденциальности.
-            </p>
+        )}
+        
+        <div className="mt-4 md:mt-6 text-center">
+          <p className="text-text-light">
+            {mode === 'login' ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="ml-2 text-primary hover:underline focus:outline-none min-h-[44px] inline-flex items-center"
+            >
+              {mode === 'login' ? 'Зарегистрироваться' : 'Войти'}
+            </button>
+          </p>
+        </div>
+        
+        {mode === 'login' && (
+          <div className="mt-3 md:mt-4 text-center">
+            <button
+              type="button"
+              className="text-sm text-primary hover:underline focus:outline-none min-h-[44px] inline-flex items-center justify-center px-2"
+            >
+              Забыли пароль?
+            </button>
           </div>
+        )}
+        
+        <div className="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200">
+          <p className="text-xs text-text-light text-center">
+            Продолжая, вы соглашаетесь с условиями использования и политикой конфиденциальности.
+          </p>
+        </div>
+      </>
+    );
+  };
+
+  return (
+    <div className="auth-page flex min-h-screen bg-background iphone11pro-fix">
+      <Sidebar />
+      
+      <div className="content flex-1 md:ml-64 p-4 md:p-8 flex justify-center items-center pt-16 md:pt-0 safe-area-inset">
+        <div className="auth-card bg-surface rounded-xl shadow-lg p-5 md:p-8 w-full max-w-md mx-auto">
+          {renderForm()}
         </div>
       </div>
     </div>

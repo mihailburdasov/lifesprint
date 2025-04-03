@@ -29,8 +29,8 @@ interface UserContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  register: (data: RegisterData) => Promise<void>;
-  login: (data: LoginData) => Promise<void>;
+  register: (data: RegisterData) => Promise<boolean>;
+  login: (data: LoginData) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -72,7 +72,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Регистрация пользователя
-  const register = async (data: RegisterData): Promise<void> => {
+  const register = async (data: RegisterData): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     
@@ -89,19 +89,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Сохраняем ID пользователя в localStorage
         localStorage.setItem('lifesprint_current_user_id', response.data.id);
         setUser(response.data);
+        return true;
       } else {
         setError(response.error || 'Ошибка при регистрации. Пожалуйста, попробуйте снова.');
+        return false;
       }
     } catch (e) {
       setError('Ошибка при регистрации. Пожалуйста, попробуйте снова.');
       console.error('Ошибка регистрации:', e);
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
   // Вход пользователя
-  const login = async (data: LoginData): Promise<void> => {
+  const login = async (data: LoginData): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     
@@ -113,12 +116,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Сохраняем ID пользователя в localStorage
         localStorage.setItem('lifesprint_current_user_id', response.data.id);
         setUser(response.data);
+        return true;
       } else {
         setError(response.error || 'Неверный email или пароль.');
+        return false;
       }
     } catch (e) {
       setError('Неверный email или пароль.');
       console.error('Ошибка входа:', e);
+      return false;
     } finally {
       setIsLoading(false);
     }
