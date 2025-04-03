@@ -34,20 +34,33 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>LifeSprint</title>
-    <!-- Скрипт для принудительной перезагрузки страницы при проблемах с кэшем -->
+    <!-- Скрипт для обнаружения проблем с загрузкой и перенаправления на fallback.html -->
     <script>
+      // Проверяем, есть ли параметр fresh в URL
+      var urlParams = new URLSearchParams(window.location.search);
+      var isFreshLoad = urlParams.has('fresh');
+      var redirectAttempts = parseInt(urlParams.get('attempts') || '0');
+      
       // Функция для обнаружения пустой страницы
       function detectEmptyPage() {
         setTimeout(function() {
           var rootElement = document.getElementById('root');
           // Если корневой элемент пуст или содержит только комментарии
           if (rootElement && (!rootElement.children || rootElement.children.length === 0)) {
-            console.log('Обнаружена пустая страница, перезагрузка...');
-            // Добавляем параметр к URL для обхода кэша
+            console.log('Обнаружена пустая страница');
+            
+            // Если это уже третья попытка или это свежая загрузка, перенаправляем на fallback.html
+            if (redirectAttempts >= 2 || isFreshLoad) {
+              console.log('Перенаправление на fallback.html');
+              window.location.href = '/fallback.html';
+              return;
+            }
+            
+            // Иначе пробуем перезагрузить с новым параметром
+            console.log('Попытка перезагрузки #' + (redirectAttempts + 1));
             var timestamp = new Date().getTime();
-            var separator = window.location.search ? '&' : '?';
-            window.location.href = window.location.pathname + window.location.search + 
-                                   separator + 'nocache=' + timestamp + window.location.hash;
+            var newUrl = window.location.pathname + '?nocache=' + timestamp + '&attempts=' + (redirectAttempts + 1);
+            window.location.href = newUrl;
           }
         }, 3000); // Даем 3 секунды на загрузку
       }
