@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import DayPage from './pages/DayPage';
 import AuthPage from './pages/AuthPage';
 import ProfilePage from './pages/ProfilePage';
+import OnboardingPage from './pages/OnboardingPage';
 
 // Компонент для защиты маршрутов, требующих аутентификации
 interface ProtectedRouteProps {
@@ -36,6 +37,7 @@ const App: React.FC = () => {
             <div className="app-container min-h-screen">
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route 
                   path="/" 
                   element={
