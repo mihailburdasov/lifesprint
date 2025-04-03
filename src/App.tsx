@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ProgressProvider } from './context/ProgressContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { UserProvider, useUser } from './context/UserContext';
@@ -17,10 +17,35 @@ const AppRoutes: React.FC = () => {
   const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // Используем хук useUser для проверки аутентификации
     const { isAuthenticated, isLoading } = useUser();
+    const navigate = useNavigate();
+    const [loadingTimeout, setLoadingTimeout] = useState(false);
+    
+    // Устанавливаем таймаут для загрузки
+    useEffect(() => {
+      if (isLoading) {
+        const timer = setTimeout(() => {
+          setLoadingTimeout(true);
+        }, 3000); // 3 секунды таймаут
+        
+        return () => clearTimeout(timer);
+      }
+    }, [isLoading]);
+    
+    // Если превышен таймаут загрузки, перенаправляем на страницу входа
+    useEffect(() => {
+      if (loadingTimeout) {
+        navigate('/auth', { replace: true });
+      }
+    }, [loadingTimeout, navigate]);
     
     // Если данные загружаются, показываем заглушку
-    if (isLoading) {
-      return <div className="flex justify-center items-center min-h-screen">Загрузка...</div>;
+    if (isLoading && !loadingTimeout) {
+      return (
+        <div className="flex flex-col justify-center items-center min-h-screen">
+          <div className="mb-4 text-xl">Загрузка...</div>
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      );
     }
     
     // Если пользователь не авторизован, перенаправляем на страницу входа
