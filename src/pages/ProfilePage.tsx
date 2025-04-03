@@ -15,6 +15,7 @@ interface ProfileFormData {
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading } = useUser();
+  const { progress, getDayCompletion } = useProgress();
   
   const [formData, setFormData] = useState<ProfileFormData>({
     name: user?.name || '',
@@ -26,29 +27,6 @@ const ProfilePage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   
-  // Если пользователь не авторизован, перенаправляем на страницу входа
-  if (!isAuthenticated && !isLoading) {
-    navigate('/auth');
-    return null;
-  }
-  
-  // Если данные пользователя загружаются, показываем индикатор загрузки
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen bg-background-light dark:bg-background-dark">
-        <Sidebar />
-        <div className="content flex-1 md:ml-64 p-6 flex justify-center items-center">
-          <div className="text-center">
-            <p className="text-lg">Загрузка...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Получаем данные о прогрессе пользователя
-  const { progress, getDayCompletion } = useProgress();
-  
   // Статистика пользователя
   const [userStats, setUserStats] = useState({
     thanksCount: 0,
@@ -57,6 +35,13 @@ const ProfilePage: React.FC = () => {
     streak: 0,
     completionPercentage: 0
   });
+  
+  // Перенаправляем на страницу входа, если пользователь не авторизован
+  useEffect(() => {
+    if (!isAuthenticated && !isLoading) {
+      navigate('/auth');
+    }
+  }, [isAuthenticated, isLoading, navigate]);
   
   // Вычисляем статистику при загрузке и при изменении прогресса
   useEffect(() => {
@@ -222,7 +207,14 @@ const ProfilePage: React.FC = () => {
     <div className="profile-page flex min-h-screen bg-background-light dark:bg-background-dark">
       <Sidebar />
       
-      <div className="content flex-1 md:ml-64 p-3 sm:p-4 md:p-6 pt-16 md:pt-6">
+      {isLoading ? (
+        <div className="content flex-1 md:ml-64 p-6 flex justify-center items-center">
+          <div className="text-center">
+            <p className="text-lg">Загрузка...</p>
+          </div>
+        </div>
+      ) : !isAuthenticated ? null : (
+        <div className="content flex-1 md:ml-64 p-3 sm:p-4 md:p-6 pt-16 md:pt-6">
         <div className="bg-surface-light dark:bg-surface-dark rounded-xl shadow-md p-6">
           <h1 className="text-2xl font-bold mb-6">Профиль пользователя</h1>
           
@@ -418,6 +410,14 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ProfilePage;
         </div>
       </div>
     </div>
