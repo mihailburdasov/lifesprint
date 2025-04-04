@@ -143,7 +143,7 @@ const DayPage: React.FC = () => {
   const handleGoalToggle = (index: number) => {
     // Prevent toggling completion for empty goals
     if (!dayData.goals[index].text.trim()) {
-      alert('Пожалуйста, заполните текст задачи перед тем, как отметить её выполненной.');
+      alert('Пожалуйста, заполните задачу перед тем, как отметить её выполненной.');
       return;
     }
     
@@ -216,9 +216,13 @@ const DayPage: React.FC = () => {
       <div className="day-content space-y-6 sm:space-y-8">
         {/* Thought of the day */}
         <div className="thought-of-day">
-          <h3 className="text-base sm:text-lg font-medium mb-2">#Мысльдня</h3>
+          <h3 className="text-base sm:text-lg font-medium mb-2">
+            {dailyContent.thought.author 
+              ? `#мысльдня от ${dailyContent.thought.author}:` 
+              : '#мысльдня'}
+          </h3>
           <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md italic text-sm sm:text-base">
-            {dailyContent.thought}
+            {dailyContent.thought.text}
           </div>
         </div>
         
@@ -272,7 +276,7 @@ const DayPage: React.FC = () => {
         <div className="goals">
           <h3 className="text-base sm:text-lg font-medium mb-2">Целеполагание</h3>
           <p className="text-sm text-text-light-light dark:text-text-light-dark mb-3">
-            Какие задачи я поставлю перед собой на день?
+            Какие 3 задачи я поставлю перед собой на день?
           </p>
           
           <div className="space-y-3">
@@ -310,7 +314,7 @@ const DayPage: React.FC = () => {
               onChange={handleExerciseComplete}
               className="checkbox mr-3"
             />
-            <span>Я выполнил(а) упражнение</span>
+            <span>Упражнение выполнено</span>
           </div>
         </div>
       </div>
@@ -325,9 +329,13 @@ const DayPage: React.FC = () => {
       <div className="reflection-content space-y-6 sm:space-y-8">
         {/* Thought of the day */}
         <div className="thought-of-day">
-          <h3 className="text-base sm:text-lg font-medium mb-2">#Мысльдня</h3>
+          <h3 className="text-base sm:text-lg font-medium mb-2">
+            {dailyContent.thought.author 
+              ? `#мысльдня от ${dailyContent.thought.author}:` 
+              : '#мысльдня'}
+          </h3>
           <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md italic text-sm sm:text-base">
-            {dailyContent.thought}
+            {dailyContent.thought.text}
           </div>
         </div>
         
@@ -335,7 +343,7 @@ const DayPage: React.FC = () => {
         <div className="gratitude-journal">
           <h3 className="text-base sm:text-lg font-medium mb-2">Дневник благодарностей</h3>
           <p className="text-sm text-text-light-light dark:text-text-light-dark mb-3">
-            За что на этой неделе я благодарен себе, окружающим, миру?
+            За что на этой неделе я испытываю благодарность? (к себе, окружающим, миру)?
           </p>
           
           <div className="space-y-3">
@@ -441,7 +449,7 @@ const DayPage: React.FC = () => {
         <div className="rules">
           <h3 className="text-base sm:text-lg font-medium mb-2">Обновляем правила игры</h3>
           <p className="text-sm text-text-light-light dark:text-text-light-dark mb-3">
-            Что я улучшу в себе или своём подходе на следующую неделю?
+            Что я улучшу в себе и своём подходе на следующую неделю?
           </p>
           
           <div className="space-y-3">
@@ -474,7 +482,7 @@ const DayPage: React.FC = () => {
               onChange={handleReflectionExerciseComplete}
               className="checkbox mr-3"
             />
-            <span>Я выполнил(а) упражнение</span>
+            <span>Упражнение выполнено</span>
           </div>
         </div>
         
