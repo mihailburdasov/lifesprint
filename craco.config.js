@@ -1,6 +1,11 @@
 const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
+  style: {
+    postcss: {
+      mode: 'file',
+    },
+  },
   webpack: {
     configure: (webpackConfig) => {
       // Включаем source maps для отладки

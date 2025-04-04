@@ -21,10 +21,6 @@ module.exports = {
           light: '#1F2937',
           dark: '#F9FAFB'
         },
-        'text-light': {
-          light: '#6B7280',
-          dark: '#9CA3AF'
-        },
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
@@ -44,7 +40,4 @@ module.exports = {
     },
   },
   plugins: [],
-  corePlugins: {
-    transitionProperty: true,
-  },
 }
