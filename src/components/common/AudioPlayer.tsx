@@ -34,6 +34,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '', autoPlay
     if (!audio) return;
     
     if (autoPlay && src) {
+      // Set isPlaying to true immediately when autoPlay is true
+      setIsPlaying(true);
+      
       // We need to set a small timeout to ensure the audio is loaded
       const playPromise = setTimeout(() => {
         audio.play().catch(err => {
@@ -58,15 +61,21 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '', autoPlay
     const setAudioTime = () => {
       setCurrentTime(audio.currentTime);
     };
+    
+    const handleEnded = () => {
+      setIsPlaying(false);
+    };
 
     // Add event listeners
     audio.addEventListener('loadedmetadata', setAudioData);
     audio.addEventListener('timeupdate', setAudioTime);
+    audio.addEventListener('ended', handleEnded);
 
     // Clean up event listeners
     return () => {
       audio.removeEventListener('loadedmetadata', setAudioData);
       audio.removeEventListener('timeupdate', setAudioTime);
+      audio.removeEventListener('ended', handleEnded);
     };
   }, []);
 

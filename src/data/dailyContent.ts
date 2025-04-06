@@ -130,7 +130,9 @@ export const getStepAudioFile = (dayNumber: number, stepNumber: number): string 
   
   if (hasStepAudio) {
     // For steps 2-6, return the corresponding step-specific audio file
-    return `/audio/day${dayNumber}-${stepNumber}.mp3`;
+    // Step 2 uses audio file with index 1, step 3 uses index 2, etc.
+    const audioIndex = stepNumber - 1;
+    return `/audio/day${dayNumber}-${audioIndex}.mp3`;
   } else {
     // For reflection days (7, 14, 21, 28) and any other days, return the day-specific audio
     return `/audio/day${dayNumber}.mp3`;
