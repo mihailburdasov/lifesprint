@@ -119,8 +119,22 @@ export const getStepAudioFile = (dayNumber: number, stepNumber: number): string 
     return '';
   }
   
-  // For steps 2-6, return the corresponding audio file
-  return `/audio/day${dayNumber}-${stepNumber}.mp3`;
+  // Check if this day should have step-specific audio
+  // Days 1-6, 8-13, 15-20, 22-27 have step-specific audio
+  const hasStepAudio = (
+    (dayNumber >= 1 && dayNumber <= 6) || 
+    (dayNumber >= 8 && dayNumber <= 13) || 
+    (dayNumber >= 15 && dayNumber <= 20) || 
+    (dayNumber >= 22 && dayNumber <= 27)
+  );
+  
+  if (hasStepAudio) {
+    // For steps 2-6, return the corresponding step-specific audio file
+    return `/audio/day${dayNumber}-${stepNumber}.mp3`;
+  } else {
+    // For reflection days (7, 14, 21, 28) and any other days, return the day-specific audio
+    return `/audio/day${dayNumber}.mp3`;
+  }
 };
 
 // Get content for a specific day

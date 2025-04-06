@@ -56,7 +56,7 @@ const StepByStepDayPage: React.FC = () => {
   }) : null;
   
   // State for audio auto-play option
-  const [withAudio, setWithAudio] = useState(false);
+  const [withAudio, setWithAudio] = useState(true);
   
   // Get content for the current step
   const stepContent = getStepContent(dayNumber, stepNumber);
@@ -174,7 +174,9 @@ const StepByStepDayPage: React.FC = () => {
       case 1:
         return (
           <div className="step-content space-y-6">
-            <h3 className="text-base sm:text-lg font-medium mb-2">Выполняю день с аудио-практикой</h3>
+            <h3 className="text-xl sm:text-2xl font-medium mb-4">Добро пожаловать в новый день!</h3>
+            <p className="text-base mb-6">Давай выполним несколько полезных дел</p>
+            
             <div className="flex items-center">
               <input
                 type="checkbox"
@@ -182,10 +184,10 @@ const StepByStepDayPage: React.FC = () => {
                 onChange={() => setWithAudio(!withAudio)}
                 className="checkbox mr-3"
               />
-              <span>Включить аудио-сопровождение</span>
+              <span>Выполняю день с аудио-практикой*</span>
             </div>
             <p className="text-sm text-text-light-light dark:text-text-light-dark">
-              Если включено, аудио будет автоматически запускаться на каждом шаге.
+              *Если включено, аудио будет автоматически запускаться на каждом шаге.
             </p>
           </div>
         );
@@ -332,7 +334,9 @@ const StepByStepDayPage: React.FC = () => {
       case 1:
         return (
           <div className="step-content space-y-6">
-            <h3 className="text-base sm:text-lg font-medium mb-2">Выполняю недельную рефлексию с аудио-практикой</h3>
+            <h3 className="text-xl sm:text-2xl font-medium mb-4">Добро пожаловать в новый день!</h3>
+            <p className="text-base mb-6">Давай выполним недельную рефлексию</p>
+            
             <div className="flex items-center">
               <input
                 type="checkbox"
@@ -340,10 +344,10 @@ const StepByStepDayPage: React.FC = () => {
                 onChange={() => setWithAudio(!withAudio)}
                 className="checkbox mr-3"
               />
-              <span>Включить аудио-сопровождение</span>
+              <span>Выполняю недельную рефлексию с аудио-практикой*</span>
             </div>
             <p className="text-sm text-text-light-light dark:text-text-light-dark">
-              Если включено, аудио будет автоматически запускаться на каждом шаге.
+              *Если включено, аудио будет автоматически запускаться на каждом шаге.
             </p>
           </div>
         );
