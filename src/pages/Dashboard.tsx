@@ -116,9 +116,10 @@ const Dashboard: React.FC = () => {
         
         days.push(
           isDayAccessible(dayNumber) ? (
-            <div 
+            <Link 
+              to={`/day/${dayNumber}`}
               key={dayNumber}
-              className={`day-card bg-surface-light dark:bg-surface-dark rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow ${isReflection ? 'border-l-4 border-secondary' : ''}`}
+              className={`day-card bg-surface-light dark:bg-surface-dark rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow ${isReflection ? 'border-l-4 border-secondary' : ''} block`}
             >
               <div className="flex items-center">
                 <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center mr-2 sm:mr-3">
@@ -152,27 +153,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
               
-              <div className="mt-3">
-                <Link to={`/day/${dayNumber}`}>
-                  <Button variant="primary" size="sm">
-                    Открыть
-                  </Button>
-                </Link>
-                {!isReflection ? (
-                  <Link to={`/day/${dayNumber}/step/1`} className="ml-2">
-                    <Button variant="outline" size="sm">
-                      Заполнить
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link to={`/day/${dayNumber}/step/1`} className="ml-2">
-                    <Button variant="outline" size="sm">
-                      Рефлексия
-                    </Button>
-                  </Link>
-                )}
-              </div>
-            </div>
+            </Link>
           ) : (
             <div 
               key={dayNumber}

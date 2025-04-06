@@ -250,19 +250,19 @@ const ProfilePage: React.FC = () => {
               <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
                 <div className="flex justify-between items-center">
                   <div>
-                    <div className="text-3xl font-bold text-primary">{userStats.goalsCompletedCount}</div>
-                    <div className="text-sm text-text-light-light dark:text-text-light-dark">
-                      {userStats.goalsCompletedCount === 1 ? 'Задача выполнена' : 
-                       userStats.goalsCompletedCount >= 2 && userStats.goalsCompletedCount <= 4 ? 'Задачи выполнены' : 
-                       'Задач выполнено'}
-                    </div>
-                  </div>
-                  <div className="text-right">
                     <div className="text-3xl font-bold text-gray-500">{userStats.goalsCount}</div>
                     <div className="text-sm text-text-light-light dark:text-text-light-dark">
                       {userStats.goalsCount === 1 ? 'Задача поставлена' : 
                        userStats.goalsCount >= 2 && userStats.goalsCount <= 4 ? 'Задачи поставлены' : 
                        'Задач поставлено'}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-primary">{userStats.goalsCompletedCount}</div>
+                    <div className="text-sm text-text-light-light dark:text-text-light-dark">
+                      {userStats.goalsCompletedCount === 1 ? 'Задача выполнена' : 
+                       userStats.goalsCompletedCount >= 2 && userStats.goalsCompletedCount <= 4 ? 'Задачи выполнены' : 
+                       'Задач выполнено'}
                     </div>
                   </div>
                 </div>
