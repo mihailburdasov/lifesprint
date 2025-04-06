@@ -310,14 +310,14 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return dayNumber % 7 === 0;
   };
   
-  // Проверка, доступен ли день (только дни 1-7 доступны)
+  // Проверка, доступен ли день (дни 1-14 доступны)
   const isDayAccessible = (dayNumber: number): boolean => {
-    return dayNumber <= 7;
+    return dayNumber <= 14;
   };
   
-  // Проверка, доступна ли неделя (только неделя 1 доступна)
+  // Проверка, доступна ли неделя (недели 1-2 доступны)
   const isWeekAccessible = (weekNumber: number): boolean => {
-    return weekNumber === 1;
+    return weekNumber <= 2;
   };
   
   // Создаем безопасный прогресс, даже если настоящий прогресс не загружен
