@@ -116,43 +116,63 @@ const Dashboard: React.FC = () => {
         
         days.push(
           isDayAccessible(dayNumber) ? (
-            <Link 
-              to={`/day/${dayNumber}`} 
+            <div 
               key={dayNumber}
               className={`day-card bg-surface-light dark:bg-surface-dark rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow ${isReflection ? 'border-l-4 border-secondary' : ''}`}
             >
-            <div className="flex items-center">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center mr-2 sm:mr-3">
-                {completion === 100 ? (
-                  <FaCheckCircle className="text-green-500" size={18} />
-                ) : (
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-gray-300 flex items-center justify-center text-xs">
-                    {dayNumber}
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex-1">
-                <h3 className="font-medium">{getDayTitle ? getDayTitle(dayNumber) : `День ${dayNumber}`}</h3>
-                <p className="text-sm text-text-light-light dark:text-text-light-dark">{formatDate ? formatDate(dayDate) : dayDate.toLocaleDateString()}</p>
-              </div>
-              
-              <div className="ml-1 sm:ml-2">
-                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center border border-gray-300 dark:border-gray-600">
-                  <div 
-                    className="w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-medium"
-                    style={{
-                  background: `conic-gradient(#4F46E5 ${completion}%, #f3f4f6 0)`,
-                      color: completion > 50 ? 'white' : 'inherit',
-                      boxShadow: '0 0 0 1px rgba(0,0,0,0.05) inset'
-                    }}
-                  >
-                    {completion}%
+              <div className="flex items-center">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center mr-2 sm:mr-3">
+                  {completion === 100 ? (
+                    <FaCheckCircle className="text-green-500" size={18} />
+                  ) : (
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-gray-300 flex items-center justify-center text-xs">
+                      {dayNumber}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex-1">
+                  <h3 className="font-medium">{getDayTitle ? getDayTitle(dayNumber) : `День ${dayNumber}`}</h3>
+                  <p className="text-sm text-text-light-light dark:text-text-light-dark">{formatDate ? formatDate(dayDate) : dayDate.toLocaleDateString()}</p>
+                </div>
+                
+                <div className="ml-1 sm:ml-2">
+                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center border border-gray-300 dark:border-gray-600">
+                    <div 
+                      className="w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-medium"
+                      style={{
+                    background: `conic-gradient(#4F46E5 ${completion}%, #f3f4f6 0)`,
+                        color: completion > 50 ? 'white' : 'inherit',
+                        boxShadow: '0 0 0 1px rgba(0,0,0,0.05) inset'
+                      }}
+                    >
+                      {completion}%
+                    </div>
                   </div>
                 </div>
               </div>
+              
+              <div className="flex mt-3 gap-2">
+                <Link to={`/day/${dayNumber}`} className="flex-1">
+                  <Button variant="primary" size="sm" fullWidth>
+                    Открыть
+                  </Button>
+                </Link>
+            {!isReflection ? (
+              <Link to={`/day/${dayNumber}/step/1`} className="flex-1">
+                <Button variant="outline" size="sm" fullWidth>
+                  Заполнить
+                </Button>
+              </Link>
+            ) : (
+              <Link to={`/day/${dayNumber}/step/1`} className="flex-1">
+                <Button variant="outline" size="sm" fullWidth>
+                  Рефлексия
+                </Button>
+              </Link>
+            )}
+              </div>
             </div>
-            </Link>
           ) : (
             <div 
               key={dayNumber}
@@ -328,10 +348,15 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           
-          <div className="mt-6">
+          <div className="mt-6 flex flex-col sm:flex-row gap-3">
             <Link to={`/day/${dayNumber}`}>
               <Button variant="primary">
                 Перейти к текущему дню
+              </Button>
+            </Link>
+            <Link to={`/day/${dayNumber}/step/1`}>
+              <Button variant="outline">
+                {isReflectionDay(dayNumber) ? 'Рефлексия' : 'Заполнить день'}
               </Button>
             </Link>
           </div>

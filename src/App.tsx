@@ -6,6 +6,7 @@ import { UserProvider } from './context/UserContext';
 import ScrollToTop from './components/common/ScrollToTop';
 import Dashboard from './pages/Dashboard';
 import DayPage from './pages/DayPage';
+import StepByStepDayPage from './pages/StepByStepDayPage';
 import AuthPage from './pages/AuthPage';
 import ProfilePage from './pages/ProfilePage';
 import OnboardingPage from './pages/OnboardingPage';
@@ -66,6 +67,14 @@ const App: React.FC = () => {
                   element={
                     <ProtectedRoute>
                       <DayPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/day/:dayId/step/:stepId" 
+                  element={
+                    <ProtectedRoute>
+                      <StepByStepDayPage />
                     </ProtectedRoute>
                   } 
                 />

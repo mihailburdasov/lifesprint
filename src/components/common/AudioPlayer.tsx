@@ -4,10 +4,11 @@ import { FaPlay, FaPause, FaVolumeUp, FaVolumeMute } from 'react-icons/fa';
 interface AudioPlayerProps {
   src: string;
   className?: string;
+  autoPlay?: boolean;
 }
 
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '' }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
+const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '', autoPlay = false }) => {
+  const [isPlaying, setIsPlaying] = useState(autoPlay);
   const [isMuted, setIsMuted] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -26,6 +27,24 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '' }) => {
     }
     setIsPlaying(!isPlaying);
   }, [isPlaying]);
+
+  // Auto-play when the component mounts or when src changes
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    if (autoPlay && src) {
+      // We need to set a small timeout to ensure the audio is loaded
+      const playPromise = setTimeout(() => {
+        audio.play().catch(err => {
+          console.error('Error auto-playing audio:', err);
+          setIsPlaying(false);
+        });
+      }, 300);
+      
+      return () => clearTimeout(playPromise);
+    }
+  }, [autoPlay, src]);
 
   // Update audio duration when metadata is loaded
   useEffect(() => {

@@ -13,7 +13,7 @@ export const dailyThoughts: DailyThought[] = [
   { text: 'Успех порождает успех!', author: 'Джон Кехо' }, // Day 2
   { text: 'Поступай так, словно это сон. Действуй смело и не ищи оправданий.', author: 'Карлос Кастенеда' }, // Day 3
   { text: 'Мы не можем исправить вчерашний день, но можем создать завтрашний.', author: 'Садхгуру' }, // Day 4
-  { text: 'Мои достижения — это ступени к моему успеху.', author: 'Наполеон Хилл' }, // Day 5
+  { text: 'Мы сами создаём свою удачу!', author: 'Михаил Бурдасов' }, // Day 5
   { text: 'Практика делает совершенным.', author: 'Аристотель' }, // Day 6
   { text: 'Утренние часы задают тон всему последующему дню.', author: 'Робин Шарма' }, // Day 7 (Reflection)
   { text: 'Новые горизонты ждут тех, кто готов их увидеть.', author: 'Тони Роббинс' }, // Day 8
@@ -111,6 +111,18 @@ export const audioFiles = [
   '/audio/day28.mp3', // Day 28 (Reflection)
 ];
 
+// Step-by-step audio files for each day
+// Format: day{dayNumber}-{stepNumber}.mp3
+export const getStepAudioFile = (dayNumber: number, stepNumber: number): string => {
+  // Step 1 doesn't have audio
+  if (stepNumber === 1) {
+    return '';
+  }
+  
+  // For steps 2-6, return the corresponding audio file
+  return `/audio/day${dayNumber}-${stepNumber}.mp3`;
+};
+
 // Get content for a specific day
 export const getDailyContent = (dayNumber: number) => {
   const index = dayNumber - 1;
@@ -129,6 +141,37 @@ export const getDailyContent = (dayNumber: number) => {
     thought: dailyThoughts[index],
     exercise: dailyExercises[index],
     audioSrc: audioFiles[index],
+  };
+};
+
+// Get content for a specific step of a day
+export const getStepContent = (dayNumber: number, stepNumber: number) => {
+  const index = dayNumber - 1;
+  if (index < 0 || index >= 28) {
+    return {
+      thought: {
+        text: 'День за пределами спринта',
+        author: undefined
+      },
+      exercise: 'Нет упражнения',
+      audioSrc: '',
+    };
+  }
+  
+  // For step 1, no audio
+  if (stepNumber === 1) {
+    return {
+      thought: dailyThoughts[index],
+      exercise: dailyExercises[index],
+      audioSrc: '',
+    };
+  }
+  
+  // For steps 2-6, return the corresponding content with step-specific audio
+  return {
+    thought: dailyThoughts[index],
+    exercise: dailyExercises[index],
+    audioSrc: getStepAudioFile(dayNumber, stepNumber),
   };
 };
 
