@@ -69,7 +69,7 @@ const StepByStepDayPage: React.FC = () => {
   };
   
   const goToNextStep = () => {
-    if (stepNumber < (isReflection ? 6 : 6)) {
+    if (stepNumber < (isReflection ? 8 : 6)) {
       navigate(`/day/${dayNumber}/step/${stepNumber + 1}`);
     } else {
       // If it's the last step, mark the day as completed and go to dashboard
@@ -414,14 +414,14 @@ const StepByStepDayPage: React.FC = () => {
       case 4:
         return (
           <div className="step-content space-y-6">
-            {/* Weekly Results */}
+            {/* Weekly Results - Achievements */}
             <div className="weekly-results">
               <h3 className="text-base sm:text-lg font-medium mb-2">Подводим итоги недели</h3>
               <p className="text-sm text-text-light-light dark:text-text-light-dark mb-3">
                 Что у меня получилось на этой неделе?
               </p>
               
-              <div className="space-y-3 mb-6">
+              <div className="space-y-3">
                 {reflectionData.achievements.map((item, index) => (
                   <div key={index} className="flex items-center">
                     <span className="mr-2 text-green-500">✓</span>
@@ -435,7 +435,16 @@ const StepByStepDayPage: React.FC = () => {
                   </div>
                 ))}
               </div>
-              
+            </div>
+          </div>
+        );
+      
+      case 5:
+        return (
+          <div className="step-content space-y-6">
+            {/* Weekly Results - Improvements */}
+            <div className="weekly-results">
+              <h3 className="text-base sm:text-lg font-medium mb-2">Подводим итоги недели</h3>
               <p className="text-sm text-text-light-light dark:text-text-light-dark mb-3">
                 Что я могу сделать лучше в следующий раз?
               </p>
@@ -458,7 +467,7 @@ const StepByStepDayPage: React.FC = () => {
           </div>
         );
       
-      case 5:
+      case 6:
         return (
           <div className="step-content space-y-6">
             {/* Insights */}
@@ -483,7 +492,12 @@ const StepByStepDayPage: React.FC = () => {
                 ))}
               </div>
             </div>
-            
+          </div>
+        );
+      
+      case 7:
+        return (
+          <div className="step-content space-y-6">
             {/* Updated Rules */}
             <div className="rules">
               <h3 className="text-base sm:text-lg font-medium mb-2">Обновляем правила игры</h3>
@@ -509,7 +523,7 @@ const StepByStepDayPage: React.FC = () => {
           </div>
         );
       
-      case 6:
+      case 8:
         return (
           <div className="step-content space-y-6">
             {/* Exercise */}
@@ -591,12 +605,12 @@ const StepByStepDayPage: React.FC = () => {
                 </h1>
                 
                 <div className="mt-2 text-sm text-text-light-light dark:text-text-light-dark">
-                  Шаг {stepNumber} из 6
+                  Шаг {stepNumber} из {isReflection ? 8 : 6}
                 </div>
               </div>
             </div>
             
-            {/* Audio player (only for steps 2-6 and if audio is enabled) */}
+            {/* Audio player (only for steps 2-6/7/8 and if audio is enabled) */}
             {stepNumber > 1 && (
               <div className="audio-player-container mb-4 sm:mb-6">
                 <AudioPlayer 
@@ -621,7 +635,7 @@ const StepByStepDayPage: React.FC = () => {
               )}
               
               <Button variant="primary" onClick={goToNextStep}>
-                {stepNumber < 6 ? 'Далее →' : 'Я всё!'}
+                {stepNumber < (isReflection ? 8 : 6) ? 'Далее →' : 'Я всё!'}
               </Button>
             </div>
           </>

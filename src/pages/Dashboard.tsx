@@ -152,25 +152,25 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
               
-              <div className="flex mt-3 gap-2">
-                <Link to={`/day/${dayNumber}`} className="flex-1">
-                  <Button variant="primary" size="sm" fullWidth>
+              <div className="mt-3">
+                <Link to={`/day/${dayNumber}`}>
+                  <Button variant="primary" size="sm">
                     Открыть
                   </Button>
                 </Link>
-            {!isReflection ? (
-              <Link to={`/day/${dayNumber}/step/1`} className="flex-1">
-                <Button variant="outline" size="sm" fullWidth>
-                  Заполнить
-                </Button>
-              </Link>
-            ) : (
-              <Link to={`/day/${dayNumber}/step/1`} className="flex-1">
-                <Button variant="outline" size="sm" fullWidth>
-                  Рефлексия
-                </Button>
-              </Link>
-            )}
+                {!isReflection ? (
+                  <Link to={`/day/${dayNumber}/step/1`} className="ml-2">
+                    <Button variant="outline" size="sm">
+                      Заполнить
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link to={`/day/${dayNumber}/step/1`} className="ml-2">
+                    <Button variant="outline" size="sm">
+                      Рефлексия
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           ) : (
