@@ -7,7 +7,9 @@ import { useUser } from './UserContext';
 export interface DayProgress {
   completed: boolean;
   gratitude: string[];
+  additionalGratitude?: string[]; // Additional gratitude fields (not counted in progress)
   achievements: string[];
+  additionalAchievements?: string[]; // Additional achievement fields (not counted in progress)
   goals: { text: string; completed: boolean }[];
   exerciseCompleted: boolean;
 }
@@ -35,6 +37,7 @@ interface ProgressContextType {
   updateDayProgress: (dayNumber: number, data: Partial<DayProgress>) => void;
   updateWeekReflection: (weekNumber: number, data: Partial<WeekReflection>) => void;
   getDayCompletion: (dayNumber: number) => number;
+  getReflectionDayWidgetProgress: (dayNumber: number) => Record<string, number>;
   isReflectionDay: (dayNumber: number) => boolean;
   isDayAccessible: (dayNumber: number) => boolean;
   isWeekAccessible: (weekNumber: number) => boolean;
@@ -269,7 +272,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Round to nearest integer
       return Math.round(total);
     } 
-    // For reflection days
+    // For reflection days (7, 14, 21, 28)
     else {
       const weekNumber = dayNumber / 7;
       const reflection = progress.weekReflections[weekNumber];
@@ -277,32 +280,94 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       let total = 0;
       
-      // Check gratitude (20%)
+      // Check gratitude (15% total, 5% each)
       let gratitudeCount = 0;
       if (reflection.gratitudeSelf.trim() !== '') gratitudeCount++;
       if (reflection.gratitudeOthers.trim() !== '') gratitudeCount++;
       if (reflection.gratitudeWorld.trim() !== '') gratitudeCount++;
-      total += (gratitudeCount / 3) * 20;
+      total += gratitudeCount * 5; // 5% for each gratitude (max 15%)
       
-      // Check achievements (20%)
+      // Check achievements (15% total, 5% each)
       const achievementsFilled = reflection.achievements.filter(a => a.trim() !== '').length;
-      total += (achievementsFilled / 3) * 20;
+      total += achievementsFilled * 5; // 5% for each achievement (max 15%)
       
-      // Check improvements (20%)
+      // Check improvements/zone of growth (15% total, 5% each)
       const improvementsFilled = reflection.improvements.filter(i => i.trim() !== '').length;
-      total += (improvementsFilled / 3) * 20;
+      total += improvementsFilled * 5; // 5% for each improvement (max 15%)
       
-      // Check insights (20%)
+      // Check insights (15% total, 5% each)
       const insightsFilled = reflection.insights.filter(i => i.trim() !== '').length;
-      total += (insightsFilled / 3) * 20;
+      total += insightsFilled * 5; // 5% for each insight (max 15%)
       
-      // Check rules (20%)
+      // Check rules (30% total, 10% each)
       const rulesFilled = reflection.rules.filter(r => r.trim() !== '').length;
-      total += (rulesFilled / 3) * 20;
+      total += rulesFilled * 10; // 10% for each rule (max 30%)
+      
+      // Check mindfulness exercise completion (10%)
+      if (reflection.exerciseCompleted) {
+        total += 10; // 10% for completing the exercise
+      }
+      
+      // Cap at 100%
+      total = Math.min(total, 100);
       
       // Round to nearest integer
       return Math.round(total);
     }
+  };
+  
+  // Вычисление процента заполнения для виджета "Текущий день" для дней рефлексии (7, 14, 21, 28)
+  const getReflectionDayWidgetProgress = (dayNumber: number): Record<string, number> => {
+    if (!progress) return {
+      gratitude: 0,
+      achievements: 0,
+      improvements: 0,
+      insights: 0,
+      rules: 0,
+      exercise: 0
+    };
+    
+    // Only for reflection days
+    if (dayNumber % 7 !== 0) return {
+      gratitude: 0,
+      achievements: 0,
+      improvements: 0,
+      insights: 0,
+      rules: 0,
+      exercise: 0
+    };
+    
+    const weekNumber = dayNumber / 7;
+    const reflection = progress.weekReflections[weekNumber];
+    if (!reflection) return {
+      gratitude: 0,
+      achievements: 0,
+      improvements: 0,
+      insights: 0,
+      rules: 0,
+      exercise: 0
+    };
+    
+    // Count filled items
+    let gratitudeCount = 0;
+    if (reflection.gratitudeSelf.trim() !== '') gratitudeCount++;
+    if (reflection.gratitudeOthers.trim() !== '') gratitudeCount++;
+    if (reflection.gratitudeWorld.trim() !== '') gratitudeCount++;
+    
+    const achievementsFilled = reflection.achievements.filter(a => a.trim() !== '').length;
+    const improvementsFilled = reflection.improvements.filter(i => i.trim() !== '').length;
+    const insightsFilled = reflection.insights.filter(i => i.trim() !== '').length;
+    const rulesFilled = reflection.rules.filter(r => r.trim() !== '').length;
+    
+    // Calculate percentages (1 item = 33.3%, 3 items = 100%)
+    return {
+      gratitude: Math.min(100, Math.round((gratitudeCount / 3) * 100)),
+      achievements: Math.min(100, Math.round((achievementsFilled / 3) * 100)),
+      improvements: Math.min(100, Math.round((improvementsFilled / 3) * 100)),
+      insights: Math.min(100, Math.round((insightsFilled / 3) * 100)),
+      rules: Math.min(100, Math.round((rulesFilled / 3) * 100)),
+      exercise: reflection.exerciseCompleted ? 100 : 0
+    };
   };
   
   // Проверка, является ли день днем рефлексии
@@ -347,6 +412,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateDayProgress: safeUpdateDayProgress, 
         updateWeekReflection: safeUpdateWeekReflection, 
         getDayCompletion,
+        getReflectionDayWidgetProgress,
         isReflectionDay,
         isDayAccessible,
         isWeekAccessible

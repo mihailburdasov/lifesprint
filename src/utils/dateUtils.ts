@@ -49,13 +49,23 @@ export const getCurrentMonthSprintStart = (): Date => {
 
 // Get the day title based on the day number
 export const getDayTitle = (dayNumber: number): string => {
-  // This is a simplified example. In a real app, you would have a more comprehensive mapping.
+  // For reflection days (7, 14, 21, 28), return special titles
+  if (dayNumber % 7 === 0) {
+    const weekNumber = dayNumber / 7;
+    const weekNames = ['первой', 'второй', 'третьей', 'четвёртой'];
+    return `Подводим итоги ${weekNames[weekNumber - 1]} недели`;
+  }
+
+  // For regular days, use the predefined titles
   const titles = [
     'Плавный старт', 'Осознанность', 'Благодарность', 'Цели', 'Достижения', 'Практика',
-    'Итоги первой недели', 'Новые горизонты', 'Внимательность', 'Энергия', 'Фокус', 'Баланс', 'Рост',
-    'Итоги второй недели', 'Преодоление', 'Радость', 'Сила', 'Творчество', 'Связь', 'Гармония',
-    'Итоги третьей недели', 'Интеграция', 'Мудрость', 'Принятие', 'Видение', 'Действие', 'Празднование',
-    'Итоги месяца'
+    '', // Day 7 is handled above
+    'Новые горизонты', 'Внимательность', 'Энергия', 'Фокус', 'Баланс', 'Рост',
+    '', // Day 14 is handled above
+    'Преодоление', 'Радость', 'Сила', 'Творчество', 'Связь', 'Гармония',
+    '', // Day 21 is handled above
+    'Интеграция', 'Мудрость', 'Принятие', 'Видение', 'Действие', 'Празднование',
+    '' // Day 28 is handled above
   ];
   
   return titles[dayNumber - 1] || `День ${dayNumber}`;

@@ -58,6 +58,14 @@ const StepByStepDayPage: React.FC = () => {
   // State for audio auto-play option
   const [withAudio, setWithAudio] = useState(true);
   
+  // State for additional gratitude and achievement fields
+  const [additionalGratitude, setAdditionalGratitude] = useState<string[]>(
+    dayData.additionalGratitude || []
+  );
+  const [additionalAchievements, setAdditionalAchievements] = useState<string[]>(
+    dayData.additionalAchievements || []
+  );
+  
   // Get content for the current step
   const stepContent = getStepContent(dayNumber, stepNumber);
   
@@ -89,10 +97,40 @@ const StepByStepDayPage: React.FC = () => {
     updateDayProgress(dayNumber, { gratitude: newGratitude });
   };
   
+  const handleAdditionalGratitudeChange = (index: number, value: string) => {
+    const newAdditionalGratitude = [...additionalGratitude];
+    newAdditionalGratitude[index] = value;
+    setAdditionalGratitude(newAdditionalGratitude);
+    updateDayProgress(dayNumber, { additionalGratitude: newAdditionalGratitude });
+  };
+  
+  const addGratitudeField = () => {
+    if (additionalGratitude.length < 4) { // Max 7 total (3 default + 4 additional)
+      const newAdditionalGratitude = [...additionalGratitude, ''];
+      setAdditionalGratitude(newAdditionalGratitude);
+      updateDayProgress(dayNumber, { additionalGratitude: newAdditionalGratitude });
+    }
+  };
+  
   const handleAchievementChange = (index: number, value: string) => {
     const newAchievements = [...dayData.achievements];
     newAchievements[index] = value;
     updateDayProgress(dayNumber, { achievements: newAchievements });
+  };
+  
+  const handleAdditionalAchievementChange = (index: number, value: string) => {
+    const newAdditionalAchievements = [...additionalAchievements];
+    newAdditionalAchievements[index] = value;
+    setAdditionalAchievements(newAdditionalAchievements);
+    updateDayProgress(dayNumber, { additionalAchievements: newAdditionalAchievements });
+  };
+  
+  const addAchievementField = () => {
+    if (additionalAchievements.length < 4) { // Max 7 total (3 default + 4 additional)
+      const newAdditionalAchievements = [...additionalAchievements, ''];
+      setAdditionalAchievements(newAdditionalAchievements);
+      updateDayProgress(dayNumber, { additionalAchievements: newAdditionalAchievements });
+    }
   };
   
   const handleGoalChange = (index: number, value: string) => {
@@ -221,7 +259,7 @@ const StepByStepDayPage: React.FC = () => {
               
               <div className="space-y-3">
                 {dayData.gratitude.map((item, index) => (
-                  <div key={index} className="flex items-center">
+                  <div key={`gratitude-${index}`} className="flex items-center">
                     <span className="mr-2">🙏</span>
                     <input
                       type="text"
@@ -232,6 +270,30 @@ const StepByStepDayPage: React.FC = () => {
                     />
                   </div>
                 ))}
+                
+                {/* Additional gratitude fields */}
+                {additionalGratitude.map((item, index) => (
+                  <div key={`additional-gratitude-${index}`} className="flex items-center">
+                    <span className="mr-2">🙏</span>
+                    <input
+                      type="text"
+                      value={item}
+                      onChange={(e) => handleAdditionalGratitudeChange(index, e.target.value)}
+                      placeholder="Я благодарю за"
+                      className="input flex-1"
+                    />
+                  </div>
+                ))}
+                
+                {/* Add button for gratitude (only for non-reflection days) */}
+                {!isReflection && additionalGratitude.length < 4 && (
+                  <button
+                    onClick={addGratitudeField}
+                    className="text-gray-500 text-sm hover:text-gray-700 mt-2 flex items-center"
+                  >
+                    <span className="mr-1">+</span> Добавить благодарностей
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -249,7 +311,7 @@ const StepByStepDayPage: React.FC = () => {
               
               <div className="space-y-3">
                 {dayData.achievements.map((item, index) => (
-                  <div key={index} className="flex items-center">
+                  <div key={`achievement-${index}`} className="flex items-center">
                     <span className="mr-2">😎</span>
                     <input
                       type="text"
@@ -260,6 +322,30 @@ const StepByStepDayPage: React.FC = () => {
                     />
                   </div>
                 ))}
+                
+                {/* Additional achievement fields */}
+                {additionalAchievements.map((item, index) => (
+                  <div key={`additional-achievement-${index}`} className="flex items-center">
+                    <span className="mr-2">😎</span>
+                    <input
+                      type="text"
+                      value={item}
+                      onChange={(e) => handleAdditionalAchievementChange(index, e.target.value)}
+                      placeholder="Я горжусь собой"
+                      className="input flex-1"
+                    />
+                  </div>
+                ))}
+                
+                {/* Add button for achievements (only for non-reflection days) */}
+                {!isReflection && additionalAchievements.length < 4 && (
+                  <button
+                    onClick={addAchievementField}
+                    className="text-gray-500 text-sm hover:text-gray-700 mt-2 flex items-center"
+                  >
+                    <span className="mr-1">+</span> Добавить достижений
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -303,7 +389,7 @@ const StepByStepDayPage: React.FC = () => {
           <div className="step-content space-y-6">
             {/* Exercise */}
             <div className="exercise">
-              <h3 className="text-base sm:text-lg font-medium mb-2">#упражнение</h3>
+              <h3 className="text-base sm:text-lg font-medium mb-2">#упражнение_на_осознанность</h3>
               <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md mb-3 text-sm sm:text-base">
                 {stepContent.exercise}
               </div>
@@ -420,7 +506,7 @@ const StepByStepDayPage: React.FC = () => {
           <div className="step-content space-y-6">
             {/* Weekly Results - Achievements */}
             <div className="weekly-results">
-              <h3 className="text-base sm:text-lg font-medium mb-2">Подводим итоги недели</h3>
+              <h3 className="text-base sm:text-lg font-medium mb-2">Мои достижения</h3>
               <p className="text-sm text-text-light-light dark:text-text-light-dark mb-3">
                 Что у меня получилось на этой неделе?
               </p>
@@ -433,7 +519,7 @@ const StepByStepDayPage: React.FC = () => {
                       type="text"
                       value={item}
                       onChange={(e) => handleReflectionAchievementChange(index, e.target.value)}
-                      placeholder={`Достижение ${index + 1}`}
+                      placeholder="У меня получилось"
                       className="input flex-1"
                     />
                   </div>
@@ -448,7 +534,7 @@ const StepByStepDayPage: React.FC = () => {
           <div className="step-content space-y-6">
             {/* Weekly Results - Improvements */}
             <div className="weekly-results">
-              <h3 className="text-base sm:text-lg font-medium mb-2">Подводим итоги недели</h3>
+              <h3 className="text-base sm:text-lg font-medium mb-2">Моя зона роста</h3>
               <p className="text-sm text-text-light-light dark:text-text-light-dark mb-3">
                 Что я могу сделать лучше в следующий раз?
               </p>
@@ -461,7 +547,7 @@ const StepByStepDayPage: React.FC = () => {
                       type="text"
                       value={item}
                       onChange={(e) => handleReflectionImprovementChange(index, e.target.value)}
-                      placeholder={`Улучшение ${index + 1}`}
+                      placeholder="Я могу сделать лучше"
                       className="input flex-1"
                     />
                   </div>
@@ -482,18 +568,21 @@ const StepByStepDayPage: React.FC = () => {
               </p>
               
               <div className="space-y-3">
-                {reflectionData.insights.map((item, index) => (
-                  <div key={index} className="flex items-center">
-                    <span className="mr-2 text-primary">!</span>
-                    <input
-                      type="text"
-                      value={item}
-                      onChange={(e) => handleReflectionInsightChange(index, e.target.value)}
-                      placeholder={`Озарение ${index + 1}`}
-                      className="input flex-1"
-                    />
-                  </div>
-                ))}
+                {reflectionData.insights.map((item, index) => {
+                  const ordinals = ['первое', 'второе', 'третье'];
+                  return (
+                    <div key={index} className="flex items-center">
+                      <span className="mr-2 text-primary">!</span>
+                      <input
+                        type="text"
+                        value={item}
+                        onChange={(e) => handleReflectionInsightChange(index, e.target.value)}
+                        placeholder={`Моё ${ordinals[index]} озарение`}
+                        className="input flex-1"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -510,18 +599,21 @@ const StepByStepDayPage: React.FC = () => {
               </p>
               
               <div className="space-y-3">
-                {reflectionData.rules.map((item, index) => (
-                  <div key={index} className="flex items-center">
-                    <span className="mr-2 text-blue-500">📘</span>
-                    <input
-                      type="text"
-                      value={item}
-                      onChange={(e) => handleReflectionRuleChange(index, e.target.value)}
-                      placeholder={`Правило ${index + 1}`}
-                      className="input flex-1"
-                    />
-                  </div>
-                ))}
+                {reflectionData.rules.map((item, index) => {
+                  const ordinals = ['первое', 'второе', 'третье'];
+                  return (
+                    <div key={index} className="flex items-center">
+                      <span className="mr-2 text-blue-500">📘</span>
+                      <input
+                        type="text"
+                        value={item}
+                        onChange={(e) => handleReflectionRuleChange(index, e.target.value)}
+                        placeholder={`Моё ${ordinals[index]} новое правило`}
+                        className="input flex-1"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -532,7 +624,7 @@ const StepByStepDayPage: React.FC = () => {
           <div className="step-content space-y-6">
             {/* Exercise */}
             <div className="exercise">
-              <h3 className="text-base sm:text-lg font-medium mb-2">#упражнение</h3>
+              <h3 className="text-base sm:text-lg font-medium mb-2">#упражнение_на_осознанность</h3>
               <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md mb-3 text-sm sm:text-base">
                 {stepContent.exercise}
               </div>
@@ -639,7 +731,7 @@ const StepByStepDayPage: React.FC = () => {
               )}
               
               <Button variant="primary" onClick={goToNextStep}>
-                {stepNumber < (isReflection ? 8 : 6) ? 'Далее →' : 'Я всё!'}
+                {stepNumber < (isReflection ? 8 : 6) ? 'Далее →' : 'Готово'}
               </Button>
             </div>
           </>

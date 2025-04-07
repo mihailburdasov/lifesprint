@@ -329,18 +329,15 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           
-          <div className="mt-6 flex flex-col sm:flex-row gap-3">
-            <Link to={`/day/${dayNumber}`}>
-              <Button variant="primary">
-                Перейти к текущему дню
-              </Button>
-            </Link>
-            <Link to={`/day/${dayNumber}/step/1`}>
-              <Button variant="outline">
-                {isReflectionDay(dayNumber) ? 'Рефлексия' : 'Заполнить день'}
-              </Button>
-            </Link>
-          </div>
+          {dayNumber >= 1 && dayNumber <= 31 && (
+            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+              <Link to={`/day/${dayNumber}/step/1`}>
+                <Button variant="primary">
+                  {isReflectionDay(dayNumber) ? 'Рефлексия' : 'Заполнить день'}
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       );
     };
