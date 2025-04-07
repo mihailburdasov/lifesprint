@@ -9,7 +9,7 @@ import Button from '../components/common/Button';
 
 const Dashboard: React.FC = () => {
   // Вызываем хук useProgress на верхнем уровне компонента
-  const { progress, getDayCompletion, isReflectionDay, updateDayProgress, isDayAccessible, isWeekAccessible } = useProgress();
+  const { progress, getDayCompletion, isReflectionDay, updateDayProgress, isDayAccessible, isWeekAccessible, getReflectionDayWidgetProgress } = useProgress();
   
   // Создаем состояние для expandedWeeks
   const [expandedWeeks, setExpandedWeeks] = useState<number[]>([1]); // Start with week 1 expanded
@@ -246,6 +246,24 @@ const Dashboard: React.FC = () => {
       };
       
       const completion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
+      const isReflectionDay = dayNumber % 7 === 0;
+      
+      // Get reflection data if it's a reflection day
+      const weekNumber = Math.ceil(dayNumber / 7);
+      const reflectionData = isReflectionDay ? (safeProgress.weekReflections[weekNumber] || {
+        gratitudeSelf: '',
+        gratitudeOthers: '',
+        gratitudeWorld: '',
+        achievements: ['', '', ''],
+        improvements: ['', '', ''],
+        insights: ['', '', ''],
+        rules: ['', '', ''],
+        exerciseCompleted: false
+      }) : null;
+      
+      // Get reflection day widget progress
+      const reflectionProgress = isReflectionDay && getReflectionDayWidgetProgress ? 
+        getReflectionDayWidgetProgress(dayNumber) : null;
       
       return (
         <div className="current-day bg-surface-light dark:bg-surface-dark rounded-xl shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
@@ -271,69 +289,137 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           
-          <div className="tasks space-y-2 mb-4">
-            <h3 className="font-medium">Задачи на день:</h3>
-            {dayProgress.goals.map((goal, index) => (
-              <div key={index} className="flex items-center">
-                <input 
-                  type="checkbox" 
-                  checked={goal.completed}
-                  onChange={() => handleGoalToggle(dayNumber, index)}
-                  className="checkbox mr-3 cursor-pointer"
-                />
-                <span className={goal.completed ? 'line-through text-text-light-light dark:text-text-light-dark' : ''}>
-                  {goal.text || 'Задача не задана'}
-                </span>
-              </div>
-            ))}
-          </div>
+          {/* Tasks section - only show for non-reflection days */}
+          {!isReflectionDay && (
+            <div className="tasks space-y-2 mb-4">
+              <h3 className="font-medium">Задачи на день:</h3>
+              {dayProgress.goals.map((goal, index) => (
+                <div key={index} className="flex items-center">
+                  <input 
+                    type="checkbox" 
+                    checked={goal.completed}
+                    onChange={() => handleGoalToggle(dayNumber, index)}
+                    className="checkbox mr-3 cursor-pointer"
+                  />
+                  <span className={goal.completed ? 'line-through text-text-light-light dark:text-text-light-dark' : ''}>
+                    {goal.text || 'Задача не задана'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
           
-          <div className="progress-indicators flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-            <div className="flex-1">
-              <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Благодарность</div>
-              <div className="h-2 bg-gray-200 rounded-full">
-                <div 
-                  className="h-full bg-primary rounded-full"
-                  style={{ 
-                    width: `${Math.min(100, (dayProgress.gratitude.filter(g => g.trim() !== '').length / 3) * 100)}%` 
-                  }}
-                />
+          {/* Progress indicators */}
+          {isReflectionDay && reflectionProgress ? (
+            <div className="progress-indicators flex flex-col space-y-2 mb-4">
+              <div className="flex-1">
+                <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Благодарности</div>
+                <div className="h-2 bg-gray-200 rounded-full">
+                  <div 
+                    className="h-full bg-primary rounded-full"
+                    style={{ width: `${reflectionProgress.gratitude}%` }}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex-1">
+                <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Достижения</div>
+                <div className="h-2 bg-gray-200 rounded-full">
+                  <div 
+                    className="h-full bg-primary rounded-full"
+                    style={{ width: `${reflectionProgress.achievements}%` }}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex-1">
+                <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Улучшения</div>
+                <div className="h-2 bg-gray-200 rounded-full">
+                  <div 
+                    className="h-full bg-primary rounded-full"
+                    style={{ width: `${reflectionProgress.improvements}%` }}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex-1">
+                <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Озарения</div>
+                <div className="h-2 bg-gray-200 rounded-full">
+                  <div 
+                    className="h-full bg-primary rounded-full"
+                    style={{ width: `${reflectionProgress.insights}%` }}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex-1">
+                <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Правила</div>
+                <div className="h-2 bg-gray-200 rounded-full">
+                  <div 
+                    className="h-full bg-primary rounded-full"
+                    style={{ width: `${reflectionProgress.rules}%` }}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex-1">
+                <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Упражнение</div>
+                <div className="h-2 bg-gray-200 rounded-full">
+                  <div 
+                    className="h-full bg-primary rounded-full"
+                    style={{ width: `${reflectionProgress.exercise}%` }}
+                  />
+                </div>
               </div>
             </div>
-            
-            <div className="flex-1">
-              <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Достижения</div>
-              <div className="h-2 bg-gray-200 rounded-full">
-                <div 
-                  className="h-full bg-primary rounded-full"
-                  style={{ 
-                    width: `${Math.min(100, (dayProgress.achievements.filter(a => a.trim() !== '').length / 3) * 100)}%` 
-                  }}
-                />
+          ) : (
+            <div className="progress-indicators flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+              <div className="flex-1">
+                <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Благодарность</div>
+                <div className="h-2 bg-gray-200 rounded-full">
+                  <div 
+                    className="h-full bg-primary rounded-full"
+                    style={{ 
+                      width: `${Math.min(100, (dayProgress.gratitude.filter(g => g.trim() !== '').length / 3) * 100)}%` 
+                    }}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex-1">
+                <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Достижения</div>
+                <div className="h-2 bg-gray-200 rounded-full">
+                  <div 
+                    className="h-full bg-primary rounded-full"
+                    style={{ 
+                      width: `${Math.min(100, (dayProgress.achievements.filter(a => a.trim() !== '').length / 3) * 100)}%` 
+                    }}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex-1">
+                <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Задачи</div>
+                <div className="h-2 bg-gray-200 rounded-full">
+                  <div 
+                    className="h-full bg-primary rounded-full"
+                    style={{ 
+                      width: `${Math.min(100, 
+                        (dayProgress.goals.filter(g => g.text.trim() !== '').length * 10) + 
+                        (dayProgress.goals.filter(g => g.completed).length * 23.33)
+                      )}%` 
+                    }}
+                  />
+                </div>
               </div>
             </div>
-            
-            <div className="flex-1">
-              <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Задачи</div>
-              <div className="h-2 bg-gray-200 rounded-full">
-                <div 
-                  className="h-full bg-primary rounded-full"
-                  style={{ 
-                    width: `${Math.min(100, 
-                      (dayProgress.goals.filter(g => g.text.trim() !== '').length * 10) + 
-                      (dayProgress.goals.filter(g => g.completed).length * 23.33)
-                    )}%` 
-                  }}
-                />
-              </div>
-            </div>
-          </div>
+          )}
           
           {dayNumber >= 1 && dayNumber <= 31 && (
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
               <Link to={`/day/${dayNumber}/step/1`}>
                 <Button variant="primary">
-                  {isReflectionDay(dayNumber) ? 'Порефлексировать' : 'Заполнить день'}
+                  {dayNumber % 7 === 0 ? 'Порефлексировать' : 'Заполнить день'}
                 </Button>
               </Link>
             </div>
