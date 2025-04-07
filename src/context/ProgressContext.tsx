@@ -238,11 +238,11 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const getDayCompletion = (dayNumber: number): number => {
     if (!progress) return 0;
     
-    const dayProgress = progress.days[dayNumber];
-    if (!dayProgress) return 0;
-    
     // For regular days
     if (dayNumber % 7 !== 0) {
+      const dayProgress = progress.days[dayNumber];
+      if (!dayProgress) return 0;
+      
       let total = 0;
       
       // Check gratitude (15% total, 5% each)
@@ -275,32 +275,31 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // For reflection days (7, 14, 21, 28)
     else {
       const weekNumber = dayNumber / 7;
-      const reflection = progress.weekReflections[weekNumber];
-      if (!reflection) return 0;
+      const reflection = progress.weekReflections[weekNumber] || { ...defaultWeekReflection };
       
       let total = 0;
       
       // Check gratitude (15% total, 5% each)
       let gratitudeCount = 0;
-      if (reflection.gratitudeSelf.trim() !== '') gratitudeCount++;
-      if (reflection.gratitudeOthers.trim() !== '') gratitudeCount++;
-      if (reflection.gratitudeWorld.trim() !== '') gratitudeCount++;
+      if (reflection.gratitudeSelf && reflection.gratitudeSelf.trim() !== '') gratitudeCount++;
+      if (reflection.gratitudeOthers && reflection.gratitudeOthers.trim() !== '') gratitudeCount++;
+      if (reflection.gratitudeWorld && reflection.gratitudeWorld.trim() !== '') gratitudeCount++;
       total += gratitudeCount * 5; // 5% for each gratitude (max 15%)
       
       // Check achievements (15% total, 5% each)
-      const achievementsFilled = reflection.achievements.filter(a => a.trim() !== '').length;
+      const achievementsFilled = reflection.achievements ? reflection.achievements.filter(a => a && a.trim() !== '').length : 0;
       total += achievementsFilled * 5; // 5% for each achievement (max 15%)
       
       // Check improvements/zone of growth (15% total, 5% each)
-      const improvementsFilled = reflection.improvements.filter(i => i.trim() !== '').length;
+      const improvementsFilled = reflection.improvements ? reflection.improvements.filter(i => i && i.trim() !== '').length : 0;
       total += improvementsFilled * 5; // 5% for each improvement (max 15%)
       
       // Check insights (15% total, 5% each)
-      const insightsFilled = reflection.insights.filter(i => i.trim() !== '').length;
+      const insightsFilled = reflection.insights ? reflection.insights.filter(i => i && i.trim() !== '').length : 0;
       total += insightsFilled * 5; // 5% for each insight (max 15%)
       
       // Check rules (30% total, 10% each)
-      const rulesFilled = reflection.rules.filter(r => r.trim() !== '').length;
+      const rulesFilled = reflection.rules ? reflection.rules.filter(r => r && r.trim() !== '').length : 0;
       total += rulesFilled * 10; // 10% for each rule (max 30%)
       
       // Check mindfulness exercise completion (10%)
@@ -338,26 +337,18 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
     
     const weekNumber = dayNumber / 7;
-    const reflection = progress.weekReflections[weekNumber];
-    if (!reflection) return {
-      gratitude: 0,
-      achievements: 0,
-      improvements: 0,
-      insights: 0,
-      rules: 0,
-      exercise: 0
-    };
+    const reflection = progress.weekReflections[weekNumber] || { ...defaultWeekReflection };
     
     // Count filled items
     let gratitudeCount = 0;
-    if (reflection.gratitudeSelf.trim() !== '') gratitudeCount++;
-    if (reflection.gratitudeOthers.trim() !== '') gratitudeCount++;
-    if (reflection.gratitudeWorld.trim() !== '') gratitudeCount++;
+    if (reflection.gratitudeSelf && reflection.gratitudeSelf.trim() !== '') gratitudeCount++;
+    if (reflection.gratitudeOthers && reflection.gratitudeOthers.trim() !== '') gratitudeCount++;
+    if (reflection.gratitudeWorld && reflection.gratitudeWorld.trim() !== '') gratitudeCount++;
     
-    const achievementsFilled = reflection.achievements.filter(a => a.trim() !== '').length;
-    const improvementsFilled = reflection.improvements.filter(i => i.trim() !== '').length;
-    const insightsFilled = reflection.insights.filter(i => i.trim() !== '').length;
-    const rulesFilled = reflection.rules.filter(r => r.trim() !== '').length;
+    const achievementsFilled = reflection.achievements ? reflection.achievements.filter(a => a && a.trim() !== '').length : 0;
+    const improvementsFilled = reflection.improvements ? reflection.improvements.filter(i => i && i.trim() !== '').length : 0;
+    const insightsFilled = reflection.insights ? reflection.insights.filter(i => i && i.trim() !== '').length : 0;
+    const rulesFilled = reflection.rules ? reflection.rules.filter(r => r && r.trim() !== '').length : 0;
     
     // Calculate percentages (1 item = 33.3%, 3 items = 100%)
     return {
