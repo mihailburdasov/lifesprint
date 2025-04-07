@@ -333,7 +333,7 @@ const Dashboard: React.FC = () => {
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
               <Link to={`/day/${dayNumber}/step/1`}>
                 <Button variant="primary">
-                  {isReflectionDay(dayNumber) ? 'Рефлексия' : 'Заполнить день'}
+                  {isReflectionDay(dayNumber) ? 'Порефлексировать' : 'Заполнить день'}
                 </Button>
               </Link>
             </div>
