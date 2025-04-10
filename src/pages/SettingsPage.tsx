@@ -225,6 +225,20 @@ const SettingsPage: React.FC = () => {
               
               <div className="space-y-4">
                 <div>
+                  <h3 className="text-base font-medium mb-2">Миграция данных в облако</h3>
+                  <p className="text-sm text-text-light mb-2">
+                    Перенесите ваши данные в облачное хранилище для доступа с разных устройств и надежного сохранения.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={() => navigate('/migration')}
+                  >
+                    Перейти к миграции
+                  </Button>
+                </div>
+                
+                <div>
                   <h3 className="text-base font-medium mb-2">Изменить пароль</h3>
                   <Button
                     type="button"

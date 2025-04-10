@@ -79,17 +79,37 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   
   // Загрузка прогресса пользователя при авторизации
   useEffect(() => {
-    if (isAuthenticated && user) {
-      setIsLoading(true);
-      
-      try {
-        // Получаем прогресс пользователя из локального хранилища
-        const response = apiService.getUserProgress(user.id);
+    const loadUserProgress = async () => {
+      if (isAuthenticated && user) {
+        setIsLoading(true);
         
-        if (response.success && response.data) {
-          setProgress(response.data);
-        } else {
-          // Если прогресс не найден, создаем новый
+        try {
+          // Получаем прогресс пользователя из Supabase через apiService
+          const response = await apiService.getUserProgress(user.id);
+          
+          if (response.success && response.data) {
+            setProgress(response.data);
+          } else {
+            // Если прогресс не найден, создаем новый
+            const currentMonthStart = getCurrentMonthSprintStart();
+            const today = new Date();
+            const diffTime = today.getTime() - currentMonthStart.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            const currentDay = Math.min(Math.max(diffDays, 1), 28); // Между 1 и 28
+            
+            const newProgress: UserProgress = {
+              startDate: currentMonthStart,
+              currentDay: currentDay,
+              days: {},
+              weekReflections: {}
+            };
+            
+            setProgress(newProgress);
+          }
+        } catch (error) {
+          console.error('Ошибка при получении прогресса пользователя:', error);
+          
+          // В случае ошибки создаем новый прогресс
           const currentMonthStart = getCurrentMonthSprintStart();
           const today = new Date();
           const diffTime = today.getTime() - currentMonthStart.getTime();
@@ -104,44 +124,35 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           };
           
           setProgress(newProgress);
+        } finally {
+          setIsLoading(false);
         }
-      } catch (error) {
-        console.error('Ошибка при получении прогресса пользователя:', error);
-        
-        // В случае ошибки создаем новый прогресс
-        const currentMonthStart = getCurrentMonthSprintStart();
-        const today = new Date();
-        const diffTime = today.getTime() - currentMonthStart.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        const currentDay = Math.min(Math.max(diffDays, 1), 28); // Между 1 и 28
-        
-        const newProgress: UserProgress = {
-          startDate: currentMonthStart,
-          currentDay: currentDay,
-          days: {},
-          weekReflections: {}
-        };
-        
-        setProgress(newProgress);
-      } finally {
+      } else {
+        // Если пользователь не авторизован, сбрасываем прогресс
+        setProgress(null);
         setIsLoading(false);
       }
-    } else {
-      // Если пользователь не авторизован, сбрасываем прогресс
-      setProgress(null);
-      setIsLoading(false);
-    }
+    };
+    
+    loadUserProgress();
   }, [isAuthenticated, user]);
   
   // Сохранение прогресса пользователя при изменении
   useEffect(() => {
-    if (isAuthenticated && user && progress) {
-      try {
-        apiService.updateUserProgress(user.id, progress);
-      } catch (error) {
-        console.error('Ошибка при сохранении прогресса пользователя:', error);
+    const saveUserProgress = async () => {
+      if (isAuthenticated && user && progress) {
+        try {
+          await apiService.updateUserProgress(user.id, progress);
+        } catch (error) {
+          console.error('Ошибка при сохранении прогресса пользователя:', error);
+        }
       }
-    }
+    };
+    
+    // Используем debounce, чтобы не вызывать сохранение слишком часто
+    const timeoutId = setTimeout(saveUserProgress, 500);
+    
+    return () => clearTimeout(timeoutId);
   }, [progress, isAuthenticated, user]);
   
   // Update current day to always show the current calendar day

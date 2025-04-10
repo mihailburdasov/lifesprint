@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiService } from '../utils/apiService';
+import { supabase } from '../utils/supabaseClient';
+import { migrateLocalDataToSupabase, clearLocalUserData } from '../utils/migrationScript';
 
 // Определение типов для пользователя
 export interface User {
@@ -7,6 +9,15 @@ export interface User {
   name: string;
   email: string;
   telegramNickname?: string;
+}
+
+// Тип для статуса миграции
+export interface MigrationStatus {
+  inProgress: boolean;
+  message: string | null;
+  success: boolean | null;
+  migratedUsers: number;
+  totalUsers: number;
 }
 
 // Данные для регистрации
@@ -29,9 +40,12 @@ interface UserContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  register: (data: RegisterData) => boolean;
-  login: (data: LoginData) => boolean;
-  logout: () => void;
+  register: (data: RegisterData) => Promise<boolean>;
+  login: (data: LoginData) => Promise<boolean>;
+  logout: () => Promise<void>;
+  migrationStatus: MigrationStatus;
+  migrateToSupabase: () => Promise<boolean>;
+  clearLocalData: () => void;
 }
 
 // Создание контекста
@@ -42,72 +56,146 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [migrationStatus, setMigrationStatus] = useState<MigrationStatus>({
+    inProgress: false,
+    message: null,
+    success: null,
+    migratedUsers: 0,
+    totalUsers: 0
+  });
 
   // Проверка наличия пользователя при загрузке
   useEffect(() => {
-    try {
-      // Проверяем, есть ли сохраненный ID пользователя в localStorage
-      const storedUserId = localStorage.getItem('lifesprint_current_user_id');
-      
-      if (storedUserId) {
-        // Получаем пользователя напрямую из localStorage вместо вызова API
-        const userJson = localStorage.getItem(`lifesprint_user_${storedUserId}`);
+    const checkAuth = async () => {
+      try {
+        // Сначала проверяем сессию Supabase
+        const { data: sessionData } = await supabase.auth.getSession();
         
-        if (userJson) {
-          try {
-            const userData = JSON.parse(userJson);
+        if (sessionData.session) {
+          // Пользователь авторизован в Supabase
+          const { data: userData, error: userError } = await supabase.auth.getUser();
+          
+          if (userError) {
+            console.error('Ошибка при получении данных пользователя:', userError);
+            setUser(null);
+          } else if (userData.user) {
+            // Получаем дополнительные данные пользователя из метаданных
+            const { id, email } = userData.user;
+            const name = userData.user.user_metadata?.name || email?.split('@')[0] || 'Пользователь';
+            const telegramNickname = userData.user.user_metadata?.telegram_nickname;
             
-            // Проверяем, что данные пользователя содержат необходимые поля
-            if (userData && userData.id && userData.name && userData.email) {
-              setUser(userData);
-            } else {
-              console.error('Данные пользователя неполные или некорректные');
-              localStorage.removeItem('lifesprint_current_user_id');
+            // Проверяем, есть ли у пользователя локальные данные, которые нужно мигрировать
+            if (email) {
+              const localUserData = apiService.findLocalUserByEmail(email);
+              if (localUserData && localUserData.id !== id) {
+                // Мигрируем данные прогресса из localStorage в Supabase
+                await apiService.migrateUserProgressToSupabase(localUserData.id, id);
+              }
             }
-          } catch (error) {
-            console.error('Ошибка при парсинге данных пользователя:', error);
-            localStorage.removeItem('lifesprint_current_user_id');
+            
+            setUser({
+              id,
+              name,
+              email: email || '',
+              telegramNickname
+            });
           }
         } else {
-          // Если данные пользователя не найдены, удаляем ID из localStorage
-          console.error('Данные пользователя не найдены');
-          localStorage.removeItem('lifesprint_current_user_id');
+          // Если нет сессии Supabase, проверяем localStorage (для обратной совместимости)
+          const storedUserId = localStorage.getItem('lifesprint_current_user_id');
+          
+          if (storedUserId) {
+            const userJson = localStorage.getItem(`lifesprint_user_${storedUserId}`);
+            
+            if (userJson) {
+              try {
+                const userData = JSON.parse(userJson);
+                
+                if (userData && userData.id && userData.name && userData.email) {
+                  setUser(userData);
+                } else {
+                  console.error('Данные пользователя неполные или некорректные');
+                  localStorage.removeItem('lifesprint_current_user_id');
+                }
+              } catch (error) {
+                console.error('Ошибка при парсинге данных пользователя:', error);
+                localStorage.removeItem('lifesprint_current_user_id');
+              }
+            } else {
+              console.error('Данные пользователя не найдены');
+              localStorage.removeItem('lifesprint_current_user_id');
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Ошибка при проверке наличия пользователя:', error);
+        localStorage.removeItem('lifesprint_current_user_id');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
+    
+    // Подписываемся на изменения состояния аутентификации
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          const { user: authUser } = session;
+          
+          if (authUser) {
+            // Получаем дополнительные данные пользователя из метаданных
+            const name = authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Пользователь';
+            const telegramNickname = authUser.user_metadata?.telegram_nickname;
+            
+            setUser({
+              id: authUser.id,
+              name,
+              email: authUser.email || '',
+              telegramNickname
+            });
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
         }
       }
-    } catch (error) {
-      console.error('Ошибка при проверке наличия пользователя:', error);
-      // В случае ошибки очищаем данные пользователя
-      localStorage.removeItem('lifesprint_current_user_id');
-    } finally {
-      setIsLoading(false);
-    }
+    );
+    
+    // Отписываемся при размонтировании компонента
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   // Регистрация пользователя
-  const register = (data: RegisterData): boolean => {
+  const register = async (data: RegisterData): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Вызов локального сервиса для регистрации пользователя
-      const response = apiService.register(
+      // Используем apiService для регистрации пользователя
+      const response = await apiService.register(
         data.name,
         data.email,
         data.password,
         data.telegramNickname
       );
       
-      if (response.success && response.data) {
-        // Сохраняем ID пользователя в localStorage
-        localStorage.setItem('lifesprint_current_user_id', response.data.id);
-        setUser(response.data);
-        return true;
-      } else {
+      if (!response.success) {
         setError(response.error || 'Ошибка при регистрации. Пожалуйста, попробуйте снова.');
         return false;
       }
+      
+      if (response.data) {
+        setUser(response.data);
+        return true;
+      } else {
+        setError('Не удалось создать пользователя. Пожалуйста, попробуйте снова.');
+        return false;
+      }
     } catch (e) {
-      setError('Ошибка при регистрации. Пожалуйста, попробуйте снова.');
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      setError(`Ошибка при регистрации: ${errorMessage}`);
       console.error('Ошибка регистрации:', e);
       return false;
     } finally {
@@ -116,25 +204,31 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Вход пользователя
-  const login = (data: LoginData): boolean => {
+  const login = async (data: LoginData): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Вызов локального сервиса для входа пользователя
-      const response = apiService.login(data.email, data.password);
+      // Используем apiService для входа пользователя
+      const response = await apiService.login(data.email, data.password);
       
-      if (response.success && response.data) {
-        // Сохраняем ID пользователя в localStorage
+      if (!response.success) {
+        setError(response.error || 'Неверный email или пароль.');
+        return false;
+      }
+      
+      if (response.data) {
+        // Сохраняем ID пользователя в localStorage для обратной совместимости
         localStorage.setItem('lifesprint_current_user_id', response.data.id);
         setUser(response.data);
         return true;
       } else {
-        setError(response.error || 'Неверный email или пароль.');
+        setError('Не удалось войти. Пожалуйста, попробуйте снова.');
         return false;
       }
     } catch (e) {
-      setError('Неверный email или пароль.');
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      setError(`Ошибка при входе: ${errorMessage}`);
       console.error('Ошибка входа:', e);
       return false;
     } finally {
@@ -143,9 +237,63 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Выход пользователя
-  const logout = (): void => {
-    localStorage.removeItem('lifesprint_current_user_id');
-    setUser(null);
+  const logout = async (): Promise<void> => {
+    try {
+      // Выход из Supabase
+      await supabase.auth.signOut();
+      
+      // Очищаем localStorage (для обратной совместимости)
+      localStorage.removeItem('lifesprint_current_user_id');
+      
+      // Очищаем состояние пользователя
+      setUser(null);
+    } catch (error) {
+      console.error('Ошибка при выходе:', error);
+      // Даже если произошла ошибка, очищаем состояние пользователя
+      localStorage.removeItem('lifesprint_current_user_id');
+      setUser(null);
+    }
+  };
+  
+  // Миграция данных из localStorage в Supabase
+  const migrateToSupabase = async (): Promise<boolean> => {
+    setMigrationStatus({
+      ...migrationStatus,
+      inProgress: true,
+      message: 'Начинаем миграцию данных...',
+      success: null
+    });
+    
+    try {
+      const result = await migrateLocalDataToSupabase();
+      
+      setMigrationStatus({
+        inProgress: false,
+        message: result.message,
+        success: result.success,
+        migratedUsers: result.migratedUsers,
+        totalUsers: result.totalUsers
+      });
+      
+      return result.success;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      setMigrationStatus({
+        inProgress: false,
+        message: `Ошибка миграции: ${errorMessage}`,
+        success: false,
+        migratedUsers: 0,
+        totalUsers: 0
+      });
+      
+      return false;
+    }
+  };
+  
+  // Очистка локальных данных
+  const clearLocalData = (): void => {
+    clearLocalUserData();
   };
 
   return (
@@ -157,7 +305,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         error,
         register,
         login,
-        logout
+        logout,
+        migrationStatus,
+        migrateToSupabase,
+        clearLocalData
       }}
     >
       {children}

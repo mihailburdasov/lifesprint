@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ProgressProvider } from './context/ProgressContext';
 import { ThemeProvider } from './context/ThemeContext';
-import { UserProvider } from './context/UserContext';
+import { UserProvider, useUser } from './context/UserContext';
 import ScrollToTop from './components/common/ScrollToTop';
 import Dashboard from './pages/Dashboard';
 import DayPage from './pages/DayPage';
@@ -11,32 +11,21 @@ import AuthPage from './pages/AuthPage';
 import ProfilePage from './pages/ProfilePage';
 import OnboardingPage from './pages/OnboardingPage';
 import SettingsPage from './pages/SettingsPage';
+import MigrationPage from './pages/MigrationPage';
+import { supabase } from './utils/supabaseClient';
 
 // Улучшенный компонент для защиты маршрутов
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // Проверяем, есть ли пользователь в localStorage
-  const userId = localStorage.getItem('lifesprint_current_user_id');
+  // Используем хук для получения данных о пользователе
+  const { isAuthenticated, isLoading } = useUser();
   
-  // Проверяем, существуют ли данные пользователя
-  let userExists = false;
-  
-  if (userId) {
-    try {
-      const userJson = localStorage.getItem(`lifesprint_user_${userId}`);
-      userExists = userJson !== null;
-    } catch (error) {
-      console.error('Ошибка при проверке данных пользователя:', error);
-    }
+  // Если идет загрузка, показываем индикатор загрузки
+  if (isLoading) {
+    return <div className="flex justify-center items-center min-h-screen">Загрузка...</div>;
   }
   
-  // Если пользователь не авторизован или данные пользователя не найдены
-  if (!userId || !userExists) {
-    // Очищаем ID пользователя, если данные не найдены
-    if (userId && !userExists) {
-      localStorage.removeItem('lifesprint_current_user_id');
-    }
-    
-    // Перенаправляем на страницу входа
+  // Если пользователь не авторизован, перенаправляем на страницу входа
+  if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
   }
   
@@ -54,6 +43,7 @@ const App: React.FC = () => {
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/onboarding" element={<OnboardingPage />} />
+                <Route path="/migration" element={<MigrationPage />} />
                 <Route 
                   path="/" 
                   element={

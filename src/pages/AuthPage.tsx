@@ -82,7 +82,7 @@ const AuthPage: React.FC = () => {
   };
 
   // Обработка отправки формы
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -93,14 +93,24 @@ const AuthPage: React.FC = () => {
     
     try {
       if (mode === 'login') {
-        const loginResult = login({
+        const loginResult = await login({
           email: formData.email,
           password: formData.password
         });
         
         // Если вход успешен, перенаправление произойдет автоматически через useEffect
+        if (loginResult) {
+          // Проверяем, есть ли локальные данные, которые нужно мигрировать
+          const localUserData = localStorage.getItem(`lifesprint_user_${formData.email}`);
+          if (localUserData) {
+            // Предлагаем пользователю перейти на страницу миграции
+            if (window.confirm('У вас есть локальные данные, которые можно перенести в облачное хранилище. Хотите перейти на страницу миграции?')) {
+              navigate('/migration');
+            }
+          }
+        }
       } else if (mode === 'register') {
-        const result = register({
+        const result = await register({
           name: formData.name || '',
           email: formData.email,
           password: formData.password,
@@ -127,7 +137,9 @@ const AuthPage: React.FC = () => {
         <div className="text-center py-6">
           <div className="text-5xl mb-4">✅</div>
           <h2 className="text-xl font-bold mb-3">Регистрация успешна!</h2>
-          <p className="mb-6">Ваш аккаунт успешно создан. Теперь вы можете войти в систему.</p>
+          <p className="mb-6">
+            Ваш аккаунт успешно создан. Проверьте вашу электронную почту для подтверждения аккаунта.
+          </p>
           <Button
             type="button"
             variant="primary"
@@ -260,6 +272,16 @@ const AuthPage: React.FC = () => {
             <button
               type="button"
               className="text-sm text-primary hover:underline focus:outline-none min-h-[44px] inline-flex items-center justify-center px-2"
+              onClick={() => {
+                // Здесь можно добавить логику для сброса пароля через Supabase
+                const email = formData.email;
+                if (email) {
+                  // Показываем модальное окно или переходим на страницу сброса пароля
+                  alert(`Функция сброса пароля будет отправлена на ${email}`);
+                } else {
+                  alert('Пожалуйста, введите ваш email для сброса пароля');
+                }
+              }}
             >
               Забыли пароль?
             </button>
