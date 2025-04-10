@@ -457,10 +457,7 @@ const Dashboard: React.FC = () => {
       // Все недели
       const allWeeks = [1, 2, 3, 4, 5];
       
-      // Если активная неделя - бонусная (5), не меняем порядок
-      if (activeWeek === 5) return allWeeks;
-      
-      // Иначе перемещаем активную неделю в начало
+      // Перемещаем активную неделю в начало
       return [
         activeWeek,
         ...allWeeks.filter(week => week !== activeWeek)
