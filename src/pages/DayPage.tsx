@@ -7,6 +7,7 @@ import { useProgress } from '../context/ProgressContext';
 import { FaLock } from 'react-icons/fa';
 import { formatDate, getDayTitle, isReflectionDay } from '../utils/dateUtils';
 import { getDailyContent, getMotivationalPhrase } from '../data/dailyContent';
+import useInputFocus from '../hooks/useInputFocus';
 
 interface DayParams {
   dayId: string;
@@ -17,6 +18,9 @@ const DayPage: React.FC = () => {
   const { dayId } = useParams<DayParams>();
   const navigate = useNavigate();
   const { progress, updateDayProgress, updateWeekReflection, isReflectionDay: checkReflectionDay, getDayCompletion, isDayAccessible } = useProgress();
+  
+  // Используем хук для предотвращения перекрытия полей ввода мобильной клавиатурой
+  useInputFocus();
   
   const dayNumber = parseInt(dayId || '1', 10);
   const isReflection = checkReflectionDay(dayNumber);
@@ -52,6 +56,9 @@ const DayPage: React.FC = () => {
   }) : null;
   
   // State for additional gratitude and achievement fields
+  // Only allow adding additional fields for the current day
+  const isCurrentDay = dayNumber === progress.currentDay;
+  
   const [additionalGratitude, setAdditionalGratitude] = useState<string[]>(
     dayData.additionalGratitude || []
   );
@@ -299,8 +306,8 @@ const DayPage: React.FC = () => {
               </div>
             ))}
             
-            {/* Add button for gratitude (only for non-reflection days) */}
-            {!isReflection && additionalGratitude.length < 4 && (
+            {/* Add button for gratitude (only for current day and non-reflection days) */}
+            {isCurrentDay && !isReflection && additionalGratitude.length < 4 && (
               <button
                 onClick={addGratitudeField}
                 className="text-gray-500 text-sm hover:text-gray-700 mt-2 flex items-center"
@@ -346,8 +353,8 @@ const DayPage: React.FC = () => {
               </div>
             ))}
             
-            {/* Add button for achievements (only for non-reflection days) */}
-            {!isReflection && additionalAchievements.length < 4 && (
+            {/* Add button for achievements (only for current day and non-reflection days) */}
+            {isCurrentDay && !isReflection && additionalAchievements.length < 4 && (
               <button
                 onClick={addAchievementField}
                 className="text-gray-500 text-sm hover:text-gray-700 mt-2 flex items-center"

@@ -11,9 +11,6 @@ const Dashboard: React.FC = () => {
   // Вызываем хук useProgress на верхнем уровне компонента
   const { progress, getDayCompletion, isReflectionDay, updateDayProgress, isDayAccessible, isWeekAccessible, getReflectionDayWidgetProgress } = useProgress();
   
-  // Создаем состояние для expandedWeeks
-  const [expandedWeeks, setExpandedWeeks] = useState<number[]>([1]); // Start with week 1 expanded
-  
   // Create a default empty progress object that matches the UserProgress interface
   const emptyProgress: UserProgress = {
     startDate: new Date(),
@@ -25,8 +22,34 @@ const Dashboard: React.FC = () => {
   // Use the progress from context or the empty progress if it's undefined
   const safeProgress = progress || emptyProgress;
   
+  // Определяем активную неделю на основе текущего дня
+  const activeWeek = Math.ceil(safeProgress.currentDay / 7);
+  
+  // Создаем состояние для expandedWeeks, начинаем с активной недели
+  const [expandedWeeks, setExpandedWeeks] = useState<number[]>([activeWeek]);
+  
   // Оборачиваем в try-catch только рендеринг, но не вызов хуков
   try {
+    
+    // Проверяем, все ли дни недели завершены на 100%
+    const isWeekCompleted = (weekNumber: number): boolean => {
+      // Для бонусной недели всегда возвращаем false
+      if (weekNumber === 5) return false;
+      
+      const startDay = (weekNumber - 1) * 7 + 1;
+      const endDay = weekNumber * 7;
+      
+      // Проверяем каждый день в неделе
+      for (let dayNumber = startDay; dayNumber <= endDay; dayNumber++) {
+        // Если хотя бы один день не завершен на 100%, возвращаем false
+        if (getDayCompletion(dayNumber) !== 100) {
+          return false;
+        }
+      }
+      
+      // Если все дни завершены на 100%, возвращаем true
+      return true;
+    };
     
     // Toggle week expansion
     const toggleWeek = (weekNumber: number) => {
@@ -36,7 +59,8 @@ const Dashboard: React.FC = () => {
       if (expandedWeeks.includes(weekNumber)) {
         setExpandedWeeks(expandedWeeks.filter(week => week !== weekNumber));
       } else {
-        setExpandedWeeks([...expandedWeeks, weekNumber]);
+        // Если открываем новую неделю, закрываем все остальные
+        setExpandedWeeks([weekNumber]);
       }
     };
     
@@ -428,6 +452,21 @@ const Dashboard: React.FC = () => {
       );
     };
     
+    // Создаем массив недель в порядке отображения: сначала активная, затем остальные
+    const getOrderedWeeks = (): number[] => {
+      // Все недели
+      const allWeeks = [1, 2, 3, 4, 5];
+      
+      // Если активная неделя - бонусная (5), не меняем порядок
+      if (activeWeek === 5) return allWeeks;
+      
+      // Иначе перемещаем активную неделю в начало
+      return [
+        activeWeek,
+        ...allWeeks.filter(week => week !== activeWeek)
+      ];
+    };
+    
     return (
       <div className="dashboard flex min-h-screen bg-background-light dark:bg-background-dark">
         <Sidebar />
@@ -437,13 +476,18 @@ const Dashboard: React.FC = () => {
           {currentDayBlock()}
           
           <div className="weeks space-y-3 sm:space-y-4">
-            {[1, 2, 3, 4, 5].map(weekNumber => (
+            {getOrderedWeeks().map(weekNumber => (
               <div key={weekNumber} className="week bg-surface-light dark:bg-surface-dark rounded-xl shadow-md overflow-hidden">
                 <div 
                   className="week-header flex items-center justify-between p-4 cursor-pointer"
                   onClick={() => toggleWeek(weekNumber)}
                 >
-                  <h2 className="text-lg font-semibold">{weekNumber === 5 ? 'Бонус' : `Неделя ${weekNumber}`}</h2>
+                  <h2 className="text-lg font-semibold flex items-center">
+                    {weekNumber === 5 ? 'Бонус' : `Неделя ${weekNumber}`}
+                    {isWeekCompleted(weekNumber) && (
+                      <FaCheckCircle className="text-green-500 ml-2" size={18} />
+                    )}
+                  </h2>
                   <div className="flex items-center">
                     {!isWeekAccessible(weekNumber) && (
                       <FaLock className="text-gray-500 mr-2" />
