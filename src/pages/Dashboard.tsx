@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProgress } from '../context/ProgressContext';
 import { Link } from 'react-router-dom';
 import { FaCheckCircle, FaChevronDown, FaChevronRight, FaLock } from 'react-icons/fa';
@@ -25,8 +25,16 @@ const Dashboard: React.FC = () => {
   // Определяем активную неделю на основе текущего дня
   const activeWeek = Math.ceil(safeProgress.currentDay / 7);
   
-  // Создаем состояние для expandedWeeks, начинаем с активной недели
+  // Создаем состояние для expandedWeeks
   const [expandedWeeks, setExpandedWeeks] = useState<number[]>([activeWeek]);
+  
+  // Обновляем expandedWeeks при изменении активной недели
+  useEffect(() => {
+    // Если активная неделя не развернута, разворачиваем её и сворачиваем остальные
+    if (!expandedWeeks.includes(activeWeek)) {
+      setExpandedWeeks([activeWeek]);
+    }
+  }, [activeWeek]);
   
   // Оборачиваем в try-catch только рендеринг, но не вызов хуков
   try {
