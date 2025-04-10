@@ -265,7 +265,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     
     try {
-      const result = await migrateLocalDataToSupabase();
+      // Передаем функцию обновления статуса миграции
+      const result = await migrateLocalDataToSupabase(
+        (status) => setMigrationStatus(status)
+      );
       
       setMigrationStatus({
         inProgress: false,
