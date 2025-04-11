@@ -58,18 +58,31 @@ const AuthPage: React.FC = () => {
     }
   };
 
-  // Упрощенная валидация формы
+  // Улучшенная валидация формы
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};
     
-    // Базовая проверка email (только на заполненность)
+    // Проверка email с регулярным выражением
     if (!formData.email) {
       newErrors.email = 'Email обязателен';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Введите корректный email';
     }
     
-    // Базовая проверка пароля (только на заполненность)
+    // Улучшенная проверка пароля
     if (!formData.password) {
       newErrors.password = 'Пароль обязателен';
+    } else if (mode === 'register') {
+      // Проверяем сложность пароля только при регистрации
+      if (formData.password.length < 8) {
+        newErrors.password = 'Пароль должен содержать не менее 8 символов';
+      } else if (!/[A-Z]/.test(formData.password)) {
+        newErrors.password = 'Пароль должен содержать хотя бы одну заглавную букву';
+      } else if (!/[0-9]/.test(formData.password)) {
+        newErrors.password = 'Пароль должен содержать хотя бы одну цифру';
+      } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) {
+        newErrors.password = 'Пароль должен содержать хотя бы один специальный символ';
+      }
     }
     
     // Проверка имени при регистрации

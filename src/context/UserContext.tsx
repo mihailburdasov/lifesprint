@@ -40,9 +40,12 @@ interface UserContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  emailVerified: boolean;
   register: (data: RegisterData) => Promise<boolean>;
   login: (data: LoginData) => Promise<boolean>;
   logout: () => Promise<void>;
+  logoutFromAllDevices: () => Promise<void>;
+  checkEmailVerification: (userId: string) => Promise<boolean>;
   migrationStatus: MigrationStatus;
   migrateToSupabase: () => Promise<boolean>;
   clearLocalData: () => void;
@@ -56,6 +59,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [emailVerified, setEmailVerified] = useState<boolean>(false);
   const [migrationStatus, setMigrationStatus] = useState<MigrationStatus>({
     inProgress: false,
     message: null,
@@ -84,6 +88,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const name = userData.user.user_metadata?.name || email?.split('@')[0] || 'Пользователь';
             const telegramNickname = userData.user.user_metadata?.telegram_nickname;
             
+            // Проверяем, подтвержден ли email
+            const isVerified = !!userData.user.email_confirmed_at;
+            setEmailVerified(isVerified);
+            
             // Проверяем, есть ли у пользователя локальные данные, которые нужно мигрировать
             if (email) {
               const localUserData = apiService.findLocalUserByEmail(email);
@@ -92,6 +100,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 await apiService.migrateUserProgressToSupabase(localUserData.id, id);
               }
             }
+            
+            // Обрабатываем очередь синхронизации
+            await apiService.processSyncQueue(id);
             
             setUser({
               id,
@@ -298,6 +309,52 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearLocalData = (): void => {
     clearLocalUserData();
   };
+  
+  // Выход со всех устройств
+  const logoutFromAllDevices = async (): Promise<void> => {
+    try {
+      // Выход из всех сессий Supabase
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      
+      if (error) {
+        console.error('Ошибка при выходе со всех устройств:', error);
+        throw error;
+      }
+      
+      // Очищаем localStorage (для обратной совместимости)
+      localStorage.removeItem('lifesprint_current_user_id');
+      
+      // Очищаем состояние пользователя
+      setUser(null);
+    } catch (error) {
+      console.error('Ошибка при выходе со всех устройств:', error);
+      // Даже если произошла ошибка, очищаем состояние пользователя
+      localStorage.removeItem('lifesprint_current_user_id');
+      setUser(null);
+    }
+  };
+  
+  // Проверка подтверждения email
+  const checkEmailVerification = async (userId: string): Promise<boolean> => {
+    try {
+      const { data: userData, error } = await supabase.auth.getUser();
+      
+      if (error || !userData.user) {
+        setEmailVerified(false);
+        return false;
+      }
+      
+      // Проверяем, подтвержден ли email
+      const isVerified = !!userData.user.email_confirmed_at;
+      setEmailVerified(isVerified);
+      
+      return isVerified;
+    } catch (error) {
+      console.error('Ошибка при проверке подтверждения email:', error);
+      setEmailVerified(false);
+      return false;
+    }
+  };
 
   return (
     <UserContext.Provider
@@ -306,9 +363,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         isLoading,
         error,
+        emailVerified,
         register,
         login,
         logout,
+        logoutFromAllDevices,
+        checkEmailVerification,
         migrationStatus,
         migrateToSupabase,
         clearLocalData

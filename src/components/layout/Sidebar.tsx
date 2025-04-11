@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FaHome, FaCalendarAlt, FaUser, FaBars, FaTimes, FaSun, FaMoon, FaSignOutAlt, FaCog } from 'react-icons/fa';
 import { useTheme } from '../../context/ThemeContext';
 import { useUser } from '../../context/UserContext';
+import SyncIndicator from '../common/SyncIndicator';
 
 interface SidebarProps {
   className?: string;
@@ -135,8 +136,15 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
           </ul>
         </nav>
         
+        {/* Sync status indicator */}
+        {isAuthenticated && (
+          <div className="px-6 mt-6">
+            <SyncIndicator />
+          </div>
+        )}
+        
         {/* Theme toggle button */}
-        <div className="px-6 mt-8">
+        <div className="px-6 mt-4">
           <button
             onClick={toggleTheme}
             className="flex items-center justify-between w-full px-4 py-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"

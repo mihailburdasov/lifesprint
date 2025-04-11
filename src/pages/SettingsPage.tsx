@@ -4,6 +4,7 @@ import Sidebar from '../components/layout/Sidebar';
 import Button from '../components/common/Button';
 import { useUser } from '../context/UserContext';
 import { apiService } from '../utils/apiService';
+import SyncIndicator from '../components/common/SyncIndicator';
 
 interface ProfileFormData {
   name: string;
@@ -13,7 +14,7 @@ interface ProfileFormData {
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading } = useUser();
+  const { user, isAuthenticated, isLoading, logoutFromAllDevices } = useUser();
   
   const [formData, setFormData] = useState<ProfileFormData>({
     name: user?.name || '',
@@ -250,6 +251,35 @@ const SettingsPage: React.FC = () => {
                   >
                     Сменить пароль
                   </Button>
+                </div>
+                
+                <div>
+                  <h3 className="text-base font-medium mb-2">Выход со всех устройств</h3>
+                  <p className="text-sm text-text-light mb-2">
+                    Завершите все активные сессии на всех устройствах, где вы вошли в аккаунт.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (window.confirm('Вы уверены, что хотите выйти со всех устройств? Вам придется войти заново на каждом устройстве.')) {
+                        logoutFromAllDevices();
+                        navigate('/auth');
+                      }
+                    }}
+                  >
+                    Выйти со всех устройств
+                  </Button>
+                </div>
+                
+                <div>
+                  <h3 className="text-base font-medium mb-2">Статус синхронизации</h3>
+                  <p className="text-sm text-text-light mb-2">
+                    Текущий статус синхронизации данных с облачным хранилищем.
+                  </p>
+                  <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
+                    <SyncIndicator />
+                  </div>
                 </div>
                 
                 <div>
