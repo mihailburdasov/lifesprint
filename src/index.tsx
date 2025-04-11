@@ -117,12 +117,10 @@ if (hasTestContent) {
   }
 }
 
-// Отключаем регистрацию Service Worker для упрощения отладки
-// Раскомментируйте этот код, когда приложение будет стабильно работать
-/*
+// Включаем регистрацию Service Worker для поддержки PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
+    navigator.serviceWorker.register('./service-worker.js')
       .then(registration => {
         console.log('Service Worker зарегистрирован:', registration);
       })
@@ -131,4 +129,3 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
-*/

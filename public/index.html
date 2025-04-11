@@ -38,29 +38,19 @@
     -->
     <title>LifeSprint</title>
     
-    <!-- Добавляем прямые ссылки на React и ReactDOM для диагностики -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <!-- Дополнительные логи для отладки -->
+    <!-- React и ReactDOM загружаются через основной бандл приложения -->
+    <!-- Базовые логи для отладки -->
     <script>
-      console.log('Начало загрузки страницы');
-      window.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM загружен');
-      });
-      window.addEventListener('load', function() {
-        console.log('Страница полностью загружена');
-        console.log('Содержимое root:', document.getElementById('root').innerHTML);
-      });
+      // Отслеживание ошибок
       window.addEventListener('error', function(e) {
         console.log('Глобальная ошибка:', e.message, e.filename, e.lineno);
       });
       
-      // Отключение Service Worker
+      // Отключение Service Worker для отладки
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for (let registration of registrations) {
             registration.unregister();
-            console.log('Service Worker отменен');
           }
         });
       }
@@ -109,55 +99,20 @@
       // Включаем обнаружение пустой страницы
       window.addEventListener('load', detectEmptyPage);
       
-      // Добавляем расширенное логирование для диагностики
+      // Базовая проверка загрузки приложения
       window.addEventListener('load', function() {
-        console.log('=== ДИАГНОСТИКА ЗАГРУЗКИ ===');
-        console.log('1. Документ полностью загружен');
-        
-        // Проверяем загрузку скриптов
-        const scripts = document.querySelectorAll('script');
-        console.log('2. Количество скриптов на странице:', scripts.length);
-        
-        // Логируем все загруженные скрипты
-        console.log('2.1. Загруженные скрипты:');
-        scripts.forEach((script, index) => {
-          console.log(`   Скрипт ${index + 1}: ${script.src || 'встроенный'}`);
-        });
-        
-        // Проверяем загрузку всех ресурсов
-        console.log('2.2. Все загруженные ресурсы:');
-        if (window.performance && window.performance.getEntries) {
-          const resources = window.performance.getEntries();
-          resources.forEach((resource, index) => {
-            if (resource.name.endsWith('.js')) {
-              console.log(`   JS ресурс ${index + 1}: ${resource.name}, статус: ${resource.responseStatus || 'неизвестно'}`);
-            }
-          });
-        }
+        console.log('=== ПРОВЕРКА ЗАГРУЗКИ ===');
         
         // Проверяем состояние root элемента
         const rootEl = document.getElementById('root');
-        console.log('3. Root элемент найден:', !!rootEl);
-        console.log('4. Содержимое root:', rootEl ? rootEl.innerHTML : 'не найден');
+        console.log('Root элемент найден:', !!rootEl);
         
-        // Проверяем, загрузились ли React и ReactDOM
-        console.log('5. React доступен:', typeof React !== 'undefined');
-        console.log('6. ReactDOM доступен:', typeof ReactDOM !== 'undefined');
-        
-        // Проверяем стили
-        const styles = document.querySelectorAll('link[rel="stylesheet"]');
-        console.log('7. Количество стилей:', styles.length);
-        
-        // Логируем все загруженные стили
-        console.log('7.1. Загруженные стили:');
-        styles.forEach((style, index) => {
-          console.log(`   Стиль ${index + 1}: ${style.href}`);
-        });
-        
+        // Отложенная проверка содержимого root
         setTimeout(function() {
-          console.log('=== ОТЛОЖЕННАЯ ПРОВЕРКА (через 5 сек) ===');
-          console.log('8. Содержимое root через 5 сек:', document.getElementById('root').innerHTML);
-        }, 5000);
+          const rootContent = document.getElementById('root').innerHTML;
+          const hasContent = rootContent && rootContent.trim().length > 0;
+          console.log('Root содержит контент через 3 сек:', hasContent);
+        }, 3000);
       });
       
       // Проверяем, есть ли активный Service Worker
@@ -183,49 +138,6 @@
       To begin the development, run `npm start` or `yarn start`.
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
-    <!-- Добавляем простой встроенный React-компонент для проверки -->
-    <script type="text/javascript">
-      // Ждем загрузки страницы и React
-      window.addEventListener('load', function() {
-        // Проверяем, доступны ли React и ReactDOM
-        if (typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
-          console.log('Пробуем рендерить встроенный React-компонент');
-          
-          // Создаем простой React-компонент
-          const SimpleComponent = React.createElement(
-            'div',
-            { style: { padding: '20px', textAlign: 'center', fontFamily: 'Arial, sans-serif' } },
-            [
-              React.createElement('h1', { style: { color: '#4F46E5' } }, 'Встроенный React-компонент'),
-              React.createElement('p', null, 'Если вы видите этот текст, значит React работает корректно.'),
-              React.createElement('button', 
-                { 
-                  onClick: function() { alert('Кнопка работает!'); },
-                  style: {
-                    backgroundColor: '#4F46E5',
-                    color: 'white',
-                    border: 'none',
-                    padding: '10px 20px',
-                    borderRadius: '5px',
-                    cursor: 'pointer'
-                  }
-                }, 
-                'Нажмите меня'
-              )
-            ]
-          );
-          
-          // Рендерим компонент в root
-          try {
-            ReactDOM.render(SimpleComponent, document.getElementById('root'));
-            console.log('Встроенный React-компонент отрендерен успешно');
-          } catch (error) {
-            console.error('Ошибка при рендеринге встроенного React-компонента:', error);
-          }
-        } else {
-          console.error('React или ReactDOM не доступны для встроенного компонента');
-        }
-      });
-    </script>
+    <!-- React-компоненты загружаются через основной бандл приложения -->
   </body>
 </html>
