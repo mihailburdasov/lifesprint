@@ -101,8 +101,36 @@
         }, 3000); // Даем 3 секунды на загрузку
       }
       
-      // Запускаем обнаружение пустой страницы при загрузке
-      window.addEventListener('load', detectEmptyPage);
+      // Временно отключаем обнаружение пустой страницы для диагностики
+      // window.addEventListener('load', detectEmptyPage);
+      
+      // Добавляем расширенное логирование для диагностики
+      window.addEventListener('load', function() {
+        console.log('=== ДИАГНОСТИКА ЗАГРУЗКИ ===');
+        console.log('1. Документ полностью загружен');
+        
+        // Проверяем загрузку скриптов
+        const scripts = document.querySelectorAll('script');
+        console.log('2. Количество скриптов на странице:', scripts.length);
+        
+        // Проверяем состояние root элемента
+        const rootEl = document.getElementById('root');
+        console.log('3. Root элемент найден:', !!rootEl);
+        console.log('4. Содержимое root:', rootEl ? rootEl.innerHTML : 'не найден');
+        
+        // Проверяем, загрузились ли React и ReactDOM
+        console.log('5. React доступен:', typeof React !== 'undefined');
+        console.log('6. ReactDOM доступен:', typeof ReactDOM !== 'undefined');
+        
+        // Проверяем стили
+        const styles = document.querySelectorAll('link[rel="stylesheet"]');
+        console.log('7. Количество стилей:', styles.length);
+        
+        setTimeout(function() {
+          console.log('=== ОТЛОЖЕННАЯ ПРОВЕРКА (через 5 сек) ===');
+          console.log('8. Содержимое root через 5 сек:', document.getElementById('root').innerHTML);
+        }, 5000);
+      });
       
       // Проверяем, есть ли активный Service Worker
       if ('serviceWorker' in navigator) {

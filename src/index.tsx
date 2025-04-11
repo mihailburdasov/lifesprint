@@ -46,32 +46,51 @@ if (USE_SUPABASE) {
   }
 }
 
+// Расширенное логирование для диагностики
+console.log('=== ДИАГНОСТИКА REACT ===');
+console.log('1. index.tsx загружен');
+console.log('2. App импортирован из:', './App.simple');
+console.log('3. React доступен:', typeof React !== 'undefined');
+console.log('4. ReactDOM доступен:', typeof ReactDOM !== 'undefined');
+console.log('5. App компонент доступен:', typeof App !== 'undefined');
+
 // Проверка наличия элемента root
 const rootElement = document.getElementById('root');
-console.log('Элемент root найден:', !!rootElement);
+console.log('6. Элемент root найден:', !!rootElement);
+console.log('7. Root ID:', rootElement ? rootElement.id : 'не найден');
+console.log('8. Root innerHTML:', rootElement ? rootElement.innerHTML : 'не найден');
 
 // Проверка, не содержит ли root уже тестовый контент
 const hasTestContent = rootElement && rootElement.innerHTML.includes('Тестовая страница LifeSprint');
-console.log('Root содержит тестовый контент:', hasTestContent);
+console.log('9. Root содержит тестовый контент:', hasTestContent);
 
 // Если root содержит тестовый контент, не пытаемся рендерить React
 if (hasTestContent) {
-  console.log('Пропускаем рендеринг React, так как root уже содержит тестовый контент');
+  console.log('10. Пропускаем рендеринг React, так как root уже содержит тестовый контент');
 } else {
   try {
-    console.log('Перед рендерингом App');
+    console.log('10. Начинаем рендеринг App');
+    
+    // Проверяем, что App - это действительно компонент
+    console.log('11. Тип App:', typeof App);
+    console.log('12. App.toString():', App.toString().slice(0, 100) + '...');
     
     // Используем старый метод ReactDOM.render вместо createRoot для совместимости
     ReactDOM.render(
       <React.StrictMode>
-        <App />
+        <div data-testid="react-root">
+          <App />
+        </div>
       </React.StrictMode>,
       document.getElementById('root')
     );
     
-    console.log('После рендеринга App');
+    console.log('13. После рендеринга App');
+    console.log('14. Результат рендеринга: выполнено');
+    console.log('15. Root innerHTML после рендеринга:', document.getElementById('root').innerHTML);
   } catch (error) {
-    console.error('Ошибка при инициализации React:', error);
+    console.error('ОШИБКА при инициализации React:', error);
+    console.error('Стек ошибки:', error instanceof Error ? error.stack : 'стек недоступен');
     
     // В случае ошибки, добавляем контент напрямую в DOM
     try {
