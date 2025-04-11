@@ -18,13 +18,13 @@ export const progressService = {
   async getUserProgress(userId: string): Promise<ApiResponse<UserProgress>> {
     try {
       // Сначала пробуем получить прогресс из Supabase
-      const { data: progressData, error: progressError } = await supabase
+      const { data: progressData, error } = await supabase
         .from('user_progress')
         .select('*')
         .eq('user_id', userId)
         .single();
       
-      if (!progressError && progressData) {
+      if (!error && progressData) {
         // Преобразуем данные из Supabase в формат UserProgress
         const progress: UserProgress = {
           startDate: new Date(progressData.start_date),

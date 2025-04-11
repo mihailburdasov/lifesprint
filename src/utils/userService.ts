@@ -212,10 +212,10 @@ export const userService = {
   async deleteUser(userId: string): Promise<ApiResponse<null>> {
     try {
       // Удаляем пользователя из Supabase
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      const { error } = await supabase.auth.admin.deleteUser(userId);
       
-      if (authError) {
-        logService.error('Ошибка при удалении пользователя из Supabase Auth', authError);
+      if (error) {
+        logService.error('Ошибка при удалении пользователя из Supabase Auth', error);
       }
       
       // Удаляем профиль пользователя из таблицы profiles

@@ -1,31 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
-import Button from '../components/common/Button';
 import { useUser } from '../context/UserContext';
 import { useProgress, DayProgress, WeekReflection } from '../context/ProgressContext';
-import { apiService } from '../utils/apiService';
-
-interface ProfileFormData {
-  name: string;
-  email: string;
-  telegramNickname?: string;
-}
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading } = useUser();
   const { progress, getDayCompletion } = useProgress();
-  
-  const [formData, setFormData] = useState<ProfileFormData>({
-    name: user?.name || '',
-    email: user?.email || '',
-    telegramNickname: user?.telegramNickname || '',
-  });
-  
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   
   // Статистика пользователя
   const [userStats, setUserStats] = useState({
@@ -136,79 +118,6 @@ const ProfilePage: React.FC = () => {
     });
   }, [progress, getDayCompletion]);
   
-  // Обработка изменений в полях формы
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const updatedFormData = {
-      ...formData,
-      [name]: value,
-    };
-    
-    setFormData(updatedFormData);
-    
-    // Сохраняем данные при изменении
-    saveUserData(updatedFormData);
-  };
-  
-  // Функция для сохранения данных пользователя
-  const saveUserData = async (data: ProfileFormData) => {
-    if (!user) return;
-    
-    try {
-      // Обновляем данные пользователя через API
-      const response = await apiService.updateUser(user.id, {
-        name: data.name,
-        email: data.email,
-        telegramNickname: data.telegramNickname,
-      });
-      
-      if (!response.success) {
-        console.error('Ошибка при сохранении данных пользователя:', response.error);
-      }
-    } catch (error) {
-      console.error('Ошибка при сохранении данных пользователя:', error);
-    }
-  };
-  
-  // Обработка отправки формы
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user) return;
-    
-    setIsSaving(true);
-    
-    try {
-      // Обновляем данные пользователя через API
-      const response = await apiService.updateUser(user.id, {
-        name: formData.name,
-        email: formData.email,
-        telegramNickname: formData.telegramNickname,
-      });
-      
-      if (response.success && response.data) {
-        setMessage({
-          text: 'Профиль успешно обновлен',
-          type: 'success',
-        });
-        
-        setIsEditing(false);
-      } else {
-        setMessage({
-          text: response.error || 'Ошибка при обновлении профиля',
-          type: 'error',
-        });
-      }
-    } catch (error) {
-      console.error('Ошибка обновления профиля:', error);
-      setMessage({
-        text: 'Ошибка при обновлении профиля',
-        type: 'error',
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
   
   return (
     <div className="profile-page flex min-h-screen bg-background-light dark:bg-background-dark">

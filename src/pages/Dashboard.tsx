@@ -39,25 +39,25 @@ const Dashboard: React.FC = () => {
   // Оборачиваем в try-catch только рендеринг, но не вызов хуков
   try {
     
-    // Проверяем, все ли дни недели завершены на 100%
-    const isWeekCompleted = (weekNumber: number): boolean => {
-      // Для бонусной недели всегда возвращаем false
-      if (weekNumber === 5) return false;
-      
-      const startDay = (weekNumber - 1) * 7 + 1;
-      const endDay = weekNumber * 7;
-      
-      // Проверяем каждый день в неделе
-      for (let dayNumber = startDay; dayNumber <= endDay; dayNumber++) {
-        // Если хотя бы один день не завершен на 100%, возвращаем false
-        if (getDayCompletion(dayNumber) !== 100) {
-          return false;
-        }
+  // Проверяем, все ли дни недели завершены на 100%
+  const isWeekCompleted = (weekNumber: number): boolean => {
+    // Для бонусной недели всегда возвращаем false
+    if (weekNumber === 5) return false;
+    
+    const startDay = (weekNumber - 1) * 7 + 1;
+    const endDay = weekNumber * 7;
+    
+    // Проверяем каждый день в неделе
+    for (let dayNumber = startDay; dayNumber <= endDay; dayNumber++) {
+      // Если хотя бы один день не завершен на 100%, возвращаем false
+      if (getDayCompletion(dayNumber) !== 100) {
+        return false;
       }
-      
-      // Если все дни завершены на 100%, возвращаем true
-      return true;
-    };
+    }
+    
+    // Если все дни завершены на 100%, возвращаем true
+    return true;
+  };
     
     // Toggle week expansion
     const toggleWeek = (weekNumber: number) => {
