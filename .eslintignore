@@ -1,0 +1,3 @@
+# Игнорировать файлы, вызывающие проблемы с ESLint
+src/index.tsx
+src/index.minimal.tsx
