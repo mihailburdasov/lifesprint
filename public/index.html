@@ -340,18 +340,117 @@
     -->
     <!-- React-компоненты загружаются через основной бандл приложения -->
     
-    <!-- Прямой рендеринг React-компонента -->
+    <!-- Загрузка основных скриптов приложения -->
     <script>
-      // Функция для рендеринга базового React-приложения
-      function renderBasicApp() {
-        console.log('Рендеринг базового React-приложения');
+      // Функция для загрузки основных скриптов приложения
+      function loadMainScripts() {
+        console.log('Загрузка основных скриптов приложения');
+        
+        // Проверяем, загружены ли уже основные скрипты
+        if (window.__MAIN_SCRIPTS_LOADED__) {
+          console.log('Основные скрипты уже загружены');
+          return;
+        }
+        
+        // Проверяем, есть ли уже загруженные скрипты в DOM
+        const existingScripts = Array.from(document.querySelectorAll('script')).map(script => script.src);
+        console.log('Существующие скрипты:', existingScripts);
+        
+        // Создаем элементы script для загрузки основных скриптов
+        const scripts = [
+          // Пути к основным скриптам приложения (относительные пути)
+          './static/js/main.chunk.js',
+          './static/js/vendors~main.chunk.js',
+          './static/js/bundle.js',
+          // Альтернативные пути для разных сборок
+          './static/js/main.js',
+          './static/js/2.chunk.js',
+          './static/js/runtime-main.js',
+          // Дополнительные пути для разных сборок
+          './static/js/0.chunk.js',
+          './static/js/1.chunk.js',
+          './static/js/3.chunk.js',
+          './static/js/4.chunk.js',
+          // Пути для production сборки
+          './static/js/main.[hash].chunk.js',
+          './static/js/2.[hash].chunk.js',
+          './static/js/runtime-main.[hash].js',
+          // Пути для Vercel
+          './static/js/app.js',
+          './static/js/index.js'
+        ];
+        
+        // Загружаем скрипты последовательно
+        let loadedCount = 0;
+        let errorCount = 0;
+        
+        function loadNextScript(index) {
+          if (index >= scripts.length) {
+            console.log(`Загрузка скриптов завершена. Успешно: ${loadedCount}, ошибок: ${errorCount}`);
+            return;
+          }
+          
+          const src = scripts[index];
+          const script = document.createElement('script');
+          script.src = src;
+          
+          // Добавляем параметр для обхода кэша
+          const timestamp = new Date().getTime();
+          script.src = `${src}?v=${timestamp}`;
+          
+          script.async = false; // Загружаем скрипты последовательно
+          
+          script.onload = function() {
+            console.log('Скрипт загружен:', src);
+            loadedCount++;
+            loadNextScript(index + 1);
+          };
+          
+          script.onerror = function() {
+            console.error('Ошибка при загрузке скрипта:', src);
+            errorCount++;
+            loadNextScript(index + 1);
+          };
+          
+          document.body.appendChild(script);
+        }
+        
+        // Начинаем загрузку скриптов
+        loadNextScript(0);
+        
+        // Устанавливаем флаг загрузки основных скриптов
+        window.__MAIN_SCRIPTS_LOADED__ = true;
+      }
+      
+      // Запускаем загрузку основных скриптов после загрузки страницы
+      window.addEventListener('load', function() {
+        // Загружаем основные скрипты
+        loadMainScripts();
+        
+        // Проверяем, загрузилось ли основное приложение через 5 секунд
+        setTimeout(function() {
+          // Проверяем, есть ли контент в root элементе
+          const rootEl = document.getElementById('root');
+          const hasContent = rootEl && rootEl.childNodes.length > 0;
+          
+          // Если контента нет, отображаем заглушку
+          if (!hasContent) {
+            console.log('Основное приложение не загрузилось, отображаем заглушку');
+            renderFallbackApp();
+          }
+        }, 5000);
+      });
+      
+      // Функция для рендеринга заглушки
+      function renderFallbackApp() {
+        console.log('Рендеринг заглушки');
         
         // Проверяем наличие React и ReactDOM
         const hasReact = typeof React !== 'undefined';
         const hasReactDOM = typeof ReactDOM !== 'undefined';
         
-        console.log('React доступен для рендеринга:', hasReact);
-        console.log('ReactDOM доступен для рендеринга:', hasReactDOM);
+        console.log('React доступен для рендеринга заглушки:', hasReact);
+        console.log('ReactDOM доступен для рендеринга заглушки:', hasReactDOM);
         
         if (hasReact && hasReactDOM) {
           try {
@@ -418,7 +517,8 @@
                   marginTop: '10px'
                 },
                 onClick: function() {
-                  alert('Добро пожаловать в LifeSprint!');
+                  // Перезагружаем страницу при нажатии на кнопку
+                  window.location.reload();
                 },
                 key: 'button'
               }, 'Начать путь')
@@ -428,12 +528,12 @@
             const rootEl = document.getElementById('root');
             if (rootEl) {
               ReactDOM.render(App, rootEl);
-              console.log('Базовое React-приложение успешно отрендерено');
+              console.log('Заглушка успешно отрендерена');
             } else {
               console.error('Элемент root не найден');
             }
           } catch (error) {
-            console.error('Ошибка при рендеринге базового React-приложения:', error);
+            console.error('Ошибка при рендеринге заглушки:', error);
             
             // В случае ошибки, добавляем базовый HTML
             const rootEl = document.getElementById('root');
@@ -451,7 +551,7 @@
             }
           }
         } else {
-          console.error('React или ReactDOM не доступны для рендеринга');
+          console.error('React или ReactDOM не доступны для рендеринга заглушки');
           
           // Добавляем базовый HTML, если React или ReactDOM не доступны
           const rootEl = document.getElementById('root');
@@ -469,12 +569,6 @@
           }
         }
       }
-      
-      // Запускаем рендеринг базового React-приложения после загрузки страницы
-      window.addEventListener('load', function() {
-        // Даем время для загрузки React и ReactDOM
-        setTimeout(renderBasicApp, 1000);
-      });
     </script>
   </body>
 </html>
