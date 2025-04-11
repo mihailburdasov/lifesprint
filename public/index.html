@@ -331,7 +331,7 @@
     <!-- Main app script -->
     <script>
       // Функция для загрузки скриптов
-      function loadScript(src) {
+      async function loadScript(src) {
         return new Promise((resolve, reject) => {
           const script = document.createElement('script');
           script.src = src;
@@ -352,17 +352,22 @@
       }
       
       // Функция для загрузки всех скриптов
-      async function loadAllScripts() {
+      async function loadApplicationScripts() {
         console.log('Loading application scripts...');
         
         try {
-          // Загружаем основные скрипты в правильном порядке
-          await loadScript('/static/js/main.8c81b5dd.js');
-          await loadScript('/static/js/185.79775fd9.chunk.js');
-          await loadScript('/static/js/378.24feee14.chunk.js');
-          await loadScript('/static/js/437.4ec4b14b.chunk.js');
-          await loadScript('/static/js/818.d64ed2dc.chunk.js');
-          await loadScript('/static/js/774.48af026e.chunk.js');
+          const scripts = [
+            '/static/js/main.d8beaefa.js',
+            '/static/js/185.79775fd9.chunk.js',
+            '/static/js/378.24feee14.chunk.js',
+            '/static/js/437.4ec4b14b.chunk.js',
+            '/static/js/818.d64ed2dc.chunk.js',
+            '/static/js/774.48af026e.chunk.js'
+          ];
+          
+          for (const script of scripts) {
+            await loadScript(script);
+          }
           
           console.log('All scripts loaded successfully');
           return true;
@@ -376,18 +381,13 @@
       window.addEventListener('load', async function() {
         console.log('Page loaded, starting script loading...');
         
-        // Проверяем наличие React и ReactDOM
-        const hasReact = typeof React !== 'undefined';
-        const hasReactDOM = typeof ReactDOM !== 'undefined';
-        
-        if (!hasReact || !hasReactDOM) {
+        if (!checkReactLoaded()) {
           console.error('React or ReactDOM not available');
           renderFallbackApp();
           return;
         }
         
-        // Загружаем скрипты
-        const scriptsLoaded = await loadAllScripts();
+        const scriptsLoaded = await loadApplicationScripts();
         
         if (!scriptsLoaded) {
           console.error('Failed to load application scripts');
@@ -395,7 +395,6 @@
           return;
         }
         
-        // Проверяем, загрузилось ли приложение
         setTimeout(() => {
           const rootEl = document.getElementById('root');
           const hasContent = rootEl && rootEl.childNodes.length > 0;
@@ -411,10 +410,7 @@
       function renderFallbackApp() {
         console.log('Rendering fallback app');
         
-        const hasReact = typeof React !== 'undefined';
-        const hasReactDOM = typeof ReactDOM !== 'undefined';
-        
-        if (hasReact && hasReactDOM) {
+        if (typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
           try {
             const root = ReactDOM.createRoot(document.getElementById('root'));
             const App = React.createElement('div', {
@@ -445,28 +441,6 @@
                 },
                 key: 'subtitle' 
               }, 'Приложение для формирования полезных привычек и достижения целей'),
-              React.createElement('div', {
-                style: {
-                  backgroundColor: '#e0e7ff',
-                  padding: '15px',
-                  borderRadius: '6px',
-                  marginBottom: '20px'
-                },
-                key: 'info'
-              }, [
-                React.createElement('h2', {
-                  style: { 
-                    color: '#4338ca',
-                    fontSize: '1.5rem',
-                    marginBottom: '10px'
-                  },
-                  key: 'info-title'
-                }, 'О приложении'),
-                React.createElement('p', {
-                  style: { color: '#1e3a8a' },
-                  key: 'info-text'
-                }, '31-дневный путь трансформации для формирования полезных привычек и достижения ваших целей.')
-              ]),
               React.createElement('button', {
                 style: {
                   backgroundColor: '#4F46E5',
@@ -502,21 +476,6 @@
                 </div>
               `;
             }
-          }
-        } else {
-          console.error('React or ReactDOM not available for fallback rendering');
-          const rootEl = document.getElementById('root');
-          if (rootEl) {
-            rootEl.innerHTML = `
-              <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
-                <h1 style="color: #4F46E5;">LifeSprint</h1>
-                <p>Приложение для формирования полезных привычек и достижения целей</p>
-                <p>Не удалось загрузить необходимые библиотеки.</p>
-                <button onclick="window.location.reload()" style="background-color: #4F46E5; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-top: 20px; cursor: pointer;">
-                  Обновить страницу
-                </button>
-              </div>
-            `;
           }
         }
       }

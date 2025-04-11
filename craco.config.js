@@ -1,6 +1,8 @@
 const TerserPlugin = require('terser-webpack-plugin');
 const { InjectManifest } = require('workbox-webpack-plugin');
 const path = require('path');
+const CompressionPlugin = require('compression-webpack-plugin');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 module.exports = {
   style: {
@@ -11,9 +13,9 @@ module.exports = {
   webpack: {
     configure: (webpackConfig) => {
       // Включаем source maps для отладки
-      webpackConfig.devtool = 'source-map';
+      webpackConfig.devtool = process.env.NODE_ENV === 'production' ? 'source-map' : 'eval-source-map';
 
-      // Настраиваем оптимизацию с более мягкими параметрами
+      // Настраиваем оптимизацию
       webpackConfig.optimization = {
         ...webpackConfig.optimization,
         minimize: true,
@@ -21,39 +23,77 @@ module.exports = {
           new TerserPlugin({
             terserOptions: {
               compress: {
-                // Сохраняем console.log для отладки
-                drop_console: false,
-                drop_debugger: false
+                drop_console: process.env.NODE_ENV === 'production',
+                drop_debugger: process.env.NODE_ENV === 'production',
+                pure_funcs: process.env.NODE_ENV === 'production' ? ['console.log'] : []
               },
               mangle: {
                 safari10: true,
-                // Сохраняем имена классов и функций для лучшей отладки
                 keep_classnames: true,
                 keep_fnames: true,
                 toplevel: false,
                 reserved: []
               },
               output: {
-                // Сохраняем комментарии и форматирование для лучшей читаемости
-                comments: true,
+                comments: false,
                 ascii_only: true,
-                beautify: true
+                beautify: false
               }
             },
             extractComments: false
           })
-        ]
+        ],
+        splitChunks: {
+          chunks: 'all',
+          maxSize: 244000,
+          cacheGroups: {
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+            },
+            common: {
+              name: 'common',
+              minChunks: 2,
+              chunks: 'all',
+              priority: 10,
+              reuseExistingChunk: true,
+              enforce: true
+            }
+          }
+        }
       };
+
+      // Добавляем плагины для оптимизации
+      if (process.env.NODE_ENV === 'production') {
+        webpackConfig.plugins.push(
+          new CompressionPlugin({
+            filename: '[path][base].gz',
+            algorithm: 'gzip',
+            test: /\.(js|css|html|svg)$/,
+            threshold: 10240,
+            minRatio: 0.8
+          })
+        );
+
+        if (process.env.ANALYZE) {
+          webpackConfig.plugins.push(
+            new BundleAnalyzerPlugin({
+              analyzerMode: 'static',
+              reportFilename: 'bundle-analysis.html',
+              openAnalyzer: false
+            })
+          );
+        }
+      }
 
       return webpackConfig;
     }
   },
-  // Включаем source maps и добавляем плагины
   plugins: [
     {
       plugin: {
         overrideWebpackConfig: ({ webpackConfig }) => {
-          // Добавляем Workbox плагин для генерации Service Worker
           if (process.env.NODE_ENV === 'production') {
             const workboxPlugin = new InjectManifest({
               swSrc: path.resolve(__dirname, 'public/service-worker.js'),
@@ -65,15 +105,12 @@ module.exports = {
                 /\.js\.gz$/,
                 /\.css\.gz$/,
               ],
-              // Улучшенные настройки для PWA
-              maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // Увеличиваем лимит до 5MB
+              maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
               dontCacheBustURLsMatching: /\.\w{8}\./,
               manifestTransforms: [
                 (manifestEntries) => {
-                  // Добавляем версию к URL для обхода кэша
                   const timestamp = new Date().getTime();
                   const manifest = manifestEntries.map(entry => {
-                    // Добавляем параметр версии к URL
                     if (entry.url && !entry.url.includes('?')) {
                       entry.url = `${entry.url}?v=${timestamp}`;
                     }
@@ -84,7 +121,6 @@ module.exports = {
               ]
             });
             
-            // Добавляем плагин в конец массива плагинов
             webpackConfig.plugins.push(workboxPlugin);
           }
           
