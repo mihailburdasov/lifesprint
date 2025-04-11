@@ -1,10 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-// Импортируем также старый тип ReactDOM для совместимости
-import type { Root } from 'react-dom/client';
 import './index.css';
-// import App from './App';
-import App from './App.simple';
+// Удалены неиспользуемые импорты, которые вызывали ошибки ESLint
 import * as Sentry from '@sentry/react';
 import { setupTokenRefresh } from './utils/supabaseClient';
 
