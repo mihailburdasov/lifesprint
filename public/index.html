@@ -16,7 +16,7 @@
     <meta http-equiv="Clear-Site-Data" content="cache" />
     <meta
       name="description"
-      content="LifeSprint - 28-дневный путь трансформации"
+      content="LifeSprint - 31-дневный путь трансформации"
     />
     <link rel="apple-touch-icon" href="/logo192.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="/logo192.png" />
@@ -83,6 +83,16 @@
       function detectEmptyPage() {
         setTimeout(function() {
           var rootElement = document.getElementById('root');
+          
+          // Проверяем, содержит ли root тестовый контент
+          var hasTestContent = rootElement && rootElement.innerHTML.includes('Тестовая страница LifeSprint');
+          
+          // Если есть тестовый контент, значит страница не пустая
+          if (hasTestContent) {
+            console.log('Обнаружен тестовый HTML-контент, пропускаем проверку пустой страницы');
+            return;
+          }
+          
           // Если корневой элемент пуст или содержит только комментарии
           if (rootElement && (!rootElement.children || rootElement.children.length === 0)) {
             console.log('Обнаружена пустая страница');
@@ -118,7 +128,14 @@
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Тестовый контент для проверки базового рендеринга -->
+      <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+        <h1 style="color: #4F46E5;">Тестовая страница LifeSprint</h1>
+        <p>Если вы видите этот текст, значит базовый HTML-рендеринг работает корректно.</p>
+        <p>Этот контент добавлен напрямую в index.html для диагностики проблем с React.</p>
+      </div>
+    </div>
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.

@@ -52,22 +52,61 @@ if (!window.location.search.includes('nocache=')) {
   window.history.replaceState(null, '', newUrl);
 }
 
-try {
-  console.log('Перед созданием root');
-  const root = ReactDOM.createRoot(
-    document.getElementById('root') as HTMLElement
-  );
-  console.log('Root создан');
-  
-  console.log('Перед рендерингом App');
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
-  console.log('После рендеринга App');
-} catch (error) {
-  console.error('Ошибка при инициализации React:', error);
+// Проверка наличия элемента root
+const rootElement = document.getElementById('root');
+console.log('Элемент root найден:', !!rootElement);
+
+// Проверка, не содержит ли root уже тестовый контент
+const hasTestContent = rootElement && rootElement.innerHTML.includes('Тестовая страница LifeSprint');
+console.log('Root содержит тестовый контент:', hasTestContent);
+
+// Если root содержит тестовый контент, не пытаемся рендерить React
+if (hasTestContent) {
+  console.log('Пропускаем рендеринг React, так как root уже содержит тестовый контент');
+} else {
+  try {
+    console.log('Перед созданием root');
+    
+    // Проверяем, доступен ли ReactDOM.createRoot
+    console.log('ReactDOM.createRoot доступен:', typeof ReactDOM.createRoot === 'function');
+    
+    const root = ReactDOM.createRoot(
+      document.getElementById('root') as HTMLElement
+    );
+    console.log('Root создан');
+    
+    // Проверяем, доступен ли App
+    console.log('App доступен:', typeof App === 'function');
+    
+    console.log('Перед рендерингом App');
+    root.render(
+      <React.StrictMode>
+        <div style={{padding: '20px', textAlign: 'center'}}>
+          <h1 style={{color: '#4F46E5'}}>React работает!</h1>
+          <p>Это контент, отрендеренный через React.</p>
+        </div>
+      </React.StrictMode>
+    );
+    console.log('После рендеринга App');
+  } catch (error) {
+    console.error('Ошибка при инициализации React:', error);
+    
+    // В случае ошибки, добавляем контент напрямую в DOM
+    try {
+      const rootEl = document.getElementById('root');
+      if (rootEl && !rootEl.innerHTML.includes('Тестовая страница')) {
+        rootEl.innerHTML = `
+          <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+            <h1 style="color: #4F46E5;">Ошибка инициализации React</h1>
+            <p>Произошла ошибка при инициализации React.</p>
+            <p>Детали ошибки: ${error instanceof Error ? error.message : String(error)}</p>
+          </div>
+        `;
+      }
+    } catch (domError) {
+      console.error('Ошибка при добавлении контента в DOM:', domError);
+    }
+  }
 }
 
 // Регистрация Service Worker для PWA
