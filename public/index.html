@@ -36,6 +36,30 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>LifeSprint</title>
+    <!-- Дополнительные логи для отладки -->
+    <script>
+      console.log('Начало загрузки страницы');
+      window.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM загружен');
+      });
+      window.addEventListener('load', function() {
+        console.log('Страница полностью загружена');
+        console.log('Содержимое root:', document.getElementById('root').innerHTML);
+      });
+      window.addEventListener('error', function(e) {
+        console.log('Глобальная ошибка:', e.message, e.filename, e.lineno);
+      });
+      
+      // Отключение Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (let registration of registrations) {
+            registration.unregister();
+            console.log('Service Worker отменен');
+          }
+        });
+      }
+    </script>
     <!-- Скрипт для обнаружения проблем с загрузкой и перенаправления на fallback.html -->
     <script>
       // Проверяем, есть ли параметр fresh в URL
