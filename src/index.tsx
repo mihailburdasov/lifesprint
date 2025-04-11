@@ -1,54 +1,49 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-// Удалены неиспользуемые импорты, которые вызывали ошибки ESLint
-import * as Sentry from '@sentry/react';
-import { setupTokenRefresh } from './utils/supabaseClient';
+import App from './App.simple'; // Используем упрощенную версию App без Supabase
 
-try {
-  // Инициализация Sentry для мониторинга ошибок
-  // В продакшене нужно заменить DSN на реальный
-  Sentry.init({
-    dsn: process.env.REACT_APP_SENTRY_DSN || "https://examplePublicKey@o0.ingest.sentry.io/0",
-    // Настройка частоты отправки данных
-    // В продакшене рекомендуется установить меньшее значение
-    sampleRate: 1.0, // Отправлять 100% ошибок
-    
-    // Установка окружения
-    environment: process.env.NODE_ENV,
-    
-    // Установка версии релиза
-    release: '1.0.2',
-    
-    // Игнорирование ошибок, которые не нужно отслеживать
-    ignoreErrors: [
-      // Ошибки сети
-      'Network Error',
-      'Failed to fetch',
-      // Ошибки CORS
-      'Cross-Origin Request Blocked',
-      // Ошибки расширений браузера
-      'Extension context invalidated',
-      // Ошибки, связанные с отменой запросов
-      'AbortError',
-      // Ошибки, связанные с закрытием вкладки
-      'The operation was aborted'
-    ]
-  });
-
-  // Инициализация автоматического обновления токенов
-  setupTokenRefresh();
-  console.log('Supabase и Sentry инициализированы успешно');
-} catch (error) {
-  console.error('Ошибка при инициализации Supabase или Sentry:', error);
-}
+// Константа для определения, нужно ли использовать Supabase
+const USE_SUPABASE = false;
 
 // Добавляем версию к URL для обхода кэша, если еще нет параметра nocache
 if (!window.location.search.includes('nocache=')) {
-  const version = '1.0.2'; // Обновлена версия
+  const version = '1.0.3'; // Обновлена версия
   const separator = window.location.search ? '&' : '?';
   const newUrl = `${window.location.pathname}${window.location.search}${separator}v=${version}${window.location.hash}`;
   window.history.replaceState(null, '', newUrl);
+}
+
+// Инициализация Sentry только если нужно
+if (USE_SUPABASE) {
+  try {
+    // Импортируем Sentry и Supabase динамически
+    import('@sentry/react').then((Sentry) => {
+      Sentry.init({
+        dsn: process.env.REACT_APP_SENTRY_DSN || "https://examplePublicKey@o0.ingest.sentry.io/0",
+        sampleRate: 1.0,
+        environment: process.env.NODE_ENV,
+        release: '1.0.3',
+        ignoreErrors: [
+          'Network Error',
+          'Failed to fetch',
+          'Cross-Origin Request Blocked',
+          'Extension context invalidated',
+          'AbortError',
+          'The operation was aborted'
+        ]
+      });
+      console.log('Sentry инициализирован успешно');
+    });
+    
+    // Инициализация Supabase
+    import('./utils/supabaseClient').then(({ setupTokenRefresh }) => {
+      setupTokenRefresh();
+      console.log('Supabase инициализирован успешно');
+    });
+  } catch (error) {
+    console.error('Ошибка при инициализации внешних сервисов:', error);
+  }
 }
 
 // Проверка наличия элемента root
@@ -64,22 +59,16 @@ if (hasTestContent) {
   console.log('Пропускаем рендеринг React, так как root уже содержит тестовый контент');
 } else {
   try {
-    console.log('Перед созданием root');
-    
-    // Проверяем, доступен ли ReactDOM.render
-    console.log('ReactDOM.render доступен:', typeof ReactDOM.render === 'function');
-    
-    // Используем старый метод ReactDOM.render вместо createRoot
     console.log('Перед рендерингом App');
+    
+    // Используем старый метод ReactDOM.render вместо createRoot для совместимости
     ReactDOM.render(
       <React.StrictMode>
-        <div style={{padding: '20px', textAlign: 'center'}}>
-          <h1 style={{color: '#4F46E5'}}>React работает!</h1>
-          <p>Это контент, отрендеренный через React.</p>
-        </div>
+        <App />
       </React.StrictMode>,
       document.getElementById('root')
     );
+    
     console.log('После рендеринга App');
   } catch (error) {
     console.error('Ошибка при инициализации React:', error);
@@ -102,7 +91,9 @@ if (hasTestContent) {
   }
 }
 
-// Регистрация Service Worker для PWA
+// Отключаем регистрацию Service Worker для упрощения отладки
+// Раскомментируйте этот код, когда приложение будет стабильно работать
+/*
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js')
@@ -114,3 +105,4 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+*/

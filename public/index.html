@@ -36,18 +36,6 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>LifeSprint</title>
-    <!-- Проверка соединения с Supabase -->
-    <script>
-      // Проверка соединения с Supabase
-      fetch('https://yvmukcseklazffqaxpso.supabase.co/auth/v1/user', {
-        headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2bXVrY3Nla2xhemZmcWF4cHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQyNzI0NTYsImV4cCI6MjA1OTg0ODQ1Nn0.j25gSyYfv4gBE6wprJ_U6ZZ5o55HOmvphk2BiJuglCw'
-        }
-      })
-      .then(response => console.log('Supabase ответ:', response.status))
-      .catch(error => console.error('Ошибка Supabase:', error));
-    </script>
-    
     <!-- Дополнительные логи для отладки -->
     <script>
       console.log('Начало загрузки страницы');
