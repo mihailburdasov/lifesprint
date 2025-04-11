@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.simple'; // Используем упрощенную версию App без Supabase
 
@@ -46,6 +46,9 @@ if (USE_SUPABASE) {
   }
 }
 
+// Для обратной совместимости с проверками
+import * as ReactDOM from 'react-dom';
+
 // Расширенное логирование для диагностики
 console.log('=== ДИАГНОСТИКА REACT ===');
 console.log('1. index.tsx загружен');
@@ -75,18 +78,22 @@ if (hasTestContent) {
     console.log('11. Тип App:', typeof App);
     console.log('12. App.toString():', App.toString().slice(0, 100) + '...');
     
-    // Используем старый метод ReactDOM.render вместо createRoot для совместимости
-    ReactDOM.render(
-      <React.StrictMode>
-        <div data-testid="react-root">
-          <App />
-        </div>
-      </React.StrictMode>,
-      document.getElementById('root')
-    );
-    
-    console.log('13. После рендеринга App');
-    console.log('14. Результат рендеринга: выполнено');
+    // Используем современный метод createRoot для React 18
+    if (rootElement) {
+      const root = createRoot(rootElement);
+      root.render(
+        <React.StrictMode>
+          <div data-testid="react-root">
+            <App />
+          </div>
+        </React.StrictMode>
+      );
+      
+      console.log('13. После рендеринга App с createRoot');
+      console.log('14. Результат рендеринга: выполнено с createRoot');
+    } else {
+      console.error('Не удалось найти элемент root для рендеринга');
+    }
     console.log('15. Root innerHTML после рендеринга:', document.getElementById('root').innerHTML);
   } catch (error) {
     console.error('ОШИБКА при инициализации React:', error);

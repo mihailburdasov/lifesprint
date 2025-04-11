@@ -1,6 +1,6 @@
 {
   "short_name": "LifeSprint",
-  "name": "LifeSprint - 28-дневный путь трансформации",
+  "name": "LifeSprint - 31-дневный путь трансформации",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,7 +20,7 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "/?source=pwa",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#4F46E5",
