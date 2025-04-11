@@ -25,7 +25,8 @@
       manifest.json provides metadata used when your web app is installed on a
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
-    <link rel="manifest" href="/manifest.json" />
+    <!-- Временно отключаем манифест для диагностики проблем загрузки -->
+    <!-- <link rel="manifest" href="/manifest.json" /> -->
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -36,6 +37,10 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>LifeSprint</title>
+    
+    <!-- Добавляем прямые ссылки на React и ReactDOM для диагностики -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <!-- Дополнительные логи для отладки -->
     <script>
       console.log('Начало загрузки страницы');
@@ -113,6 +118,23 @@
         const scripts = document.querySelectorAll('script');
         console.log('2. Количество скриптов на странице:', scripts.length);
         
+        // Логируем все загруженные скрипты
+        console.log('2.1. Загруженные скрипты:');
+        scripts.forEach((script, index) => {
+          console.log(`   Скрипт ${index + 1}: ${script.src || 'встроенный'}`);
+        });
+        
+        // Проверяем загрузку всех ресурсов
+        console.log('2.2. Все загруженные ресурсы:');
+        if (window.performance && window.performance.getEntries) {
+          const resources = window.performance.getEntries();
+          resources.forEach((resource, index) => {
+            if (resource.name.endsWith('.js')) {
+              console.log(`   JS ресурс ${index + 1}: ${resource.name}, статус: ${resource.responseStatus || 'неизвестно'}`);
+            }
+          });
+        }
+        
         // Проверяем состояние root элемента
         const rootEl = document.getElementById('root');
         console.log('3. Root элемент найден:', !!rootEl);
@@ -125,6 +147,12 @@
         // Проверяем стили
         const styles = document.querySelectorAll('link[rel="stylesheet"]');
         console.log('7. Количество стилей:', styles.length);
+        
+        // Логируем все загруженные стили
+        console.log('7.1. Загруженные стили:');
+        styles.forEach((style, index) => {
+          console.log(`   Стиль ${index + 1}: ${style.href}`);
+        });
         
         setTimeout(function() {
           console.log('=== ОТЛОЖЕННАЯ ПРОВЕРКА (через 5 сек) ===');
