@@ -183,5 +183,49 @@
       To begin the development, run `npm start` or `yarn start`.
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
+    <!-- Добавляем простой встроенный React-компонент для проверки -->
+    <script type="text/javascript">
+      // Ждем загрузки страницы и React
+      window.addEventListener('load', function() {
+        // Проверяем, доступны ли React и ReactDOM
+        if (typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
+          console.log('Пробуем рендерить встроенный React-компонент');
+          
+          // Создаем простой React-компонент
+          const SimpleComponent = React.createElement(
+            'div',
+            { style: { padding: '20px', textAlign: 'center', fontFamily: 'Arial, sans-serif' } },
+            [
+              React.createElement('h1', { style: { color: '#4F46E5' } }, 'Встроенный React-компонент'),
+              React.createElement('p', null, 'Если вы видите этот текст, значит React работает корректно.'),
+              React.createElement('button', 
+                { 
+                  onClick: function() { alert('Кнопка работает!'); },
+                  style: {
+                    backgroundColor: '#4F46E5',
+                    color: 'white',
+                    border: 'none',
+                    padding: '10px 20px',
+                    borderRadius: '5px',
+                    cursor: 'pointer'
+                  }
+                }, 
+                'Нажмите меня'
+              )
+            ]
+          );
+          
+          // Рендерим компонент в root
+          try {
+            ReactDOM.render(SimpleComponent, document.getElementById('root'));
+            console.log('Встроенный React-компонент отрендерен успешно');
+          } catch (error) {
+            console.error('Ошибка при рендеринге встроенного React-компонента:', error);
+          }
+        } else {
+          console.error('React или ReactDOM не доступны для встроенного компонента');
+        }
+      });
+    </script>
   </body>
 </html>
