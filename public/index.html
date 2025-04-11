@@ -45,60 +45,45 @@
     -->
     <title>LifeSprint</title>
     
-    <!-- Явное подключение React и ReactDOM для отладки -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-development.js"></script>
+    <!-- Явное подключение React и ReactDOM через надежный CDN -->
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
     
-    <!-- Резервный механизм загрузки основного бандла -->
+    <!-- Информация о статусе приложения -->
     <script>
-      // Функция для проверки загрузки основного бандла
-      function checkMainBundleLoaded() {
-        // Проверяем, загружен ли основной бандл (по наличию глобальных переменных)
-        const mainBundleLoaded = typeof window.__MAIN_BUNDLE_LOADED__ !== 'undefined';
-        console.log('Основной бандл загружен:', mainBundleLoaded);
-        
-        if (!mainBundleLoaded) {
-          console.log('Основной бандл не загружен, пробуем загрузить вручную');
-          
-          // Пробуем найти основной скрипт в DOM
-          const scripts = document.querySelectorAll('script[src*="main"]');
-          if (scripts.length > 0) {
-            console.log('Найден основной скрипт:', scripts[0].src);
-          } else {
-            console.log('Основной скрипт не найден в DOM, пробуем загрузить статический файл');
-            
-            // Создаем новый элемент script для загрузки основного бандла
-            const script = document.createElement('script');
-            script.src = './static/js/main.js'; // Предполагаемый путь к основному бандлу
-            script.async = true;
-            script.onload = function() {
-              console.log('Основной бандл загружен вручную');
-              window.__MAIN_BUNDLE_LOADED__ = true;
-            };
-            script.onerror = function() {
-              console.error('Ошибка при загрузке основного бандла вручную');
-              
-              // Пробуем альтернативный путь
-              const alternativeScript = document.createElement('script');
-              alternativeScript.src = './static/js/bundle.js'; // Альтернативный путь
-              alternativeScript.async = true;
-              alternativeScript.onload = function() {
-                console.log('Основной бандл загружен через альтернативный путь');
-                window.__MAIN_BUNDLE_LOADED__ = true;
-              };
-              alternativeScript.onerror = function() {
-                console.error('Ошибка при загрузке основного бандла через альтернативный путь');
-              };
-              document.head.appendChild(alternativeScript);
-            };
-            document.head.appendChild(script);
-          }
+      // Устанавливаем глобальную переменную для отслеживания статуса приложения
+      window.__APP_STATUS__ = {
+        reactLoaded: false,
+        reactDomLoaded: false,
+        renderAttempted: false,
+        renderSuccessful: false
+      };
+      
+      // Функция для обновления статуса приложения
+      function updateAppStatus(key, value) {
+        if (window.__APP_STATUS__ && typeof window.__APP_STATUS__[key] !== 'undefined') {
+          window.__APP_STATUS__[key] = value;
+          console.log(`Статус приложения обновлен: ${key} = ${value}`);
         }
       }
       
-      // Запускаем проверку загрузки основного бандла после загрузки страницы
+      // Проверяем загрузку React и ReactDOM
+      function checkReactLoaded() {
+        const reactLoaded = typeof React !== 'undefined';
+        const reactDomLoaded = typeof ReactDOM !== 'undefined';
+        
+        updateAppStatus('reactLoaded', reactLoaded);
+        updateAppStatus('reactDomLoaded', reactDomLoaded);
+        
+        console.log('React загружен:', reactLoaded);
+        console.log('ReactDOM загружен:', reactDomLoaded);
+        
+        return reactLoaded && reactDomLoaded;
+      }
+      
+      // Запускаем проверку загрузки React после загрузки страницы
       window.addEventListener('load', function() {
-        setTimeout(checkMainBundleLoaded, 2000);
+        setTimeout(checkReactLoaded, 1000);
       });
     </script>
     
@@ -165,7 +150,7 @@
     </script> -->
     
     <script>
-      // Базовая проверка загрузки приложения
+      // Упрощенная проверка загрузки приложения
       window.addEventListener('load', function() {
         console.log('=== ПРОВЕРКА ЗАГРУЗКИ ===');
         
@@ -173,96 +158,25 @@
         const rootEl = document.getElementById('root');
         console.log('Root элемент найден:', !!rootEl);
         
-        // Отложенная проверка содержимого root
-        setTimeout(function() {
-          const rootContent = document.getElementById('root') ? document.getElementById('root').innerHTML : '';
-          const hasContent = rootContent && rootContent.trim().length > 0;
-          console.log('Root содержит контент через 3 сек:', hasContent);
-          
-          // Если контента нет, проверяем наличие React и ReactDOM
-          if (!hasContent) {
-            console.log('Контент не загружен, проверяем наличие React');
-            
-            // Проверяем наличие React и ReactDOM
-            const hasReact = typeof React !== 'undefined';
-            const hasReactDOM = typeof ReactDOM !== 'undefined';
-            
-            console.log('React доступен:', hasReact);
-            console.log('ReactDOM доступен:', hasReactDOM);
-            
-            // Проверяем, не находимся ли мы уже в цикле перезагрузок
-            const urlParams = new URLSearchParams(window.location.search);
-            const reloadCount = parseInt(urlParams.get('reload_count') || '0');
-            
-            // Если React и ReactDOM загружены, но контент не отображается
-            if (hasReact && hasReactDOM) {
-              console.log('React и ReactDOM загружены, но контент не отображается. Возможно, проблема в рендеринге.');
-              
-              // Пробуем отрендерить простой компонент напрямую
-              try {
-                const SimpleApp = React.createElement('div', {
-                  style: {
-                    padding: '20px',
-                    textAlign: 'center',
-                    fontFamily: 'Arial, sans-serif'
-                  }
-                }, [
-                  React.createElement('h1', {
-                    style: { color: '#4F46E5' },
-                    key: 'title'
-                  }, 'LifeSprint'),
-                  React.createElement('p', { key: 'subtitle' }, 'Приложение для формирования полезных привычек'),
-                  React.createElement('p', { key: 'status' }, 'Статус: React работает, но основное приложение не загрузилось')
-                ]);
-                
-                const rootEl = document.getElementById('root');
-                if (rootEl) {
-                  console.log('Пробуем отрендерить простой React-компонент');
-                  ReactDOM.render(SimpleApp, rootEl);
-                }
-              } catch (renderError) {
-                console.error('Ошибка при рендеринге простого компонента:', renderError);
-              }
+        // Проверяем наличие React и ReactDOM
+        const hasReact = typeof React !== 'undefined';
+        const hasReactDOM = typeof ReactDOM !== 'undefined';
+        console.log('React доступен:', hasReact);
+        console.log('ReactDOM доступен:', hasReactDOM);
+        
+        // Отключаем Service Worker для отладки
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            console.log('Найдено Service Worker регистраций:', registrations.length);
+            for (let registration of registrations) {
+              registration.unregister();
+              console.log('Service Worker отключен:', registration.scope);
             }
-            // Ограничиваем количество попыток перезагрузки и добавляем задержку
-            else if (reloadCount < 1) {
-              console.log('React или ReactDOM не загружены, пробуем перезагрузить через 5 секунд');
-              
-              // Добавляем задержку перед перезагрузкой
-              setTimeout(function() {
-                const timestamp = new Date().getTime();
-                window.location.href = window.location.pathname + '?reload=' + timestamp + '&reload_count=' + (reloadCount + 1);
-              }, 5000); // 5 секунд задержки
-            } else {
-              console.error('Достигнут лимит перезагрузок. Проблема с загрузкой React.');
-              
-              // Добавляем базовый контент для отображения ошибки
-              const rootEl = document.getElementById('root');
-              if (rootEl) {
-                rootEl.innerHTML = `
-                  <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
-                    <h1 style="color: #4F46E5;">LifeSprint</h1>
-                    <p>Возникла проблема при загрузке приложения.</p>
-                    <p>Пожалуйста, попробуйте очистить кэш браузера или обновить страницу.</p>
-                    <button onclick="window.location.href=window.location.pathname" style="background-color: #4F46E5; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-top: 20px; cursor: pointer;">
-                      Обновить страницу
-                    </button>
-                  </div>
-                `;
-              }
-            }
-          }
-        }, 3000);
+          }).catch(function(error) {
+            console.log('Ошибка при отключении Service Worker:', error);
+          });
+        }
       });
-      
-      // Проверяем, есть ли активный Service Worker
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(function(registration) {
-          console.log('Service Worker готов:', registration.scope);
-        }).catch(function(error) {
-          console.log('Service Worker не готов:', error);
-        });
-      }
     </script>
     
     <!-- Проверка загрузки ресурсов -->
@@ -426,112 +340,140 @@
     -->
     <!-- React-компоненты загружаются через основной бандл приложения -->
     
-    <!-- Скрипт для проверки и загрузки основных JavaScript-файлов -->
+    <!-- Прямой рендеринг React-компонента -->
     <script>
-      // Функция для проверки наличия файла
-      function checkFileExists(url) {
-        return fetch(url, { method: 'HEAD' })
-          .then(response => {
-            if (response.ok) {
-              console.log('Файл найден:', url);
-              return true;
+      // Функция для рендеринга базового React-приложения
+      function renderBasicApp() {
+        console.log('Рендеринг базового React-приложения');
+        
+        // Проверяем наличие React и ReactDOM
+        const hasReact = typeof React !== 'undefined';
+        const hasReactDOM = typeof ReactDOM !== 'undefined';
+        
+        console.log('React доступен для рендеринга:', hasReact);
+        console.log('ReactDOM доступен для рендеринга:', hasReactDOM);
+        
+        if (hasReact && hasReactDOM) {
+          try {
+            // Создаем простой компонент
+            const App = React.createElement('div', {
+              style: {
+                padding: '20px',
+                textAlign: 'center',
+                fontFamily: 'Arial, sans-serif',
+                maxWidth: '800px',
+                margin: '0 auto',
+                backgroundColor: '#f9fafb',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+              }
+            }, [
+              React.createElement('h1', {
+                style: { 
+                  color: '#4F46E5',
+                  fontSize: '2rem',
+                  marginBottom: '1rem'
+                },
+                key: 'title'
+              }, 'LifeSprint'),
+              React.createElement('p', { 
+                style: { 
+                  fontSize: '1.2rem',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem'
+                },
+                key: 'subtitle' 
+              }, 'Приложение для формирования полезных привычек и достижения целей'),
+              React.createElement('div', {
+                style: {
+                  backgroundColor: '#e0e7ff',
+                  padding: '15px',
+                  borderRadius: '6px',
+                  marginBottom: '20px'
+                },
+                key: 'info'
+              }, [
+                React.createElement('h2', {
+                  style: { 
+                    color: '#4338ca',
+                    fontSize: '1.5rem',
+                    marginBottom: '10px'
+                  },
+                  key: 'info-title'
+                }, 'О приложении'),
+                React.createElement('p', {
+                  style: { color: '#1e3a8a' },
+                  key: 'info-text'
+                }, '31-дневный путь трансформации для формирования полезных привычек и достижения ваших целей.')
+              ]),
+              React.createElement('button', {
+                style: {
+                  backgroundColor: '#4F46E5',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '5px',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  marginTop: '10px'
+                },
+                onClick: function() {
+                  alert('Добро пожаловать в LifeSprint!');
+                },
+                key: 'button'
+              }, 'Начать путь')
+            ]);
+            
+            // Рендерим компонент
+            const rootEl = document.getElementById('root');
+            if (rootEl) {
+              ReactDOM.render(App, rootEl);
+              console.log('Базовое React-приложение успешно отрендерено');
             } else {
-              console.log('Файл не найден:', url);
-              return false;
+              console.error('Элемент root не найден');
             }
-          })
-          .catch(error => {
-            console.error('Ошибка при проверке файла:', url, error);
-            return false;
-          });
-      }
-      
-      // Функция для загрузки скрипта
-      function loadScript(url) {
-        return new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = url;
-          script.async = true;
-          script.onload = () => {
-            console.log('Скрипт загружен успешно:', url);
-            resolve();
-          };
-          script.onerror = () => {
-            console.error('Ошибка при загрузке скрипта:', url);
-            reject(new Error(`Ошибка загрузки скрипта: ${url}`));
-          };
-          document.body.appendChild(script);
-        });
-      }
-      
-      // Функция для проверки и загрузки основных JavaScript-файлов
-      async function checkAndLoadMainScripts() {
-        console.log('Проверка и загрузка основных JavaScript-файлов');
-        
-        // Возможные пути к основным JavaScript-файлам
-        const possiblePaths = [
-          './static/js/main.js',
-          './static/js/bundle.js',
-          './static/js/main.chunk.js',
-          './static/js/vendors~main.chunk.js',
-          './static/js/runtime-main.js',
-          './static/js/2.chunk.js',
-          './static/js/app.js'
-        ];
-        
-        // Проверяем наличие файлов и загружаем их
-        for (const path of possiblePaths) {
-          const exists = await checkFileExists(path);
-          if (exists) {
-            try {
-              await loadScript(path);
-              console.log('Скрипт успешно загружен:', path);
-            } catch (error) {
-              console.error('Ошибка при загрузке скрипта:', path, error);
+          } catch (error) {
+            console.error('Ошибка при рендеринге базового React-приложения:', error);
+            
+            // В случае ошибки, добавляем базовый HTML
+            const rootEl = document.getElementById('root');
+            if (rootEl) {
+              rootEl.innerHTML = `
+                <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+                  <h1 style="color: #4F46E5;">LifeSprint</h1>
+                  <p>Приложение для формирования полезных привычек и достижения целей</p>
+                  <p>Произошла ошибка при загрузке приложения.</p>
+                  <button onclick="window.location.reload()" style="background-color: #4F46E5; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-top: 20px; cursor: pointer;">
+                    Обновить страницу
+                  </button>
+                </div>
+              `;
             }
+          }
+        } else {
+          console.error('React или ReactDOM не доступны для рендеринга');
+          
+          // Добавляем базовый HTML, если React или ReactDOM не доступны
+          const rootEl = document.getElementById('root');
+          if (rootEl) {
+            rootEl.innerHTML = `
+              <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+                <h1 style="color: #4F46E5;">LifeSprint</h1>
+                <p>Приложение для формирования полезных привычек и достижения целей</p>
+                <p>Не удалось загрузить необходимые библиотеки.</p>
+                <button onclick="window.location.reload()" style="background-color: #4F46E5; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-top: 20px; cursor: pointer;">
+                  Обновить страницу
+                </button>
+              </div>
+            `;
           }
         }
-        
-        // Проверяем, загрузился ли React после загрузки скриптов
-        setTimeout(() => {
-          const hasReact = typeof React !== 'undefined';
-          const hasReactDOM = typeof ReactDOM !== 'undefined';
-          console.log('После загрузки скриптов: React доступен:', hasReact);
-          console.log('После загрузки скриптов: ReactDOM доступен:', hasReactDOM);
-          
-          // Если React и ReactDOM загружены, но контент не отображается, пробуем отрендерить простой компонент
-          if (hasReact && hasReactDOM) {
-            const rootEl = document.getElementById('root');
-            if (rootEl && !rootEl.innerHTML.trim()) {
-              console.log('Root пуст после загрузки скриптов, пробуем отрендерить простой компонент');
-              try {
-                const SimpleApp = React.createElement('div', {
-                  style: {
-                    padding: '20px',
-                    textAlign: 'center',
-                    fontFamily: 'Arial, sans-serif'
-                  }
-                }, [
-                  React.createElement('h1', {
-                    style: { color: '#4F46E5' },
-                    key: 'title'
-                  }, 'LifeSprint'),
-                  React.createElement('p', { key: 'subtitle' }, 'Приложение для формирования полезных привычек'),
-                  React.createElement('p', { key: 'status' }, 'Статус: Скрипты загружены, но основное приложение не запустилось')
-                ]);
-                
-                ReactDOM.render(SimpleApp, rootEl);
-              } catch (renderError) {
-                console.error('Ошибка при рендеринге простого компонента после загрузки скриптов:', renderError);
-              }
-            }
-          }
-        }, 1000);
       }
       
-      // Запускаем проверку и загрузку основных JavaScript-файлов после загрузки страницы
+      // Запускаем рендеринг базового React-приложения после загрузки страницы
       window.addEventListener('load', function() {
-        setTimeout(checkAndLoadMainScripts, 3000);
+        // Даем время для загрузки React и ReactDOM
+        setTimeout(renderBasicApp, 1000);
       });
     </script>
   </body>
