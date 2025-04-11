@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
+// import App from './App';
+import App from './App.simple';
 import * as Sentry from '@sentry/react';
 import { setupTokenRefresh } from './utils/supabaseClient';
 
@@ -46,15 +47,23 @@ if (!window.location.search.includes('nocache=')) {
   window.history.replaceState(null, '', newUrl);
 }
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+try {
+  console.log('Перед созданием root');
+  const root = ReactDOM.createRoot(
+    document.getElementById('root') as HTMLElement
+  );
+  console.log('Root создан');
+  
+  console.log('Перед рендерингом App');
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+  console.log('После рендеринга App');
+} catch (error) {
+  console.error('Ошибка при инициализации React:', error);
+}
 
 // Регистрация Service Worker для PWA
 if ('serviceWorker' in navigator) {
