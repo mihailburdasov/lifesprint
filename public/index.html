@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="./favicon.ico" />
+    <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1" />
     <meta name="theme-color" content="#4F46E5" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -25,15 +25,15 @@
       name="description"
       content="LifeSprint - 31-дневный путь трансформации"
     />
-    <link rel="apple-touch-icon" href="./logo192.png" />
-    <link rel="apple-touch-icon" sizes="192x192" href="./logo192.png" />
-    <link rel="apple-touch-icon" sizes="512x512" href="./logo512.png" />
+    <link rel="apple-touch-icon" href="/logo192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/logo192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/logo512.png" />
     <!--
       manifest.json provides metadata used when your web app is installed on a
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
     <!-- Включаем манифест с исправленным start_url -->
-    <link rel="manifest" href="./manifest.json" />
+    <link rel="manifest" href="/manifest.json" />
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -46,8 +46,8 @@
     <title>LifeSprint</title>
     
     <!-- Явное подключение React и ReactDOM через надежный CDN -->
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     
     <!-- Информация о статусе приложения -->
     <script>
@@ -359,25 +359,9 @@
         // Создаем элементы script для загрузки основных скриптов
         const scripts = [
           // Пути к основным скриптам приложения (относительные пути)
-          './static/js/main.chunk.js',
-          './static/js/vendors~main.chunk.js',
-          './static/js/bundle.js',
-          // Альтернативные пути для разных сборок
-          './static/js/main.js',
-          './static/js/2.chunk.js',
-          './static/js/runtime-main.js',
-          // Дополнительные пути для разных сборок
-          './static/js/0.chunk.js',
-          './static/js/1.chunk.js',
-          './static/js/3.chunk.js',
-          './static/js/4.chunk.js',
-          // Пути для production сборки
-          './static/js/main.[hash].chunk.js',
-          './static/js/2.[hash].chunk.js',
-          './static/js/runtime-main.[hash].js',
-          // Пути для Vercel
-          './static/js/app.js',
-          './static/js/index.js'
+          '/static/js/runtime-main.js',
+          '/static/js/2.chunk.js',
+          '/static/js/main.chunk.js'
         ];
         
         // Загружаем скрипты последовательно
@@ -454,7 +438,7 @@
         
         if (hasReact && hasReactDOM) {
           try {
-            // Создаем простой компонент
+            const root = ReactDOM.createRoot(document.getElementById('root'));
             const App = React.createElement('div', {
               style: {
                 padding: '20px',
@@ -525,13 +509,8 @@
             ]);
             
             // Рендерим компонент
-            const rootEl = document.getElementById('root');
-            if (rootEl) {
-              ReactDOM.render(App, rootEl);
-              console.log('Заглушка успешно отрендерена');
-            } else {
-              console.error('Элемент root не найден');
-            }
+            root.render(App);
+            console.log('Заглушка успешно отрендерена');
           } catch (error) {
             console.error('Ошибка при рендеринге заглушки:', error);
             
