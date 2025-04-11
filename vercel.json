@@ -10,6 +10,9 @@
       }
     }
   ],
+  "env": {
+    "PUBLIC_URL": "."
+  },
   "routes": [
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
