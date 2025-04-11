@@ -1,7 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { apiService } from '../utils/apiService';
 import { supabase } from '../utils/supabaseClient';
 import { migrateLocalDataToSupabase, clearLocalUserData } from '../utils/migrationScript';
+import { logService } from '../utils/logService';
+import { authService } from '../utils/authService';
+import { userService } from '../utils/userService';
+import { syncService } from '../utils/syncService';
+import { encryptionService } from '../utils/encryptionService';
 
 // Определение типов для пользователя
 export interface User {
@@ -49,6 +53,16 @@ interface UserContextType {
   migrationStatus: MigrationStatus;
   migrateToSupabase: () => Promise<boolean>;
   clearLocalData: () => void;
+  updateUser: (userData: Partial<User>) => Promise<boolean>;
+  resetPassword: (email: string) => Promise<boolean>;
+  updatePassword: (newPassword: string) => Promise<boolean>;
+  syncStatus: {
+    lastSync: number;
+    inProgress: boolean;
+    error: string | null;
+    pendingOperations: number;
+  };
+  syncData: () => Promise<boolean>;
 }
 
 // Создание контекста
@@ -67,6 +81,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     migratedUsers: 0,
     totalUsers: 0
   });
+  const [syncStatus, setSyncStatus] = useState({
+    lastSync: 0,
+    inProgress: false,
+    error: null,
+    pendingOperations: 0
+  });
+
+  // Обновление статуса синхронизации
+  const updateSyncStatus = (userId: string) => {
+    if (userId) {
+      const status = syncService.getSyncStatus(userId);
+      setSyncStatus(status);
+    }
+  };
 
   // Проверка наличия пользователя при загрузке
   useEffect(() => {
@@ -77,69 +105,55 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (sessionData.session) {
           // Пользователь авторизован в Supabase
-          const { data: userData, error: userError } = await supabase.auth.getUser();
+          const currentUser = await authService.getCurrentUser();
           
-          if (userError) {
-            console.error('Ошибка при получении данных пользователя:', userError);
-            setUser(null);
-          } else if (userData.user) {
-            // Получаем дополнительные данные пользователя из метаданных
-            const { id, email } = userData.user;
-            const name = userData.user.user_metadata?.name || email?.split('@')[0] || 'Пользователь';
-            const telegramNickname = userData.user.user_metadata?.telegram_nickname;
-            
+          if (currentUser) {
             // Проверяем, подтвержден ли email
-            const isVerified = !!userData.user.email_confirmed_at;
+            const isVerified = await authService.checkEmailVerification(currentUser.id);
             setEmailVerified(isVerified);
             
             // Проверяем, есть ли у пользователя локальные данные, которые нужно мигрировать
-            if (email) {
-              const localUserData = apiService.findLocalUserByEmail(email);
-              if (localUserData && localUserData.id !== id) {
+            if (currentUser.email) {
+              const localUser = await authService.findLocalUserByEmail(currentUser.email);
+              if (localUser && localUser.id !== currentUser.id) {
                 // Мигрируем данные прогресса из localStorage в Supabase
-                await apiService.migrateUserProgressToSupabase(localUserData.id, id);
+                await migrateLocalDataToSupabase(
+                  (status) => setMigrationStatus(status)
+                );
               }
             }
             
-            // Обрабатываем очередь синхронизации
-            await apiService.processSyncQueue(id);
+            // Обновляем статус синхронизации
+            updateSyncStatus(currentUser.id);
             
-            setUser({
-              id,
-              name,
-              email: email || '',
-              telegramNickname
-            });
+            // Запускаем периодическую синхронизацию
+            syncService.startPeriodicSync(currentUser.id);
+            
+            setUser(currentUser);
           }
         } else {
           // Если нет сессии Supabase, проверяем localStorage (для обратной совместимости)
           const storedUserId = localStorage.getItem('lifesprint_current_user_id');
           
           if (storedUserId) {
-            const userJson = localStorage.getItem(`lifesprint_user_${storedUserId}`);
+            const userData = await userService.getUserById(storedUserId);
             
-            if (userJson) {
-              try {
-                const userData = JSON.parse(userJson);
-                
-                if (userData && userData.id && userData.name && userData.email) {
-                  setUser(userData);
-                } else {
-                  console.error('Данные пользователя неполные или некорректные');
-                  localStorage.removeItem('lifesprint_current_user_id');
-                }
-              } catch (error) {
-                console.error('Ошибка при парсинге данных пользователя:', error);
-                localStorage.removeItem('lifesprint_current_user_id');
-              }
+            if (userData) {
+              setUser(userData);
+              
+              // Обновляем статус синхронизации
+              updateSyncStatus(storedUserId);
+              
+              // Запускаем периодическую синхронизацию
+              syncService.startPeriodicSync(storedUserId);
             } else {
-              console.error('Данные пользователя не найдены');
+              logService.warn('Данные пользователя не найдены');
               localStorage.removeItem('lifesprint_current_user_id');
             }
           }
         }
       } catch (error) {
-        console.error('Ошибка при проверке наличия пользователя:', error);
+        logService.error('Ошибка при проверке наличия пользователя', error);
         localStorage.removeItem('lifesprint_current_user_id');
       } finally {
         setIsLoading(false);
@@ -159,12 +173,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const name = authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Пользователь';
             const telegramNickname = authUser.user_metadata?.telegram_nickname;
             
-            setUser({
+            const newUser = {
               id: authUser.id,
               name,
               email: authUser.email || '',
               telegramNickname
-            });
+            };
+            
+            setUser(newUser);
+            
+            // Обновляем статус синхронизации
+            updateSyncStatus(authUser.id);
+            
+            // Запускаем периодическую синхронизацию
+            syncService.startPeriodicSync(authUser.id);
           }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
@@ -184,8 +206,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     
     try {
-      // Используем apiService для регистрации пользователя
-      const response = await apiService.register(
+      // Используем authService для регистрации пользователя
+      const response = await authService.register(
         data.name,
         data.email,
         data.password,
@@ -199,6 +221,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (response.data) {
         setUser(response.data);
+        
+        // Если поддерживается шифрование, генерируем ключ шифрования
+        if (encryptionService.isSupported()) {
+          try {
+            await encryptionService.generateKey(data.password);
+          } catch (encryptError) {
+            logService.error('Ошибка при генерации ключа шифрования', encryptError);
+          }
+        }
+        
+        // Обновляем статус синхронизации
+        updateSyncStatus(response.data.id);
+        
+        // Запускаем периодическую синхронизацию
+        syncService.startPeriodicSync(response.data.id);
+        
         return true;
       } else {
         setError('Не удалось создать пользователя. Пожалуйста, попробуйте снова.');
@@ -207,7 +245,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       setError(`Ошибка при регистрации: ${errorMessage}`);
-      console.error('Ошибка регистрации:', e);
+      logService.error('Ошибка регистрации', e);
       return false;
     } finally {
       setIsLoading(false);
@@ -220,8 +258,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     
     try {
-      // Используем apiService для входа пользователя
-      const response = await apiService.login(data.email, data.password);
+      // Используем authService для входа пользователя
+      const response = await authService.login(data.email, data.password);
       
       if (!response.success) {
         setError(response.error || 'Неверный email или пароль.');
@@ -229,9 +267,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (response.data) {
-        // Сохраняем ID пользователя в localStorage для обратной совместимости
-        localStorage.setItem('lifesprint_current_user_id', response.data.id);
         setUser(response.data);
+        
+        // Если поддерживается шифрование, получаем ключ шифрования
+        if (encryptionService.isSupported()) {
+          try {
+            await encryptionService.getKey(data.password);
+          } catch (encryptError) {
+            logService.error('Ошибка при получении ключа шифрования', encryptError);
+          }
+        }
+        
+        // Обновляем статус синхронизации
+        updateSyncStatus(response.data.id);
+        
+        // Запускаем периодическую синхронизацию
+        syncService.startPeriodicSync(response.data.id);
+        
         return true;
       } else {
         setError('Не удалось войти. Пожалуйста, попробуйте снова.');
@@ -240,7 +292,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       setError(`Ошибка при входе: ${errorMessage}`);
-      console.error('Ошибка входа:', e);
+      logService.error('Ошибка входа', e);
       return false;
     } finally {
       setIsLoading(false);
@@ -250,18 +302,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Выход пользователя
   const logout = async (): Promise<void> => {
     try {
-      // Выход из Supabase
-      await supabase.auth.signOut();
-      
-      // Очищаем localStorage (для обратной совместимости)
-      localStorage.removeItem('lifesprint_current_user_id');
-      
-      // Очищаем состояние пользователя
+      await authService.logout();
       setUser(null);
     } catch (error) {
-      console.error('Ошибка при выходе:', error);
-      // Даже если произошла ошибка, очищаем состояние пользователя
-      localStorage.removeItem('lifesprint_current_user_id');
+      logService.error('Ошибка при выходе', error);
       setUser(null);
     }
   };
@@ -313,23 +357,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Выход со всех устройств
   const logoutFromAllDevices = async (): Promise<void> => {
     try {
-      // Выход из всех сессий Supabase
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
-      
-      if (error) {
-        console.error('Ошибка при выходе со всех устройств:', error);
-        throw error;
-      }
-      
-      // Очищаем localStorage (для обратной совместимости)
-      localStorage.removeItem('lifesprint_current_user_id');
-      
-      // Очищаем состояние пользователя
+      await authService.logoutFromAllDevices();
       setUser(null);
     } catch (error) {
-      console.error('Ошибка при выходе со всех устройств:', error);
-      // Даже если произошла ошибка, очищаем состояние пользователя
-      localStorage.removeItem('lifesprint_current_user_id');
+      logService.error('Ошибка при выходе со всех устройств', error);
       setUser(null);
     }
   };
@@ -337,21 +368,131 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Проверка подтверждения email
   const checkEmailVerification = async (userId: string): Promise<boolean> => {
     try {
-      const { data: userData, error } = await supabase.auth.getUser();
+      const isVerified = await authService.checkEmailVerification(userId);
+      setEmailVerified(isVerified);
+      return isVerified;
+    } catch (error) {
+      logService.error('Ошибка при проверке подтверждения email', error);
+      setEmailVerified(false);
+      return false;
+    }
+  };
+  
+  // Обновление данных пользователя
+  const updateUser = async (userData: Partial<User>): Promise<boolean> => {
+    if (!user) {
+      setError('Пользователь не авторизован');
+      return false;
+    }
+    
+    try {
+      const response = await userService.updateUser(user.id, userData);
       
-      if (error || !userData.user) {
-        setEmailVerified(false);
+      if (!response.success) {
+        setError(response.error || 'Ошибка при обновлении данных пользователя');
         return false;
       }
       
-      // Проверяем, подтвержден ли email
-      const isVerified = !!userData.user.email_confirmed_at;
-      setEmailVerified(isVerified);
-      
-      return isVerified;
+      if (response.data) {
+        setUser(response.data);
+        
+        // Добавляем операцию в очередь синхронизации
+        syncService.addToSyncQueue(user.id, {
+          type: 'user',
+          action: 'update',
+          data: response.data
+        });
+        
+        // Обновляем статус синхронизации
+        updateSyncStatus(user.id);
+        
+        return true;
+      } else {
+        setError('Не удалось обновить данные пользователя');
+        return false;
+      }
     } catch (error) {
-      console.error('Ошибка при проверке подтверждения email:', error);
-      setEmailVerified(false);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setError(`Ошибка при обновлении данных пользователя: ${errorMessage}`);
+      logService.error('Ошибка при обновлении данных пользователя', error);
+      return false;
+    }
+  };
+  
+  // Сброс пароля
+  const resetPassword = async (email: string): Promise<boolean> => {
+    try {
+      const response = await authService.resetPassword(email);
+      
+      if (!response.success) {
+        setError(response.error || 'Ошибка при сбросе пароля');
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setError(`Ошибка при сбросе пароля: ${errorMessage}`);
+      logService.error('Ошибка при сбросе пароля', error);
+      return false;
+    }
+  };
+  
+  // Обновление пароля
+  const updatePassword = async (newPassword: string): Promise<boolean> => {
+    try {
+      const response = await authService.updatePassword(newPassword);
+      
+      if (!response.success) {
+        setError(response.error || 'Ошибка при обновлении пароля');
+        return false;
+      }
+      
+      // Если поддерживается шифрование, генерируем новый ключ шифрования
+      if (encryptionService.isSupported()) {
+        try {
+          await encryptionService.generateKey(newPassword);
+        } catch (encryptError) {
+          logService.error('Ошибка при генерации ключа шифрования', encryptError);
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setError(`Ошибка при обновлении пароля: ${errorMessage}`);
+      logService.error('Ошибка при обновлении пароля', error);
+      return false;
+    }
+  };
+  
+  // Синхронизация данных
+  const syncData = async (): Promise<boolean> => {
+    if (!user) {
+      setError('Пользователь не авторизован');
+      return false;
+    }
+    
+    try {
+      const response = await syncService.syncData(user.id);
+      
+      // Обновляем статус синхронизации
+      updateSyncStatus(user.id);
+      
+      if (!response.success) {
+        setError(response.error || 'Ошибка при синхронизации данных');
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setError(`Ошибка при синхронизации данных: ${errorMessage}`);
+      logService.error('Ошибка при синхронизации данных', error);
+      
+      // Обновляем статус синхронизации
+      updateSyncStatus(user.id);
+      
       return false;
     }
   };
@@ -371,7 +512,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         checkEmailVerification,
         migrationStatus,
         migrateToSupabase,
-        clearLocalData
+        clearLocalData,
+        updateUser,
+        resetPassword,
+        updatePassword,
+        syncStatus,
+        syncData
       }}
     >
       {children}

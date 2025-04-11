@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getCurrentMonthSprintStart } from '../utils/dateUtils';
-import { apiService } from '../utils/apiService';
+import { progressService } from '../utils/progressService';
+import { syncService } from '../utils/syncService';
 import { useUser } from './UserContext';
+import { logService } from '../utils/logService';
 
 // Define types for our context
 export interface DayProgress {
@@ -84,30 +86,18 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsLoading(true);
         
         try {
-          // Получаем прогресс пользователя из Supabase через apiService
-          const response = await apiService.getUserProgress(user.id);
+          // Получаем прогресс пользователя через progressService
+          const response = await progressService.getUserProgress(user.id);
           
           if (response.success && response.data) {
             setProgress(response.data);
           } else {
             // Если прогресс не найден, создаем новый
-            const currentMonthStart = getCurrentMonthSprintStart();
-            const today = new Date();
-            const diffTime = today.getTime() - currentMonthStart.getTime();
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-            const currentDay = Math.min(Math.max(diffDays, 1), 28); // Между 1 и 28
-            
-            const newProgress: UserProgress = {
-              startDate: currentMonthStart,
-              currentDay: currentDay,
-              days: {},
-              weekReflections: {}
-            };
-            
+            const newProgress = await progressService.initUserProgress(user.id);
             setProgress(newProgress);
           }
         } catch (error) {
-          console.error('Ошибка при получении прогресса пользователя:', error);
+          logService.error('Ошибка при получении прогресса пользователя', error);
           
           // В случае ошибки создаем новый прогресс
           const currentMonthStart = getCurrentMonthSprintStart();
@@ -142,9 +132,26 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const saveUserProgress = async () => {
       if (isAuthenticated && user && progress) {
         try {
-          await apiService.updateUserProgress(user.id, progress);
+          // Обновляем прогресс через progressService
+          const response = await progressService.updateUserProgress(user.id, progress);
+          
+          // Если обновление не удалось, добавляем операцию в очередь синхронизации
+          if (!response.success) {
+            syncService.addToSyncQueue(user.id, {
+              type: 'progress',
+              action: 'update',
+              data: progress
+            });
+          }
         } catch (error) {
-          console.error('Ошибка при сохранении прогресса пользователя:', error);
+          logService.error('Ошибка при сохранении прогресса пользователя', error);
+          
+          // В случае ошибки добавляем операцию в очередь синхронизации
+          syncService.addToSyncQueue(user.id, {
+            type: 'progress',
+            action: 'update',
+            data: progress
+          });
         }
       }
     };
@@ -207,8 +214,9 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   
   // Обновление прогресса дня
   const updateDayProgress = (dayNumber: number, data: Partial<DayProgress>) => {
-    if (!progress) return;
+    if (!progress || !user) return;
     
+    // Обновляем локальное состояние
     setProgress(prev => {
       if (!prev) return null;
       
@@ -223,12 +231,27 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       };
     });
+    
+    // Обновляем прогресс дня через progressService
+    progressService.updateDayProgress(user.id, dayNumber, data).catch(error => {
+      logService.error('Ошибка при обновлении прогресса дня', error);
+      
+      // В случае ошибки добавляем операцию в очередь синхронизации
+      if (progress) {
+        syncService.addToSyncQueue(user.id, {
+          type: 'progress',
+          action: 'update',
+          data: progress
+        });
+      }
+    });
   };
   
   // Обновление недельной рефлексии
   const updateWeekReflection = (weekNumber: number, data: Partial<WeekReflection>) => {
-    if (!progress) return;
+    if (!progress || !user) return;
     
+    // Обновляем локальное состояние
     setProgress(prev => {
       if (!prev) return null;
       
@@ -243,6 +266,20 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       };
     });
+    
+    // Обновляем недельную рефлексию через progressService
+    progressService.updateWeekReflection(user.id, weekNumber, data).catch(error => {
+      logService.error('Ошибка при обновлении недельной рефлексии', error);
+      
+      // В случае ошибки добавляем операцию в очередь синхронизации
+      if (progress) {
+        syncService.addToSyncQueue(user.id, {
+          type: 'progress',
+          action: 'update',
+          data: progress
+        });
+      }
+    });
   };
   
   // Вычисление процента заполнения дня
@@ -254,75 +291,15 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const dayProgress = progress.days[dayNumber];
       if (!dayProgress) return 0;
       
-      let total = 0;
-      
-      // Check gratitude (15% total, 5% each)
-      const gratitudeFilled = dayProgress.gratitude.filter(g => g.trim() !== '').length;
-      total += gratitudeFilled * 5; // 5% for each gratitude
-      
-      // Check achievements (15% total, 5% each)
-      const achievementsFilled = dayProgress.achievements.filter(a => a.trim() !== '').length;
-      total += achievementsFilled * 5; // 5% for each achievement
-      
-      // Check goals/tasks (15% for filling + 45% for completing)
-      const goalsFilled = dayProgress.goals.filter(g => g.text.trim() !== '').length;
-      total += goalsFilled * 5; // 5% for each task filled (max 15%)
-      
-      // Check completed tasks (15% for each completed task)
-      const goalsCompleted = dayProgress.goals.filter(g => g.completed).length;
-      total += goalsCompleted * 15; // 15% for each completed task (max 45%)
-      
-      // Check mindfulness exercise completion (10%)
-      if (dayProgress.exerciseCompleted) {
-        total += 10; // 10% for completing the exercise
-      }
-      
-      // Cap at 100%
-      total = Math.min(total, 100);
-      
-      // Round to nearest integer
-      return Math.round(total);
+      return progressService.getDayCompletion(dayProgress);
     } 
     // For reflection days (7, 14, 21, 28)
     else {
       const weekNumber = dayNumber / 7;
-      const reflection = progress.weekReflections[weekNumber] || { ...defaultWeekReflection };
+      const reflection = progress.weekReflections[weekNumber];
+      if (!reflection) return 0;
       
-      let total = 0;
-      
-      // Check gratitude (15% total, 5% each)
-      let gratitudeCount = 0;
-      if (reflection.gratitudeSelf && reflection.gratitudeSelf.trim() !== '') gratitudeCount++;
-      if (reflection.gratitudeOthers && reflection.gratitudeOthers.trim() !== '') gratitudeCount++;
-      if (reflection.gratitudeWorld && reflection.gratitudeWorld.trim() !== '') gratitudeCount++;
-      total += gratitudeCount * 5; // 5% for each gratitude (max 15%)
-      
-      // Check achievements (15% total, 5% each)
-      const achievementsFilled = reflection.achievements ? reflection.achievements.filter(a => a && a.trim() !== '').length : 0;
-      total += achievementsFilled * 5; // 5% for each achievement (max 15%)
-      
-      // Check improvements/zone of growth (15% total, 5% each)
-      const improvementsFilled = reflection.improvements ? reflection.improvements.filter(i => i && i.trim() !== '').length : 0;
-      total += improvementsFilled * 5; // 5% for each improvement (max 15%)
-      
-      // Check insights (15% total, 5% each)
-      const insightsFilled = reflection.insights ? reflection.insights.filter(i => i && i.trim() !== '').length : 0;
-      total += insightsFilled * 5; // 5% for each insight (max 15%)
-      
-      // Check rules (30% total, 10% each)
-      const rulesFilled = reflection.rules ? reflection.rules.filter(r => r && r.trim() !== '').length : 0;
-      total += rulesFilled * 10; // 10% for each rule (max 30%)
-      
-      // Check mindfulness exercise completion (10%)
-      if (reflection.exerciseCompleted) {
-        total += 10; // 10% for completing the exercise
-      }
-      
-      // Cap at 100%
-      total = Math.min(total, 100);
-      
-      // Round to nearest integer
-      return Math.round(total);
+      return progressService.getReflectionCompletion(reflection);
     }
   };
   
@@ -374,7 +351,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   
   // Проверка, является ли день днем рефлексии
   const isReflectionDay = (dayNumber: number): boolean => {
-    return dayNumber % 7 === 0;
+    return progressService.isReflectionDay(dayNumber);
   };
   
   // Проверка, доступен ли день (дни 1-14 доступны)

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
 import Button from '../components/common/Button';
 import { useUser } from '../context/UserContext';
+import { validationService } from '../utils/validationService';
+import { logService } from '../utils/logService';
 
 // Типы для формы авторизации
 type AuthMode = 'login' | 'register' | 'verification';
@@ -58,40 +60,30 @@ const AuthPage: React.FC = () => {
     }
   };
 
-  // Улучшенная валидация формы
+  // Валидация формы с использованием validationService
   const validateForm = (): boolean => {
-    const newErrors: Partial<FormData> = {};
-    
-    // Проверка email с регулярным выражением
-    if (!formData.email) {
-      newErrors.email = 'Email обязателен';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Введите корректный email';
+    if (mode === 'login') {
+      // Валидация формы входа
+      const validation = validationService.validateLoginForm(
+        formData.email,
+        formData.password
+      );
+      
+      setErrors(validation.errors);
+      return validation.valid;
+    } else {
+      // Валидация формы регистрации
+      const validation = validationService.validateRegistrationForm(
+        formData.name || '',
+        formData.email,
+        formData.password,
+        formData.password, // Здесь должен быть confirmPassword, но в текущей форме его нет
+        formData.telegramNickname
+      );
+      
+      setErrors(validation.errors);
+      return validation.valid;
     }
-    
-    // Улучшенная проверка пароля
-    if (!formData.password) {
-      newErrors.password = 'Пароль обязателен';
-    } else if (mode === 'register') {
-      // Проверяем сложность пароля только при регистрации
-      if (formData.password.length < 8) {
-        newErrors.password = 'Пароль должен содержать не менее 8 символов';
-      } else if (!/[A-Z]/.test(formData.password)) {
-        newErrors.password = 'Пароль должен содержать хотя бы одну заглавную букву';
-      } else if (!/[0-9]/.test(formData.password)) {
-        newErrors.password = 'Пароль должен содержать хотя бы одну цифру';
-      } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) {
-        newErrors.password = 'Пароль должен содержать хотя бы один специальный символ';
-      }
-    }
-    
-    // Проверка имени при регистрации
-    if (mode === 'register' && !formData.name) {
-      newErrors.name = 'Имя обязательно';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   // Обработка отправки формы
@@ -137,7 +129,7 @@ const AuthPage: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Ошибка авторизации:', error);
+      logService.error('Ошибка авторизации', error);
     } finally {
       setIsLoading(false);
     }
@@ -185,7 +177,7 @@ const AuthPage: React.FC = () => {
                     type="text"
                     id="name"
                     name="name"
-                    value={formData.name}
+                    value={validationService.sanitizeInput(formData.name || '')}
                     onChange={handleChange}
                     className={`input w-full h-11 text-base ${errors.name ? 'border-red-500' : ''}`}
                     placeholder="Введите ваше имя"
@@ -203,7 +195,7 @@ const AuthPage: React.FC = () => {
                     type="text"
                     id="telegramNickname"
                     name="telegramNickname"
-                    value={formData.telegramNickname}
+                    value={validationService.sanitizeInput(formData.telegramNickname || '')}
                     onChange={handleChange}
                     className="input w-full h-11 text-base"
                     placeholder="@username"
@@ -220,7 +212,7 @@ const AuthPage: React.FC = () => {
                 type="email"
                 id="email"
                 name="email"
-                value={formData.email}
+                value={validationService.sanitizeInput(formData.email)}
                 onChange={handleChange}
                 className={`input w-full h-11 text-base ${errors.email ? 'border-red-500' : ''}`}
                 placeholder="Введите ваш email"

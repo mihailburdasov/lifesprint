@@ -1,18 +1,44 @@
 {
   "short_name": "LifeSprint",
-  "name": "LifeSprint - Improve your life one sprint at a time",
+  "name": "LifeSprint - 28-дневный путь трансформации",
   "icons": [
     {
       "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": "/?v=1.0.1",
+  "start_url": "/?source=pwa",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#4F46E5",
   "background_color": "#ffffff",
   "apple_mobile_web_app_capable": "yes",
-  "apple_mobile_web_app_status_bar_style": "black-translucent"
+  "apple_mobile_web_app_status_bar_style": "black-translucent",
+  "description": "Приложение для формирования полезных привычек и достижения целей",
+  "categories": ["lifestyle", "productivity", "health"],
+  "screenshots": [
+    {
+      "src": "screenshot1.png",
+      "type": "image/png",
+      "sizes": "540x1200"
+    },
+    {
+      "src": "screenshot2.png",
+      "type": "image/png",
+      "sizes": "540x1200"
+    }
+  ]
 }
