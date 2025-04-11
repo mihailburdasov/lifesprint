@@ -99,16 +99,17 @@ workbox.routing.setDefaultHandler(
   new workbox.strategies.StaleWhileRevalidate()
 );
 
-// Fallback page for offline mode
-workbox.routing.setCatchHandler(async ({ event }) => {
-  if (event.request.destination === 'document') {
-    return workbox.precaching.matchPrecache('/fallback.html');
-  }
-  
-  return Response.error();
-});
-
-// Precache the fallback page
-workbox.precaching.precacheAndRoute([
-  { url: '/fallback.html', revision: '1' }
-]);
+// Временно отключено
+// // Fallback page for offline mode
+// workbox.routing.setCatchHandler(async ({ event }) => {
+//   if (event.request.destination === 'document') {
+//     return workbox.precaching.matchPrecache('/fallback.html');
+//   }
+//   
+//   return Response.error();
+// });
+// 
+// // Precache the fallback page
+// workbox.precaching.precacheAndRoute([
+//   { url: '/fallback.html', revision: '1' }
+// ]);

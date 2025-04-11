@@ -6,13 +6,14 @@ import App from './App.simple'; // Используем упрощенную в�
 // Константа для определения, нужно ли использовать Supabase
 const USE_SUPABASE = false;
 
-// Добавляем версию к URL для обхода кэша, если еще нет параметра nocache
-if (!window.location.search.includes('nocache=')) {
-  const version = '1.0.3'; // Обновлена версия
-  const separator = window.location.search ? '&' : '?';
-  const newUrl = `${window.location.pathname}${window.location.search}${separator}v=${version}${window.location.hash}`;
-  window.history.replaceState(null, '', newUrl);
-}
+// Временно отключено
+// // Добавляем версию к URL для обхода кэша, если еще нет параметра nocache
+// if (!window.location.search.includes('nocache=')) {
+//   const version = '1.0.3'; // Обновлена версия
+//   const separator = window.location.search ? '&' : '?';
+//   const newUrl = `${window.location.pathname}${window.location.search}${separator}v=${version}${window.location.hash}`;
+//   window.history.replaceState(null, '', newUrl);
+// }
 
 // Инициализация Sentry только если нужно
 if (USE_SUPABASE) {

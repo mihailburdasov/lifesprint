@@ -55,8 +55,8 @@
         });
       }
     </script>
-    <!-- Скрипт для обнаружения проблем с загрузкой и перенаправления на fallback.html -->
-    <script>
+    <!-- Скрипт для обнаружения проблем с загрузкой и перенаправления на fallback.html - временно отключен -->
+    <!-- <script>
       // Проверяем, есть ли параметр fresh в URL
       var urlParams = new URLSearchParams(window.location.search);
       var isFreshLoad = urlParams.has('fresh');
@@ -98,7 +98,9 @@
       
       // Включаем обнаружение пустой страницы
       window.addEventListener('load', detectEmptyPage);
-      
+    </script> -->
+    
+    <script>
       // Базовая проверка загрузки приложения
       window.addEventListener('load', function() {
         console.log('=== ПРОВЕРКА ЗАГРУЗКИ ===');
