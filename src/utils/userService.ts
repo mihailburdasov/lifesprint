@@ -113,7 +113,7 @@ export const userService = {
   async updateUser(userId: string, userData: Partial<User>): Promise<ApiResponse<User>> {
     try {
       // Сначала пробуем обновить данные в Supabase
-      const { data: authUser, error: authError } = await supabase.auth.getUser();
+      const { data: authUser } = await supabase.auth.getUser();
       
       if (authUser && authUser.user && authUser.user.id === userId) {
         // Обновляем метаданные пользователя в Supabase Auth

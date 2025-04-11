@@ -5,7 +5,7 @@ import AudioPlayer from '../components/common/AudioPlayer';
 import Button from '../components/common/Button';
 import { useProgress } from '../context/ProgressContext';
 import { FaLock } from 'react-icons/fa';
-import { formatDate, getDayTitle, isReflectionDay } from '../utils/dateUtils';
+import { formatDate, getDayTitle } from '../utils/dateUtils';
 import { getDailyContent, getMotivationalPhrase } from '../data/dailyContent';
 import useInputFocus from '../hooks/useInputFocus';
 

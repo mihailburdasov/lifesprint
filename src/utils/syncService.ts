@@ -1,7 +1,6 @@
 import { supabase } from './supabaseClient';
 import { logService } from './logService';
 import { ApiResponse } from './authService';
-import { progressService } from './progressService';
 import { conflictResolver } from './conflictResolver';
 
 // Префиксы для ключей в localStorage

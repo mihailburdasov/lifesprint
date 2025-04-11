@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser } from '../../context/UserContext';
 import { syncService } from '../../utils/syncService';
 import { logService } from '../../utils/logService';
@@ -27,7 +27,7 @@ const SyncIndicator: React.FC = () => {
   const autoSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Функция для получения статуса синхронизации
-  const loadSyncStatus = () => {
+  const loadSyncStatus = useCallback(() => {
     if (!user) return;
     
     try {
@@ -51,7 +51,7 @@ const SyncIndicator: React.FC = () => {
     } catch (error) {
       logService.error('Ошибка при загрузке статуса синхронизации', error);
     }
-  };
+  }, [user]);
   
   // Инициализация и обновление статуса синхронизации
   useEffect(() => {

@@ -280,9 +280,6 @@ const Dashboard: React.FC = () => {
       const completion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
       const isReflectionDay = dayNumber % 7 === 0;
       
-      // Get week number for reflection day
-      const weekNumber = Math.ceil(dayNumber / 7);
-      
       // Get reflection day widget progress
       const reflectionProgress = isReflectionDay && getReflectionDayWidgetProgress ? 
         getReflectionDayWidgetProgress(dayNumber) : null;

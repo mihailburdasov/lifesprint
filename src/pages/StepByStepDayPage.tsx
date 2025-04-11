@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
 import AudioPlayer from '../components/common/AudioPlayer';
 import Button from '../components/common/Button';
 import { useProgress } from '../context/ProgressContext';
-import { formatDate, getDayTitle, isReflectionDay } from '../utils/dateUtils';
+import { formatDate, getDayTitle } from '../utils/dateUtils';
 import { getStepContent, getMotivationalPhrase } from '../data/dailyContent';
 import useInputFocus from '../hooks/useInputFocus';
 

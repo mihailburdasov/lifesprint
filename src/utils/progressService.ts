@@ -80,7 +80,6 @@ export const progressService = {
       // Пробуем обновить прогресс в Supabase с повторными попытками
       let attempts = 0;
       const maxAttempts = 3;
-      let progressError = null;
       
       // Функция для вычисления времени задержки
       const getDelayTime = (attemptNumber: number): number => {
@@ -110,7 +109,6 @@ export const progressService = {
             };
           }
           
-          progressError = error;
           attempts++;
           
           // Ждем перед следующей попыткой (экспоненциальная задержка)
@@ -119,7 +117,6 @@ export const progressService = {
             await new Promise(resolve => setTimeout(resolve, delayTime));
           }
         } catch (e) {
-          progressError = e instanceof Error ? e : new Error(String(e));
           attempts++;
           
           // Ждем перед следующей попыткой

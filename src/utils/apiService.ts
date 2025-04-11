@@ -4,8 +4,6 @@
  * Сохранен для обратной совместимости
  */
 
-import { User } from '../context/UserContext';
-import { UserProgress } from '../context/ProgressContext';
 import { authService } from './authService';
 import { userService } from './userService';
 import { progressService } from './progressService';

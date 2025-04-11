@@ -8,7 +8,7 @@ import { logService } from '../../utils/logService';
  * @returns Мемоизированное значение
  */
 export function useMemoValue<T>(value: T, dependencies: React.DependencyList): T {
-  // Добавляем value в массив зависимостей
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   return useMemo(() => value, [value, ...dependencies]);
 }
 
@@ -56,6 +56,7 @@ export function useStableCallback<T extends (...args: any[]) => any>(
   dependencies: React.DependencyList
 ): T {
   // Добавляем callback в массив зависимостей
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   return useCallback(callback, [callback, ...dependencies]);
 }
 
@@ -68,6 +69,7 @@ export const MemoizedChildren: React.FC<{
   dependencies?: React.DependencyList;
 }> = memo(({ children, dependencies = [] }) => {
   // Мемоизируем дочерние компоненты с добавлением children в зависимости
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const memoizedChildren = useMemo(() => children, [children, ...dependencies]);
   
   return <>{memoizedChildren}</>;
