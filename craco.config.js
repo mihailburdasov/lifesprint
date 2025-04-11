@@ -65,6 +65,23 @@ module.exports = {
                 /\.js\.gz$/,
                 /\.css\.gz$/,
               ],
+              // Улучшенные настройки для PWA
+              maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // Увеличиваем лимит до 5MB
+              dontCacheBustURLsMatching: /\.\w{8}\./,
+              manifestTransforms: [
+                (manifestEntries) => {
+                  // Добавляем версию к URL для обхода кэша
+                  const timestamp = new Date().getTime();
+                  const manifest = manifestEntries.map(entry => {
+                    // Добавляем параметр версии к URL
+                    if (entry.url && !entry.url.includes('?')) {
+                      entry.url = `${entry.url}?v=${timestamp}`;
+                    }
+                    return entry;
+                  });
+                  return { manifest, warnings: [] };
+                }
+              ]
             });
             
             // Добавляем плагин в конец массива плагинов

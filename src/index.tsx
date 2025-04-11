@@ -6,14 +6,13 @@ import App from './App.simple'; // Используем упрощенную в�
 // Константа для определения, нужно ли использовать Supabase
 const USE_SUPABASE = false;
 
-// Временно отключено
-// // Добавляем версию к URL для обхода кэша, если еще нет параметра nocache
-// if (!window.location.search.includes('nocache=')) {
-//   const version = '1.0.3'; // Обновлена версия
-//   const separator = window.location.search ? '&' : '?';
-//   const newUrl = `${window.location.pathname}${window.location.search}${separator}v=${version}${window.location.hash}`;
-//   window.history.replaceState(null, '', newUrl);
-// }
+// Добавляем версию к URL для обхода кэша, если еще нет параметра nocache
+if (!window.location.search.includes('nocache=')) {
+  const version = '1.0.4'; // Обновлена версия
+  const separator = window.location.search ? '&' : '?';
+  const newUrl = `${window.location.pathname}${window.location.search}${separator}v=${version}${window.location.hash}`;
+  window.history.replaceState(null, '', newUrl);
+}
 
 // Инициализация Sentry только если нужно
 if (USE_SUPABASE) {
@@ -118,15 +117,52 @@ if (hasTestContent) {
   }
 }
 
-// Включаем регистрацию Service Worker для поддержки PWA
+// Улучшенная регистрация Service Worker для поддержки PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js')
-      .then(registration => {
-        console.log('Service Worker зарегистрирован:', registration);
-      })
-      .catch(error => {
-        console.error('Ошибка при регистрации Service Worker:', error);
-      });
+    // Проверяем наличие активных Service Worker
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      console.log('Найдено Service Worker регистраций:', registrations.length);
+      
+      // Если есть активные Service Worker, обновляем их
+      if (registrations.length > 0) {
+        registrations.forEach(registration => {
+          registration.update().then(() => {
+            console.log('Service Worker обновлен:', registration.scope);
+          }).catch(error => {
+            console.error('Ошибка при обновлении Service Worker:', error);
+          });
+        });
+      }
+      
+      // Регистрируем новый Service Worker с принудительным обновлением
+      navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' })
+        .then(registration => {
+          console.log('Service Worker зарегистрирован:', registration.scope);
+          
+          // Проверяем наличие обновлений
+          registration.onupdatefound = () => {
+            const installingWorker = registration.installing;
+            if (installingWorker) {
+              installingWorker.onstatechange = () => {
+                console.log('Service Worker состояние изменилось:', installingWorker.state);
+                if (installingWorker.state === 'installed') {
+                  if (navigator.serviceWorker.controller) {
+                    console.log('Новый Service Worker установлен и будет использован при следующей загрузке');
+                  } else {
+                    console.log('Service Worker установлен и будет использован немедленно');
+                  }
+                }
+              };
+            }
+          };
+        })
+        .catch(error => {
+          console.error('Ошибка при регистрации Service Worker:', error);
+          console.error('Детали ошибки:', error instanceof Error ? error.message : String(error));
+        });
+    }).catch(error => {
+      console.error('Ошибка при получении регистраций Service Worker:', error);
+    });
   });
 }

@@ -9,6 +9,13 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="LifeSprint" />
+    <meta name="application-name" content="LifeSprint" />
+    <meta name="msapplication-TileColor" content="#4F46E5" />
+    <meta name="msapplication-navbutton-color" content="#4F46E5" />
+    <!-- Улучшенная поддержка PWA -->
+    <meta name="apple-touch-fullscreen" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
     <!-- Агрессивное отключение кэширования -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0" />
     <meta http-equiv="Pragma" content="no-cache" />
@@ -111,9 +118,16 @@
         
         // Отложенная проверка содержимого root
         setTimeout(function() {
-          const rootContent = document.getElementById('root').innerHTML;
+          const rootContent = document.getElementById('root') ? document.getElementById('root').innerHTML : '';
           const hasContent = rootContent && rootContent.trim().length > 0;
           console.log('Root содержит контент через 3 сек:', hasContent);
+          
+          // Если контента нет, пробуем принудительно перезагрузить страницу
+          if (!hasContent) {
+            console.log('Контент не загружен, пробуем принудительно перезагрузить');
+            const timestamp = new Date().getTime();
+            window.location.href = window.location.pathname + '?reload=' + timestamp;
+          }
         }, 3000);
       });
       
@@ -125,6 +139,67 @@
           console.log('Service Worker не готов:', error);
         });
       }
+    </script>
+    
+    <!-- Проверка PWA и манифеста -->
+    <script>
+      // Функция для проверки манифеста
+      function checkManifest() {
+        try {
+          // Проверяем, загружен ли манифест
+          const manifestLink = document.querySelector('link[rel="manifest"]');
+          if (!manifestLink) {
+            console.error('Манифест не найден в DOM');
+            return false;
+          }
+          
+          console.log('Манифест найден:', manifestLink.href);
+          
+          // Пробуем загрузить манифест через fetch
+          fetch(manifestLink.href)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Ошибка загрузки манифеста: ' + response.status);
+              }
+              return response.json();
+            })
+            .then(data => {
+              console.log('Манифест успешно загружен:', data);
+              
+              // Проверяем наличие необходимых полей
+              if (!data.name || !data.short_name || !data.icons || !data.start_url) {
+                console.warn('В манифесте отсутствуют некоторые обязательные поля');
+              }
+              
+              // Проверяем иконки
+              if (data.icons && Array.isArray(data.icons)) {
+                data.icons.forEach(icon => {
+                  const img = new Image();
+                  img.onload = function() {
+                    console.log('Иконка загружена успешно:', icon.src);
+                  };
+                  img.onerror = function() {
+                    console.error('Ошибка загрузки иконки:', icon.src);
+                  };
+                  img.src = icon.src;
+                });
+              }
+            })
+            .catch(error => {
+              console.error('Ошибка при проверке манифеста:', error);
+            });
+          
+          return true;
+        } catch (error) {
+          console.error('Ошибка при проверке манифеста:', error);
+          return false;
+        }
+      }
+      
+      // Запускаем проверку манифеста при загрузке страницы
+      window.addEventListener('load', function() {
+        setTimeout(checkManifest, 1000);
+      });
     </script>
   </head>
   <body>
