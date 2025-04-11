@@ -125,8 +125,33 @@
           // Если контента нет, пробуем принудительно перезагрузить страницу
           if (!hasContent) {
             console.log('Контент не загружен, пробуем принудительно перезагрузить');
-            const timestamp = new Date().getTime();
-            window.location.href = window.location.pathname + '?reload=' + timestamp;
+            
+            // Проверяем, не находимся ли мы уже в цикле перезагрузок
+            const urlParams = new URLSearchParams(window.location.search);
+            const reloadCount = parseInt(urlParams.get('reload_count') || '0');
+            
+            // Ограничиваем количество попыток перезагрузки
+            if (reloadCount < 2) {
+              const timestamp = new Date().getTime();
+              window.location.href = window.location.pathname + '?reload=' + timestamp + '&reload_count=' + (reloadCount + 1);
+            } else {
+              console.error('Достигнут лимит перезагрузок. Возможно, проблема с JavaScript или CSS.');
+              
+              // Добавляем базовый контент для отображения ошибки
+              const rootEl = document.getElementById('root');
+              if (rootEl) {
+                rootEl.innerHTML = `
+                  <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+                    <h1 style="color: #4F46E5;">LifeSprint</h1>
+                    <p>Возникла проблема при загрузке приложения.</p>
+                    <p>Пожалуйста, попробуйте очистить кэш браузера или обновить страницу.</p>
+                    <button onclick="window.location.href=window.location.pathname" style="background-color: #4F46E5; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-top: 20px; cursor: pointer;">
+                      Обновить страницу
+                    </button>
+                  </div>
+                `;
+              }
+            }
           }
         }, 3000);
       });
@@ -141,8 +166,61 @@
       }
     </script>
     
-    <!-- Проверка PWA и манифеста -->
+    <!-- Проверка загрузки ресурсов -->
     <script>
+      // Функция для проверки загрузки CSS
+      function checkCssLoaded() {
+        try {
+          // Проверяем, загружены ли стили
+          const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+          console.log('Количество загруженных стилей:', styles.length);
+          
+          if (styles.length === 0) {
+            console.error('Стили не загружены!');
+            return false;
+          }
+          
+          // Проверяем, применяются ли стили
+          const testElement = document.createElement('div');
+          testElement.style.display = 'none';
+          testElement.className = 'tailwind-test-bg-indigo-600';
+          document.body.appendChild(testElement);
+          
+          const computedStyle = window.getComputedStyle(testElement);
+          const hasTailwind = computedStyle.backgroundColor !== '';
+          
+          console.log('Tailwind CSS применяется:', hasTailwind);
+          document.body.removeChild(testElement);
+          
+          return true;
+        } catch (error) {
+          console.error('Ошибка при проверке CSS:', error);
+          return false;
+        }
+      }
+      
+      // Функция для проверки загрузки JavaScript
+      function checkJsLoaded() {
+        try {
+          // Проверяем, загружены ли скрипты
+          const scripts = document.querySelectorAll('script');
+          console.log('Количество загруженных скриптов:', scripts.length);
+          
+          // Проверяем наличие React
+          const hasReact = typeof React !== 'undefined' || typeof window.React !== 'undefined';
+          console.log('React загружен:', hasReact);
+          
+          // Проверяем наличие ReactDOM
+          const hasReactDOM = typeof ReactDOM !== 'undefined' || typeof window.ReactDOM !== 'undefined';
+          console.log('ReactDOM загружен:', hasReactDOM);
+          
+          return hasReact && hasReactDOM;
+        } catch (error) {
+          console.error('Ошибка при проверке JavaScript:', error);
+          return false;
+        }
+      }
+      
       // Функция для проверки манифеста
       function checkManifest() {
         try {
@@ -196,9 +274,41 @@
         }
       }
       
-      // Запускаем проверку манифеста при загрузке страницы
+      // Запускаем проверки при загрузке страницы
       window.addEventListener('load', function() {
+        // Проверяем манифест
         setTimeout(checkManifest, 1000);
+        
+        // Проверяем CSS
+        setTimeout(checkCssLoaded, 500);
+        
+        // Проверяем JavaScript
+        setTimeout(function() {
+          const jsLoaded = checkJsLoaded();
+          console.log('JavaScript полностью загружен:', jsLoaded);
+          
+          if (!jsLoaded) {
+            console.error('JavaScript не загружен полностью, возможны проблемы с React');
+          }
+        }, 1500);
+        
+        // Комплексная проверка всех ресурсов
+        setTimeout(function() {
+          console.log('=== ИТОГОВАЯ ПРОВЕРКА РЕСУРСОВ ===');
+          const cssOk = checkCssLoaded();
+          const jsOk = checkJsLoaded();
+          const manifestOk = document.querySelector('link[rel="manifest"]') !== null;
+          
+          console.log('CSS загружен:', cssOk);
+          console.log('JavaScript загружен:', jsOk);
+          console.log('Манифест найден:', manifestOk);
+          
+          if (!cssOk || !jsOk || !manifestOk) {
+            console.error('Не все ресурсы загружены корректно!');
+          } else {
+            console.log('Все ресурсы загружены успешно');
+          }
+        }, 2000);
       });
     </script>
   </head>

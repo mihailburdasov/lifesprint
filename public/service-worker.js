@@ -96,7 +96,99 @@ workbox.routing.registerRoute(
 
 // Default strategy for all other requests
 workbox.routing.setDefaultHandler(
-  new workbox.strategies.StaleWhileRevalidate()
+  new workbox.strategies.NetworkFirst({
+    cacheName: 'default-cache',
+    plugins: [
+      new workbox.expiration.ExpirationPlugin({
+        maxEntries: 100,
+        maxAgeSeconds: 24 * 60 * 60, // 24 часа
+      }),
+    ],
+  })
+);
+
+// Добавляем обработчик для JavaScript-файлов
+workbox.routing.registerRoute(
+  /\.js$/,
+  new workbox.strategies.NetworkFirst({
+    cacheName: 'js-cache',
+    plugins: [
+      new workbox.expiration.ExpirationPlugin({
+        maxEntries: 50,
+        maxAgeSeconds: 12 * 60 * 60, // 12 часов
+      }),
+    ],
+  })
+);
+
+// Добавляем обработчик для CSS-файлов
+workbox.routing.registerRoute(
+  /\.css$/,
+  new workbox.strategies.NetworkFirst({
+    cacheName: 'css-cache',
+    plugins: [
+      new workbox.expiration.ExpirationPlugin({
+        maxEntries: 50,
+        maxAgeSeconds: 12 * 60 * 60, // 12 часов
+      }),
+    ],
+  })
+);
+
+// Добавляем обработчик для HTML-файлов
+workbox.routing.registerRoute(
+  /\.html$/,
+  new workbox.strategies.NetworkFirst({
+    cacheName: 'html-cache',
+    plugins: [
+      new workbox.expiration.ExpirationPlugin({
+        maxEntries: 10,
+        maxAgeSeconds: 12 * 60 * 60, // 12 часов
+      }),
+    ],
+  })
+);
+
+// Добавляем обработчик для основного HTML-файла
+workbox.routing.registerRoute(
+  /\/$/,
+  new workbox.strategies.NetworkFirst({
+    cacheName: 'html-cache',
+    plugins: [
+      new workbox.expiration.ExpirationPlugin({
+        maxEntries: 10,
+        maxAgeSeconds: 12 * 60 * 60, // 12 часов
+      }),
+    ],
+  })
+);
+
+// Добавляем обработчик для запросов к основному домену
+workbox.routing.registerRoute(
+  new RegExp('^https://lifesprint\\.vercel\\.app/'),
+  new workbox.strategies.NetworkFirst({
+    cacheName: 'main-domain-cache',
+    plugins: [
+      new workbox.expiration.ExpirationPlugin({
+        maxEntries: 50,
+        maxAgeSeconds: 12 * 60 * 60, // 12 часов
+      }),
+    ],
+  })
+);
+
+// Добавляем обработчик для запросов к основному домену без протокола
+workbox.routing.registerRoute(
+  new RegExp('^//lifesprint\\.vercel\\.app/'),
+  new workbox.strategies.NetworkFirst({
+    cacheName: 'main-domain-cache',
+    plugins: [
+      new workbox.expiration.ExpirationPlugin({
+        maxEntries: 50,
+        maxAgeSeconds: 12 * 60 * 60, // 12 часов
+      }),
+    ],
+  })
 );
 
 // Временно отключено

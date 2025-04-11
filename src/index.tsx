@@ -78,23 +78,73 @@ if (hasTestContent) {
     console.log('11. Тип App:', typeof App);
     console.log('12. App.toString():', App.toString().slice(0, 100) + '...');
     
+    // Проверяем, загружены ли стили
+    const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+    console.log('12.1. Количество загруженных стилей:', styles.length);
+    
+    // Проверяем, загружены ли скрипты
+    const scripts = document.querySelectorAll('script');
+    console.log('12.2. Количество загруженных скриптов:', scripts.length);
+    
+    // Проверяем, доступны ли React и ReactDOM глобально
+    console.log('12.3. React доступен глобально:', typeof (window as any).React !== 'undefined');
+    console.log('12.4. ReactDOM доступен глобально:', typeof (window as any).ReactDOM !== 'undefined');
+    
     // Используем современный метод createRoot для React 18
     if (rootElement) {
-      const root = createRoot(rootElement);
-      root.render(
-        <React.StrictMode>
-          <div data-testid="react-root">
-            <App />
-          </div>
-        </React.StrictMode>
-      );
-      
-      console.log('13. После рендеринга App с createRoot');
-      console.log('14. Результат рендеринга: выполнено с createRoot');
+      try {
+        console.log('12.5. Начинаем создание root с помощью createRoot');
+        const root = createRoot(rootElement);
+        
+        console.log('12.6. Root создан успешно, начинаем рендеринг');
+        root.render(
+          <React.StrictMode>
+            <div data-testid="react-root">
+              <App />
+            </div>
+          </React.StrictMode>
+        );
+        
+        console.log('13. После рендеринга App с createRoot');
+        
+        // Проверяем, что рендеринг действительно произошел
+        setTimeout(() => {
+          const rootContent = document.getElementById('root')?.innerHTML || '';
+          console.log('13.1. Root содержит контент после рендеринга:', rootContent.length > 0);
+          console.log('13.2. Root содержит react-root:', rootContent.includes('data-testid="react-root"'));
+          console.log('14. Результат рендеринга: выполнено с createRoot');
+        }, 100);
+      } catch (renderError) {
+        console.error('Ошибка при рендеринге с createRoot:', renderError);
+        console.error('Стек ошибки рендеринга:', renderError instanceof Error ? renderError.stack : 'стек недоступен');
+        
+        // Пробуем альтернативный метод рендеринга
+        try {
+          console.log('Пробуем альтернативный метод рендеринга с ReactDOM.render');
+          ReactDOM.render(
+            <React.StrictMode>
+              <div data-testid="react-root-legacy">
+                <App />
+              </div>
+            </React.StrictMode>,
+            rootElement
+          );
+          console.log('Альтернативный рендеринг выполнен успешно');
+        } catch (legacyError) {
+          console.error('Ошибка при альтернативном рендеринге:', legacyError);
+        }
+      }
     } else {
       console.error('Не удалось найти элемент root для рендеринга');
     }
-    console.log('15. Root innerHTML после рендеринга:', document.getElementById('root').innerHTML);
+    
+    // Проверяем результат рендеринга
+    const rootAfterRender = document.getElementById('root');
+    console.log('15. Root существует после рендеринга:', !!rootAfterRender);
+    if (rootAfterRender) {
+      console.log('15.1. Root innerHTML после рендеринга (длина):', rootAfterRender.innerHTML.length);
+      console.log('15.2. Root childNodes после рендеринга:', rootAfterRender.childNodes.length);
+    }
   } catch (error) {
     console.error('ОШИБКА при инициализации React:', error);
     console.error('Стек ошибки:', error instanceof Error ? error.stack : 'стек недоступен');
