@@ -1,5 +1,7 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import ReactDOM from 'react-dom';
+// Импортируем также старый тип ReactDOM для совместимости
+import type { Root } from 'react-dom/client';
 import './index.css';
 // import App from './App';
 import App from './App.simple';
@@ -67,25 +69,19 @@ if (hasTestContent) {
   try {
     console.log('Перед созданием root');
     
-    // Проверяем, доступен ли ReactDOM.createRoot
-    console.log('ReactDOM.createRoot доступен:', typeof ReactDOM.createRoot === 'function');
+    // Проверяем, доступен ли ReactDOM.render
+    console.log('ReactDOM.render доступен:', typeof ReactDOM.render === 'function');
     
-    const root = ReactDOM.createRoot(
-      document.getElementById('root') as HTMLElement
-    );
-    console.log('Root создан');
-    
-    // Проверяем, доступен ли App
-    console.log('App доступен:', typeof App === 'function');
-    
+    // Используем старый метод ReactDOM.render вместо createRoot
     console.log('Перед рендерингом App');
-    root.render(
+    ReactDOM.render(
       <React.StrictMode>
         <div style={{padding: '20px', textAlign: 'center'}}>
           <h1 style={{color: '#4F46E5'}}>React работает!</h1>
           <p>Это контент, отрендеренный через React.</p>
         </div>
-      </React.StrictMode>
+      </React.StrictMode>,
+      document.getElementById('root')
     );
     console.log('После рендеринга App');
   } catch (error) {
