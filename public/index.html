@@ -324,6 +324,203 @@
         }, 2000);
       });
     </script>
+    
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="/static/css/main.f627e6f1.css" />
+    
+    <!-- Main app script -->
+    <script>
+      // Функция для загрузки скриптов
+      function loadScript(src) {
+        return new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = src;
+          script.async = false;
+          
+          script.onload = () => {
+            console.log('Script loaded:', src);
+            resolve();
+          };
+          
+          script.onerror = (error) => {
+            console.error('Error loading script:', src, error);
+            reject(error);
+          };
+          
+          document.body.appendChild(script);
+        });
+      }
+      
+      // Функция для загрузки всех скриптов
+      async function loadAllScripts() {
+        console.log('Loading application scripts...');
+        
+        try {
+          // Загружаем основные скрипты в правильном порядке
+          await loadScript('/static/js/main.8c81b5dd.js');
+          await loadScript('/static/js/185.79775fd9.chunk.js');
+          await loadScript('/static/js/378.24feee14.chunk.js');
+          await loadScript('/static/js/437.4ec4b14b.chunk.js');
+          await loadScript('/static/js/818.d64ed2dc.chunk.js');
+          await loadScript('/static/js/774.48af026e.chunk.js');
+          
+          console.log('All scripts loaded successfully');
+          return true;
+        } catch (error) {
+          console.error('Failed to load scripts:', error);
+          return false;
+        }
+      }
+      
+      // Запускаем загрузку скриптов при загрузке страницы
+      window.addEventListener('load', async function() {
+        console.log('Page loaded, starting script loading...');
+        
+        // Проверяем наличие React и ReactDOM
+        const hasReact = typeof React !== 'undefined';
+        const hasReactDOM = typeof ReactDOM !== 'undefined';
+        
+        if (!hasReact || !hasReactDOM) {
+          console.error('React or ReactDOM not available');
+          renderFallbackApp();
+          return;
+        }
+        
+        // Загружаем скрипты
+        const scriptsLoaded = await loadAllScripts();
+        
+        if (!scriptsLoaded) {
+          console.error('Failed to load application scripts');
+          renderFallbackApp();
+          return;
+        }
+        
+        // Проверяем, загрузилось ли приложение
+        setTimeout(() => {
+          const rootEl = document.getElementById('root');
+          const hasContent = rootEl && rootEl.childNodes.length > 0;
+          
+          if (!hasContent) {
+            console.log('Application not loaded, showing fallback');
+            renderFallbackApp();
+          }
+        }, 5000);
+      });
+      
+      // Функция для рендеринга заглушки
+      function renderFallbackApp() {
+        console.log('Rendering fallback app');
+        
+        const hasReact = typeof React !== 'undefined';
+        const hasReactDOM = typeof ReactDOM !== 'undefined';
+        
+        if (hasReact && hasReactDOM) {
+          try {
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            const App = React.createElement('div', {
+              style: {
+                padding: '20px',
+                textAlign: 'center',
+                fontFamily: 'Arial, sans-serif',
+                maxWidth: '800px',
+                margin: '0 auto',
+                backgroundColor: '#f9fafb',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+              }
+            }, [
+              React.createElement('h1', {
+                style: { 
+                  color: '#4F46E5',
+                  fontSize: '2rem',
+                  marginBottom: '1rem'
+                },
+                key: 'title'
+              }, 'LifeSprint'),
+              React.createElement('p', { 
+                style: { 
+                  fontSize: '1.2rem',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem'
+                },
+                key: 'subtitle' 
+              }, 'Приложение для формирования полезных привычек и достижения целей'),
+              React.createElement('div', {
+                style: {
+                  backgroundColor: '#e0e7ff',
+                  padding: '15px',
+                  borderRadius: '6px',
+                  marginBottom: '20px'
+                },
+                key: 'info'
+              }, [
+                React.createElement('h2', {
+                  style: { 
+                    color: '#4338ca',
+                    fontSize: '1.5rem',
+                    marginBottom: '10px'
+                  },
+                  key: 'info-title'
+                }, 'О приложении'),
+                React.createElement('p', {
+                  style: { color: '#1e3a8a' },
+                  key: 'info-text'
+                }, '31-дневный путь трансформации для формирования полезных привычек и достижения ваших целей.')
+              ]),
+              React.createElement('button', {
+                style: {
+                  backgroundColor: '#4F46E5',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '5px',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  marginTop: '10px'
+                },
+                onClick: function() {
+                  window.location.reload();
+                },
+                key: 'button'
+              }, 'Начать путь')
+            ]);
+            
+            root.render(App);
+            console.log('Fallback app rendered successfully');
+          } catch (error) {
+            console.error('Error rendering fallback app:', error);
+            const rootEl = document.getElementById('root');
+            if (rootEl) {
+              rootEl.innerHTML = `
+                <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+                  <h1 style="color: #4F46E5;">LifeSprint</h1>
+                  <p>Приложение для формирования полезных привычек и достижения целей</p>
+                  <p>Произошла ошибка при загрузке приложения.</p>
+                  <button onclick="window.location.reload()" style="background-color: #4F46E5; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-top: 20px; cursor: pointer;">
+                    Обновить страницу
+                  </button>
+                </div>
+              `;
+            }
+          }
+        } else {
+          console.error('React or ReactDOM not available for fallback rendering');
+          const rootEl = document.getElementById('root');
+          if (rootEl) {
+            rootEl.innerHTML = `
+              <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+                <h1 style="color: #4F46E5;">LifeSprint</h1>
+                <p>Приложение для формирования полезных привычек и достижения целей</p>
+                <p>Не удалось загрузить необходимые библиотеки.</p>
+                <button onclick="window.location.reload()" style="background-color: #4F46E5; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-top: 20px; cursor: pointer;">
+                  Обновить страницу
+                </button>
+              </div>
+            `;
+          }
+        }
+      }
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -359,9 +556,12 @@
         // Создаем элементы script для загрузки основных скриптов
         const scripts = [
           // Пути к основным скриптам приложения (относительные пути)
-          '/static/js/runtime-main.js',
-          '/static/js/2.chunk.js',
-          '/static/js/main.chunk.js'
+          '/static/js/main.8c81b5dd.js',
+          '/static/js/185.79775fd9.chunk.js',
+          '/static/js/378.24feee14.chunk.js',
+          '/static/js/437.4ec4b14b.chunk.js',
+          '/static/js/818.d64ed2dc.chunk.js',
+          '/static/js/774.48af026e.chunk.js'
         ];
         
         // Загружаем скрипты последовательно
