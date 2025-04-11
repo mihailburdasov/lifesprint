@@ -1,9 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 import { logService } from './logService';
 
-// Get environment variables
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+// Get environment variables with fallback values
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://yvmukcseklazffqaxpso.supabase.co';
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2bXVrY3Nla2xhemZmcWF4cHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQyNzI0NTYsImV4cCI6MjA1OTg0ODQ1Nn0.j25gSyYfv4gBE6wprJ_U6ZZ5o55HOmvphk2BiJuglCw';
+
+// Log Supabase configuration for debugging
+console.log('Supabase URL:', supabaseUrl ? 'Configured' : 'Missing');
+console.log('Supabase Anon Key:', supabaseAnonKey ? 'Configured' : 'Missing');
 
 // Create Supabase client with auto token refresh
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
