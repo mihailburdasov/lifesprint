@@ -9,7 +9,6 @@ import OfflineIndicator from './components/common/OfflineIndicator';
 import SkipLink from './components/common/SkipLink';
 import { AppErrorBoundary } from './components/common/ErrorBoundary';
 import { logService } from './utils/logService';
-import { supabase } from './utils/supabaseClient';
 
 // Ленивая загрузка компонентов страниц
 const Dashboard = lazy(() => import('./pages/Dashboard'));

@@ -18,9 +18,8 @@ interface FormData {
 
 const AuthPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading: authLoading, error: authError, login, register } = useUser();
+  const { isAuthenticated, error: authError, login, register } = useUser();
   const [mode, setMode] = useState<AuthMode>('login');
-  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
@@ -124,7 +123,6 @@ const AuthPage: React.FC = () => {
         
         // Если регистрация прошла успешно, перенаправляем на страницу подтверждения email
         if (result) {
-          setRegistrationSuccess(true);
           navigate('/verify-email', { state: { email: formData.email } });
         }
       }
@@ -151,7 +149,6 @@ const AuthPage: React.FC = () => {
             fullWidth
             onClick={() => {
               setMode('login');
-              setRegistrationSuccess(false);
             }}
           >
             Перейти к входу

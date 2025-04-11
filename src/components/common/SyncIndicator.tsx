@@ -107,7 +107,7 @@ const SyncIndicator: React.FC = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [user, isAutoSyncEnabled, syncData]);
+  }, [user, isAutoSyncEnabled, syncData, loadSyncStatus]);
   
   // Обработчик клика для ручной синхронизации
   const handleSyncClick = async (e: React.MouseEvent) => {
@@ -179,20 +179,6 @@ const SyncIndicator: React.FC = () => {
     }
   };
   
-  // Определяем класс для индикатора в зависимости от статуса
-  const getIndicatorClass = () => {
-    if (syncStatus.networkStatus === 'offline') {
-      return 'text-gray-500';
-    } else if (syncStatus.error) {
-      return 'text-red-500';
-    } else if (syncStatus.inProgress) {
-      return 'text-blue-500';
-    } else if (syncStatus.pendingOperations > 0) {
-      return 'text-yellow-500';
-    } else {
-      return 'text-green-500';
-    }
-  };
   
   return (
     <div className="sync-indicator-container relative">

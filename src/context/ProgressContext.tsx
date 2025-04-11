@@ -36,6 +36,7 @@ export interface UserProgress {
 
 interface ProgressContextType {
   progress: UserProgress;
+  isLoading: boolean; // Добавляем isLoading в тип контекста
   updateDayProgress: (dayNumber: number, data: Partial<DayProgress>) => void;
   updateWeekReflection: (weekNumber: number, data: Partial<WeekReflection>) => void;
   getDayCompletion: (dayNumber: number) => number;
@@ -387,7 +388,8 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   return (
     <ProgressContext.Provider 
       value={{ 
-        progress: safeProgress, 
+        progress: safeProgress,
+        isLoading, // Добавляем isLoading в объект контекста
         updateDayProgress: safeUpdateDayProgress, 
         updateWeekReflection: safeUpdateWeekReflection, 
         getDayCompletion,

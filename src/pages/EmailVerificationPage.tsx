@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../utils/supabaseClient';
 import Button from '../components/common/Button';
@@ -49,7 +49,7 @@ const EmailVerificationPage: React.FC = () => {
   };
   
   // Функция для проверки статуса подтверждения email
-  const checkVerificationStatus = async () => {
+  const checkVerificationStatus = useCallback(async () => {
     if (!email) return;
     
     try {
@@ -67,7 +67,7 @@ const EmailVerificationPage: React.FC = () => {
     } catch (error) {
       console.error('Ошибка при проверке статуса подтверждения:', error);
     }
-  };
+  }, [email, navigate]);
   
   // Проверяем статус подтверждения при загрузке страницы и каждые 5 секунд
   useEffect(() => {
@@ -78,7 +78,7 @@ const EmailVerificationPage: React.FC = () => {
     }, 5000);
     
     return () => clearInterval(interval);
-  }, [email]);
+  }, [checkVerificationStatus]);
   
   return (
     <div className="email-verification-page flex min-h-screen bg-background iphone11pro-fix">

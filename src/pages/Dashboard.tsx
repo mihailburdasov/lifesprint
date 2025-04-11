@@ -34,7 +34,7 @@ const Dashboard: React.FC = () => {
     if (!expandedWeeks.includes(activeWeek)) {
       setExpandedWeeks([activeWeek]);
     }
-  }, [activeWeek]);
+  }, [activeWeek, expandedWeeks]);
   
   // Оборачиваем в try-catch только рендеринг, но не вызов хуков
   try {
@@ -280,18 +280,8 @@ const Dashboard: React.FC = () => {
       const completion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
       const isReflectionDay = dayNumber % 7 === 0;
       
-      // Get reflection data if it's a reflection day
+      // Get week number for reflection day
       const weekNumber = Math.ceil(dayNumber / 7);
-      const reflectionData = isReflectionDay ? (safeProgress.weekReflections[weekNumber] || {
-        gratitudeSelf: '',
-        gratitudeOthers: '',
-        gratitudeWorld: '',
-        achievements: ['', '', ''],
-        improvements: ['', '', ''],
-        insights: ['', '', ''],
-        rules: ['', '', ''],
-        exerciseCompleted: false
-      }) : null;
       
       // Get reflection day widget progress
       const reflectionProgress = isReflectionDay && getReflectionDayWidgetProgress ? 

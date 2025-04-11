@@ -4,11 +4,12 @@ import { logService } from '../../utils/logService';
 /**
  * Хук для мемоизации значения
  * @param value Значение для мемоизации
- * @param dependencies Зависимости для пересчета значения
+ * @param dependencies Дополнительные зависимости для пересчета значения
  * @returns Мемоизированное значение
  */
 export function useMemoValue<T>(value: T, dependencies: React.DependencyList): T {
-  return useMemo(() => value, dependencies);
+  // Добавляем value в массив зависимостей
+  return useMemo(() => value, [value, ...dependencies]);
 }
 
 /**
@@ -47,14 +48,15 @@ export function memoWithDeepCompare<P extends object>(
 /**
  * Хук для создания стабильной функции обратного вызова
  * @param callback Функция обратного вызова
- * @param dependencies Зависимости для пересчета функции
+ * @param dependencies Дополнительные зависимости для пересчета функции
  * @returns Стабильная функция обратного вызова
  */
 export function useStableCallback<T extends (...args: any[]) => any>(
   callback: T,
   dependencies: React.DependencyList
 ): T {
-  return useCallback(callback, dependencies);
+  // Добавляем callback в массив зависимостей
+  return useCallback(callback, [callback, ...dependencies]);
 }
 
 /**
@@ -65,8 +67,8 @@ export const MemoizedChildren: React.FC<{
   children: React.ReactNode;
   dependencies?: React.DependencyList;
 }> = memo(({ children, dependencies = [] }) => {
-  // Мемоизируем дочерние компоненты
-  const memoizedChildren = useMemo(() => children, dependencies);
+  // Мемоизируем дочерние компоненты с добавлением children в зависимости
+  const memoizedChildren = useMemo(() => children, [children, ...dependencies]);
   
   return <>{memoizedChildren}</>;
 });
