@@ -117,10 +117,10 @@ const AuthPage: React.FC = () => {
           telegramNickname: formData.telegramNickname
         });
         
-        // Если регистрация прошла успешно, показываем экран подтверждения
+        // Если регистрация прошла успешно, перенаправляем на страницу подтверждения email
         if (result) {
           setRegistrationSuccess(true);
-          navigate('/onboarding');
+          navigate('/verify-email', { state: { email: formData.email } });
         }
       }
     } catch (error) {
@@ -273,14 +273,8 @@ const AuthPage: React.FC = () => {
               type="button"
               className="text-sm text-primary hover:underline focus:outline-none min-h-[44px] inline-flex items-center justify-center px-2"
               onClick={() => {
-                // Здесь можно добавить логику для сброса пароля через Supabase
                 const email = formData.email;
-                if (email) {
-                  // Показываем модальное окно или переходим на страницу сброса пароля
-                  alert(`Функция сброса пароля будет отправлена на ${email}`);
-                } else {
-                  alert('Пожалуйста, введите ваш email для сброса пароля');
-                }
+                navigate('/reset-password', { state: { email } });
               }}
             >
               Забыли пароль?

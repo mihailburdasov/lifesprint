@@ -12,6 +12,9 @@ import ProfilePage from './pages/ProfilePage';
 import OnboardingPage from './pages/OnboardingPage';
 import SettingsPage from './pages/SettingsPage';
 import MigrationPage from './pages/MigrationPage';
+import EmailVerificationPage from './pages/EmailVerificationPage';
+import PasswordResetPage from './pages/PasswordResetPage';
+import PasswordResetConfirmPage from './pages/PasswordResetConfirmPage';
 import { supabase } from './utils/supabaseClient';
 
 // Улучшенный компонент для защиты маршрутов
@@ -44,6 +47,9 @@ const App: React.FC = () => {
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/migration" element={<MigrationPage />} />
+                <Route path="/verify-email" element={<EmailVerificationPage />} />
+                <Route path="/reset-password" element={<PasswordResetPage />} />
+                <Route path="/reset-password-confirm" element={<PasswordResetConfirmPage />} />
                 <Route 
                   path="/" 
                   element={
