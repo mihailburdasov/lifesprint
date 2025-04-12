@@ -70,3 +70,89 @@ export const getDayTitle = (dayNumber: number): string => {
   
   return titles[dayNumber - 1] || `День ${dayNumber}`;
 };
+
+export const dateUtils = {
+  // Constants
+  DAYS_IN_SPRINT: 28,
+  DAYS_IN_WEEK: 7,
+  
+  // Get the current day number (1-28) based on the current date
+  getCurrentDayNumber(): number {
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    return Math.min(Math.max(dayOfMonth, 1), this.DAYS_IN_SPRINT);
+  },
+  
+  // Get the current week number (1-4) based on the current day
+  getCurrentWeekNumber(): number {
+    const currentDay = this.getCurrentDayNumber();
+    return Math.ceil(currentDay / this.DAYS_IN_WEEK);
+  },
+  
+  // Check if a given day is a reflection day (7, 14, 21, 28)
+  isReflectionDay(dayNumber: number): boolean {
+    return dayNumber % this.DAYS_IN_WEEK === 0;
+  },
+  
+  // Get the week number for a given day
+  getWeekForDay(dayNumber: number): number {
+    return Math.ceil(dayNumber / this.DAYS_IN_WEEK);
+  },
+  
+  // Get all days in a given week
+  getDaysInWeek(weekNumber: number): number[] {
+    const startDay = (weekNumber - 1) * this.DAYS_IN_WEEK + 1;
+    return Array.from(
+      { length: this.DAYS_IN_WEEK },
+      (_, i) => startDay + i
+    );
+  },
+  
+  // Format a date as YYYY-MM-DD
+  formatDate(date: Date): string {
+    return date.toISOString().split('T')[0];
+  },
+  
+  // Parse a date string in YYYY-MM-DD format
+  parseDate(dateString: string): Date {
+    return new Date(dateString);
+  },
+  
+  // Get time until next day
+  getTimeUntilNextDay: (): number => {
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    return tomorrow.getTime() - now.getTime();
+  },
+  
+  // Format date for display
+  formatDateForDisplay: (date: Date): string => {
+    return new Intl.DateTimeFormat('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(date);
+  },
+  
+  // Format time for display
+  formatTime: (date: Date): string => {
+    return new Intl.DateTimeFormat('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  },
+  
+  // Check if date is today
+  isToday: (date: Date): boolean => {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+  },
+  
+  // Get days in current sprint (always 28)
+  getDaysInSprint: (): number => 28,
+  
+  // Get weeks in current sprint (always 4)
+  getWeeksInSprint: (): number => 4
+};

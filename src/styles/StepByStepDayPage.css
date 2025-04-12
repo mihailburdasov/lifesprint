@@ -1,0 +1,144 @@
+/* Стили для страницы пошагового заполнения дня */
+
+.step-by-step-page {
+  @apply min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark;
+}
+
+.step-by-step-page .content {
+  @apply max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8;
+}
+
+.step-by-step-page .header {
+  @apply mb-8;
+}
+
+.step-by-step-page .header h1 {
+  @apply text-3xl font-bold mb-2;
+}
+
+.step-by-step-page .header p {
+  @apply text-gray-600 dark:text-gray-400;
+}
+
+.step-by-step-page .step-content {
+  @apply bg-surface-light dark:bg-surface-dark rounded-xl p-6 shadow-sm mb-8;
+}
+
+.step-by-step-page .step-title {
+  @apply text-xl font-semibold mb-4;
+}
+
+.step-by-step-page .step-description {
+  @apply text-gray-600 dark:text-gray-400 mb-6;
+}
+
+.step-by-step-page .input-group {
+  @apply space-y-4 mb-6;
+}
+
+.step-by-step-page .input-label {
+  @apply block text-sm font-medium mb-1;
+}
+
+.step-by-step-page .text-input {
+  @apply w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 
+         bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+         focus:ring-2 focus:ring-primary focus:border-transparent;
+}
+
+.step-by-step-page .textarea {
+  @apply w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 
+         bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+         focus:ring-2 focus:ring-primary focus:border-transparent
+         min-h-[100px] resize-y;
+}
+
+.step-by-step-page .navigation {
+  @apply flex justify-between items-center mt-8;
+}
+
+.step-by-step-page .error-message {
+  @apply text-red-600 dark:text-red-400 text-sm mt-2;
+}
+
+.step-by-step-page .success-message {
+  @apply text-green-600 dark:text-green-400 text-sm mt-2;
+}
+
+.step-by-step-page .checkbox-group {
+  @apply flex items-center space-x-2;
+}
+
+.step-by-step-page .checkbox {
+  @apply h-4 w-4 text-primary border-gray-300 dark:border-gray-600 rounded
+         focus:ring-2 focus:ring-primary focus:ring-offset-0;
+}
+
+.step-by-step-page .checkbox-label {
+  @apply text-sm text-gray-700 dark:text-gray-300;
+}
+
+.step-by-step-page .add-button {
+  @apply text-primary hover:text-primary-dark dark:text-primary-light 
+         dark:hover:text-primary-lighter font-medium text-sm;
+}
+
+.step-by-step-page .progress-bar {
+  @apply h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-8;
+}
+
+.step-by-step-page .progress-bar-fill {
+  @apply h-full bg-primary transition-all duration-300 ease-in-out;
+}
+
+.step-by-step-page .audio-section {
+  @apply mt-6;
+}
+
+.step-by-step-page .audio-title {
+  @apply text-lg font-medium mb-3;
+}
+
+.step-by-step-page .audio-description {
+  @apply text-sm text-gray-600 dark:text-gray-400 mb-4;
+}
+
+.step-by-step-page .reflection-section {
+  @apply mt-8 pt-8 border-t border-gray-200 dark:border-gray-700;
+}
+
+.step-by-step-page .reflection-title {
+  @apply text-2xl font-bold mb-4;
+}
+
+.step-by-step-page .reflection-description {
+  @apply text-gray-600 dark:text-gray-400 mb-6;
+}
+
+.step-by-step-page .motivational-phrase {
+  @apply text-lg font-medium text-primary dark:text-primary-light mb-6;
+}
+
+.step-by-step-page .loading {
+  @apply flex justify-center items-center min-h-[200px];
+}
+
+.step-by-step-page .loading-spinner {
+  @apply animate-spin h-8 w-8 text-primary;
+}
+
+.step-by-step-page .access-denied {
+  @apply text-center py-12;
+}
+
+.step-by-step-page .access-denied-icon {
+  @apply text-gray-400 dark:text-gray-600 mb-4;
+}
+
+.step-by-step-page .access-denied-message {
+  @apply text-xl font-medium mb-2;
+}
+
+.step-by-step-page .access-denied-description {
+  @apply text-gray-600 dark:text-gray-400;
+} 

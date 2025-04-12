@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useProgress } from '../context/ProgressContext';
+import { useTheme } from '../context/ThemeContext';
+import { formatDate, getDayTitle } from '../utils/dateUtils';
+import { getDailyContent, getMotivationalPhrase } from '../data/dailyContent';
+import { FaLock } from 'react-icons/fa';
+import useInputFocus from '../hooks/useInputFocus';
 import Sidebar from '../components/layout/Sidebar';
 import AudioPlayer from '../components/common/AudioPlayer';
 import Button from '../components/common/Button';
-import { useProgress } from '../context/ProgressContext';
-import { FaLock } from 'react-icons/fa';
-import { formatDate, getDayTitle } from '../utils/dateUtils';
-import { getDailyContent, getMotivationalPhrase } from '../data/dailyContent';
-import useInputFocus from '../hooks/useInputFocus';
 
 interface DayParams {
   dayId: string;
@@ -18,6 +19,7 @@ const DayPage: React.FC = () => {
   const { dayId } = useParams<DayParams>();
   const navigate = useNavigate();
   const { progress, updateDayProgress, updateWeekReflection, isReflectionDay: checkReflectionDay, getDayCompletion, isDayAccessible } = useProgress();
+  const { theme } = useTheme();
   
   // Используем хук для предотвращения перекрытия полей ввода мобильной клавиатурой
   useInputFocus();
@@ -33,22 +35,39 @@ const DayPage: React.FC = () => {
   // Get day data
   const dayData = progress.days[dayNumber] || {
     completed: false,
-    gratitude: ['', '', ''],
-    achievements: ['', '', ''],
+    gratitude: [
+      'Я благодарю за',
+      'Я благодарю за',
+      'Я благодарю за'
+    ],
+    achievements: [
+      'Я горжусь тем, что',
+      'Я горжусь тем, что',
+      'Я горжусь тем, что'
+    ],
     goals: [
       { text: '', completed: false },
       { text: '', completed: false },
       { text: '', completed: false }
     ],
-    exerciseCompleted: false
+    additionalGratitude: [],
+    additionalAchievements: [],
+    exerciseCompleted: false,
+    thoughtsCompleted: false,
+    audioCompleted: false,
+    reflectionCompleted: false
   };
   
   // Get week reflection data if it's a reflection day
   const reflectionData = isReflection ? (progress.weekReflections[weekNumber] || {
-    gratitudeSelf: '',
-    gratitudeOthers: '',
-    gratitudeWorld: '',
-    achievements: ['', '', ''],
+    gratitudeSelf: 'Я благодарю себя за',
+    gratitudeOthers: 'Я благодарю окружающих за',
+    gratitudeWorld: 'Я благодарю мир за',
+    achievements: [
+      'Я горжусь тем, что',
+      'Я горжусь тем, что',
+      'Я горжусь тем, что'
+    ],
     improvements: ['', '', ''],
     insights: ['', '', ''],
     rules: ['', '', ''],
@@ -56,9 +75,7 @@ const DayPage: React.FC = () => {
   }) : null;
   
   // State for additional gratitude and achievement fields
-  // Only allow adding additional fields for the current day
   const isCurrentDay = dayNumber === progress.currentDay;
-  
   const [additionalGratitude, setAdditionalGratitude] = useState<string[]>(
     dayData.additionalGratitude || []
   );
@@ -77,7 +94,6 @@ const DayPage: React.FC = () => {
   // Clean up timeouts when component unmounts
   useEffect(() => {
     return () => {
-      // Clear any active timeouts
       if (prevButtonTimeoutRef.current) {
         window.clearTimeout(prevButtonTimeoutRef.current);
       }
@@ -90,48 +106,36 @@ const DayPage: React.FC = () => {
   // Handle navigation to previous/next day
   const goToPreviousDay = () => {
     if (dayNumber > 1) {
-      // Clear any existing timeout
       if (prevButtonTimeoutRef.current) {
         window.clearTimeout(prevButtonTimeoutRef.current);
       }
       
-      // Set active state
       setIsPrevButtonActive(true);
-      
-      // Navigate immediately
       navigate(`/day/${dayNumber - 1}`);
       
-      // Reset active state after a short delay
       const timeoutId = window.setTimeout(() => {
         setIsPrevButtonActive(false);
         prevButtonTimeoutRef.current = null;
       }, 150);
       
-      // Store the timeout ID
       prevButtonTimeoutRef.current = timeoutId;
     }
   };
   
   const goToNextDay = () => {
     if (dayNumber < 28) {
-      // Clear any existing timeout
       if (nextButtonTimeoutRef.current) {
         window.clearTimeout(nextButtonTimeoutRef.current);
       }
       
-      // Set active state
       setIsNextButtonActive(true);
-      
-      // Navigate immediately
       navigate(`/day/${dayNumber + 1}`);
       
-      // Reset active state after a short delay
       const timeoutId = window.setTimeout(() => {
         setIsNextButtonActive(false);
         nextButtonTimeoutRef.current = null;
       }, 150);
       
-      // Store the timeout ID
       nextButtonTimeoutRef.current = timeoutId;
     }
   };
@@ -151,7 +155,7 @@ const DayPage: React.FC = () => {
   };
   
   const addGratitudeField = () => {
-    if (additionalGratitude.length < 4) { // Max 7 total (3 default + 4 additional)
+    if (additionalGratitude.length < 4) {
       const newAdditionalGratitude = [...additionalGratitude, ''];
       setAdditionalGratitude(newAdditionalGratitude);
       updateDayProgress(dayNumber, { additionalGratitude: newAdditionalGratitude });
@@ -172,7 +176,7 @@ const DayPage: React.FC = () => {
   };
   
   const addAchievementField = () => {
-    if (additionalAchievements.length < 4) { // Max 7 total (3 default + 4 additional)
+    if (additionalAchievements.length < 4) {
       const newAdditionalAchievements = [...additionalAchievements, ''];
       setAdditionalAchievements(newAdditionalAchievements);
       updateDayProgress(dayNumber, { additionalAchievements: newAdditionalAchievements });
@@ -186,7 +190,6 @@ const DayPage: React.FC = () => {
   };
   
   const handleGoalToggle = (index: number) => {
-    // Prevent toggling completion for empty goals
     if (!dayData.goals[index].text.trim()) {
       alert('Пожалуйста, заполните задачу перед тем, как отметить её выполненной.');
       return;
@@ -255,10 +258,18 @@ const DayPage: React.FC = () => {
   // Get daily content
   const dailyContent = getDailyContent(dayNumber);
   
+  // Check if this is a bonus day (days 29-31)
+  const isBonusDay = dayNumber >= 29 && dayNumber <= 31;
+  
+  // Check if the day is accessible
+  const isAccessible = isDayAccessible(dayNumber);
+  
   // Render regular day content
   const renderRegularDayContent = () => {
+    const motivationalPhrase = getMotivationalPhrase(weekNumber);
+    
     return (
-      <div className="day-content space-y-6 sm:space-y-8">
+      <div className="regular-day-content space-y-6">
         {/* Thought of the day */}
         <div className="thought-of-day">
           <h3 className="text-base sm:text-lg font-medium mb-2">
@@ -270,145 +281,138 @@ const DayPage: React.FC = () => {
             {dailyContent.thought.text}
           </div>
         </div>
-        
-        {/* Gratitude Journal */}
-        <div className="gratitude-journal">
-          <h3 className="text-base sm:text-lg font-medium mb-2">Дневник благодарностей</h3>
-          <p className="text-sm text-text-light-light dark:text-text-light-dark mb-3">
+
+        {/* Gratitude Section */}
+        <section className="gratitude-section">
+          <h3 className="text-xl font-semibold mb-2">Дневник благодарностей</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             За что я чувствую благодарность в своей жизни за последние 24 часа?
           </p>
-          
           <div className="space-y-3">
             {dayData.gratitude.map((item, index) => (
-              <div key={`gratitude-${index}`} className="flex items-center">
+              <div key={index} className="flex items-center">
                 <span className="mr-2">🙏</span>
                 <input
                   type="text"
                   value={item}
                   onChange={(e) => handleGratitudeChange(index, e.target.value)}
                   placeholder="Я благодарю за"
-                  className="input flex-1"
+                  className="input flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
             ))}
-            
-            {/* Additional gratitude fields */}
             {additionalGratitude.map((item, index) => (
-              <div key={`additional-gratitude-${index}`} className="flex items-center">
+              <div key={`additional-${index}`} className="flex items-center">
                 <span className="mr-2">🙏</span>
                 <input
                   type="text"
                   value={item}
                   onChange={(e) => handleAdditionalGratitudeChange(index, e.target.value)}
                   placeholder="Я благодарю за"
-                  className="input flex-1"
+                  className="input flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
             ))}
-            
-            {/* Add button for gratitude (only for current day and non-reflection days) */}
-            {isCurrentDay && !isReflection && additionalGratitude.length < 4 && (
-              <button
-                onClick={addGratitudeField}
-                className="text-gray-500 text-sm hover:text-gray-700 mt-2 flex items-center"
-              >
-                <span className="mr-1">+</span> Добавить благодарностей
-              </button>
-            )}
+            <button
+              onClick={addGratitudeField}
+              className="text-gray-500 text-sm hover:text-gray-700 mt-2 flex items-center"
+            >
+              <span className="mr-1">+</span> Добавить благодарностей
+            </button>
           </div>
-        </div>
-        
-        {/* Achievements */}
-        <div className="achievements">
-          <h3 className="text-base sm:text-lg font-medium mb-2">Копилка достижений</h3>
-          <p className="text-sm text-text-light-light dark:text-text-light-dark mb-3">
+        </section>
+
+        {/* Achievements Section */}
+        <section className="achievements-section">
+          <h3 className="text-xl font-semibold mb-2">Копилка достижений</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             Какими достижениями я могу гордиться за последние 24 часа?
           </p>
-          
           <div className="space-y-3">
             {dayData.achievements.map((item, index) => (
-              <div key={`achievement-${index}`} className="flex items-center">
-                <span className="mr-2">😎</span>
+              <div key={index} className="flex items-center">
+                <span className="mr-2">✓</span>
                 <input
                   type="text"
                   value={item}
                   onChange={(e) => handleAchievementChange(index, e.target.value)}
-                  placeholder="Я горжусь собой"
-                  className="input flex-1"
+                  placeholder="Я горжусь тем, что"
+                  className="input flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
             ))}
-            
-            {/* Additional achievement fields */}
             {additionalAchievements.map((item, index) => (
-              <div key={`additional-achievement-${index}`} className="flex items-center">
-                <span className="mr-2">😎</span>
+              <div key={`additional-${index}`} className="flex items-center">
+                <span className="mr-2">✓</span>
                 <input
                   type="text"
                   value={item}
                   onChange={(e) => handleAdditionalAchievementChange(index, e.target.value)}
-                  placeholder="Я горжусь собой"
-                  className="input flex-1"
+                  placeholder="Я горжусь тем, что"
+                  className="input flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
             ))}
-            
-            {/* Add button for achievements (only for current day and non-reflection days) */}
-            {isCurrentDay && !isReflection && additionalAchievements.length < 4 && (
-              <button
-                onClick={addAchievementField}
-                className="text-gray-500 text-sm hover:text-gray-700 mt-2 flex items-center"
-              >
-                <span className="mr-1">+</span> Добавить достижений
-              </button>
-            )}
+            <button
+              onClick={addAchievementField}
+              className="text-gray-500 text-sm hover:text-gray-700 mt-2 flex items-center"
+            >
+              <span className="mr-1">+</span> Добавить достижений
+            </button>
           </div>
-        </div>
-        
-        {/* Goals */}
-        <div className="goals">
-          <h3 className="text-base sm:text-lg font-medium mb-2">Целеполагание</h3>
-          <p className="text-sm text-text-light-light dark:text-text-light-dark mb-3">
+        </section>
+
+        {/* Goals Section */}
+        <section className="goals-section">
+          <h3 className="text-xl font-semibold mb-2">Целеполагание</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             Какие 3 задачи я поставлю перед собой на день?
           </p>
-          
           <div className="space-y-3">
             {dayData.goals.map((goal, index) => (
-              <div key={index} className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={goal.completed}
-                  onChange={() => handleGoalToggle(index)}
-                  className="checkbox mr-3"
-                />
+              <div key={index} className="flex items-start space-x-2">
+                <div className="flex items-center h-10">
+                  <input
+                    type="checkbox"
+                    checked={goal.completed}
+                    onChange={() => handleGoalToggle(index)}
+                    className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                  />
+                </div>
                 <input
                   type="text"
                   value={goal.text}
                   onChange={(e) => handleGoalChange(index, e.target.value)}
                   placeholder={`Моя ${index + 1} задача`}
-                  className="input flex-1"
+                  className={`flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${
+                    goal.completed ? 'line-through text-gray-500' : ''
+                  }`}
                 />
               </div>
             ))}
           </div>
-        </div>
-        
-        {/* Exercise */}
-        <div className="exercise">
-          <h3 className="text-base sm:text-lg font-medium mb-2">#упражнение_на_осознанность</h3>
-          <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md mb-3 text-sm sm:text-base">
+        </section>
+
+        {/* Exercise Section */}
+        <section className="exercise-section">
+          <h3 className="text-xl font-semibold mb-2">#упражнение_на_осознанность</h3>
+          <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md mb-4 text-sm sm:text-base">
             {dailyContent.exercise}
           </div>
-          
-          <div className="flex items-center">
+          <div className="flex items-center space-x-3">
             <input
               type="checkbox"
               checked={dayData.exerciseCompleted}
               onChange={handleExerciseComplete}
-              className="checkbox mr-3"
+              className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
             />
-            <span>Упражнение выполнено</span>
+            <span className="text-base">Упражнение выполнено</span>
           </div>
+        </section>
+
+        {/* Motivational Quote */}
+        <div className="motivational-quote p-4 bg-primary bg-opacity-10 rounded-lg">
+          <p className="text-lg italic text-center">{motivationalPhrase}</p>
         </div>
       </div>
     );
@@ -596,9 +600,6 @@ const DayPage: React.FC = () => {
     );
   };
   
-  // Check if this is a bonus day (days 29-31)
-  const isBonusDay = dayNumber >= 29 && dayNumber <= 31;
-  
   // Render bonus day content
   const renderBonusDayContent = () => {
     return (
@@ -616,9 +617,6 @@ const DayPage: React.FC = () => {
     );
   };
 
-  // Check if the day is accessible
-  const isAccessible = isDayAccessible(dayNumber);
-  
   // Render access denied content
   const renderAccessDeniedContent = () => {
     return (
@@ -721,23 +719,16 @@ const DayPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="audio-player-container mb-4 sm:mb-6">
-              <AudioPlayer 
-                src={dailyContent.audioSrc} 
-                className="w-full"
-              />
-            </div>
+            {isReflection ? renderReflectionDayContent() : renderRegularDayContent()}
             
-        {isReflection ? renderReflectionDayContent() : renderRegularDayContent()}
-        
-        {/* "Done" button at the bottom of each day */}
-        <div className="mt-8 text-center">
-          <Link to="/">
-            <Button variant="primary">
-              Готово
-            </Button>
-          </Link>
-        </div>
+            {/* "Done" button at the bottom of each day */}
+            <div className="mt-8 text-center">
+              <Link to="/">
+                <Button variant="primary">
+                  Готово
+                </Button>
+              </Link>
+            </div>
           </>
         )}
       </div>

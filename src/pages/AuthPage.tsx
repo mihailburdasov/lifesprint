@@ -18,7 +18,7 @@ interface FormData {
 
 const AuthPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, error: authError, login, register } = useUser();
+  const { user, error: authError, login, register } = useUser();
   const [mode, setMode] = useState<AuthMode>('login');
   const [formData, setFormData] = useState<FormData>({
     email: '',
@@ -31,10 +31,10 @@ const AuthPage: React.FC = () => {
 
   // Перенаправление на главную, если пользователь уже авторизован
   useEffect(() => {
-    if (isAuthenticated) {
+    if (user) {
       navigate('/');
     }
-  }, [isAuthenticated, navigate]);
+  }, [user, navigate]);
 
   // Переключение между режимами входа и регистрации
   const toggleMode = () => {
@@ -102,16 +102,8 @@ const AuthPage: React.FC = () => {
           password: formData.password
         });
         
-        // Если вход успешен, перенаправление произойдет автоматически через useEffect
         if (loginResult) {
-          // Проверяем, есть ли локальные данные, которые нужно мигрировать
-          const localUserData = localStorage.getItem(`lifesprint_user_${formData.email}`);
-          if (localUserData) {
-            // Предлагаем пользователю перейти на страницу миграции
-            if (window.confirm('У вас есть локальные данные, которые можно перенести в облачное хранилище. Хотите перейти на страницу миграции?')) {
-              navigate('/migration');
-            }
-          }
+          navigate('/');
         }
       } else if (mode === 'register') {
         const result = await register({
@@ -121,9 +113,8 @@ const AuthPage: React.FC = () => {
           telegramNickname: formData.telegramNickname
         });
         
-        // Если регистрация прошла успешно, перенаправляем на страницу подтверждения email
         if (result) {
-          navigate('/verify-email', { state: { email: formData.email } });
+          navigate('/');
         }
       }
     } catch (error) {
@@ -164,90 +155,90 @@ const AuthPage: React.FC = () => {
         </h1>
           
         <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
-            {mode === 'register' && (
-              <>
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-text-light mb-1">
-                    Ваше имя
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={validationService.sanitizeInput(formData.name || '')}
-                    onChange={handleChange}
-                    className={`input w-full h-11 text-base ${errors.name ? 'border-red-500' : ''}`}
-                    placeholder="Введите ваше имя"
-                  />
-                  {errors.name && (
-                    <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <label htmlFor="telegramNickname" className="block text-sm font-medium text-text-light mb-1">
-                    Никнейм в Telegram (по желанию)
-                  </label>
-                  <input
-                    type="text"
-                    id="telegramNickname"
-                    name="telegramNickname"
-                    value={validationService.sanitizeInput(formData.telegramNickname || '')}
-                    onChange={handleChange}
-                    className="input w-full h-11 text-base"
-                    placeholder="@username"
-                  />
-                </div>
-              </>
+          {mode === 'register' && (
+            <>
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-text-light mb-1">
+                  Ваше имя
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={validationService.sanitizeInput(formData.name || '')}
+                  onChange={handleChange}
+                  className={`input w-full h-11 text-base ${errors.name ? 'border-red-500' : ''}`}
+                  placeholder="Введите ваше имя"
+                />
+                {errors.name && (
+                  <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                )}
+              </div>
+              
+              <div>
+                <label htmlFor="telegramNickname" className="block text-sm font-medium text-text-light mb-1">
+                  Никнейм в Telegram (по желанию)
+                </label>
+                <input
+                  type="text"
+                  id="telegramNickname"
+                  name="telegramNickname"
+                  value={validationService.sanitizeInput(formData.telegramNickname || '')}
+                  onChange={handleChange}
+                  className="input w-full h-11 text-base"
+                  placeholder="@username"
+                />
+              </div>
+            </>
+          )}
+          
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-text-light mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={validationService.sanitizeInput(formData.email)}
+              onChange={handleChange}
+              className={`input w-full h-11 text-base ${errors.email ? 'border-red-500' : ''}`}
+              placeholder="Введите ваш email"
+            />
+            {errors.email && (
+              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
             )}
-            
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-text-light mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={validationService.sanitizeInput(formData.email)}
-                onChange={handleChange}
-                className={`input w-full h-11 text-base ${errors.email ? 'border-red-500' : ''}`}
-                placeholder="Введите ваш email"
-              />
-              {errors.email && (
-                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-text-light mb-1">
-                Пароль
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={`input w-full h-11 text-base ${errors.password ? 'border-red-500' : ''}`}
-                placeholder="Введите ваш пароль"
-              />
-              {errors.password && (
-                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-              )}
-            </div>
-            
-            <div className="pt-3">
-              <Button
-                type="submit"
-                variant="primary"
-                fullWidth
-                disabled={isLoading}
-                className="mt-2"
-              >
-                {isLoading ? 'Загрузка...' : mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
-              </Button>
-            </div>
+          </div>
+          
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-text-light mb-1">
+              Пароль
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className={`input w-full h-11 text-base ${errors.password ? 'border-red-500' : ''}`}
+              placeholder="Введите ваш пароль"
+            />
+            {errors.password && (
+              <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+            )}
+          </div>
+          
+          <div className="pt-3">
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              disabled={isLoading}
+              className="mt-2"
+            >
+              {isLoading ? 'Загрузка...' : mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
+            </Button>
+          </div>
         </form>
         
         {authError && (

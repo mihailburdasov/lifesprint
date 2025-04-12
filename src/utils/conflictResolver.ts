@@ -1,83 +1,53 @@
-import { UserProgress, DayProgress, WeekReflection } from '../context/ProgressContext';
+import { Progress, DayProgress, WeekProgress } from '../types/progress';
 import { logService } from './logService';
 
 /**
- * Сервис для разрешения конфликтов при синхронизации данных
+ * Сервис для разрешения конфликтов данных
  */
 export const conflictResolver = {
   /**
-   * Разрешение конфликтов для прогресса пользователя
-   * @param localProgress Локальный прогресс
-   * @param remoteProgress Удаленный прогресс
-   * @returns Объединенный прогресс
+   * Разрешение конфликтов между локальными и серверными данными прогресса
    */
-  resolveProgressConflict: (localProgress: UserProgress, remoteProgress: UserProgress): UserProgress => {
+  resolveProgressConflict(localProgress: Progress, serverProgress: Progress): Progress {
     try {
-      // Создаем новый объект прогресса
-      const mergedProgress: UserProgress = {
-        // Используем более раннюю дату начала
-        startDate: new Date(Math.min(
-          localProgress.startDate.getTime(), 
-          remoteProgress.startDate.getTime()
-        )),
-        // Используем более поздний текущий день
-        currentDay: Math.max(localProgress.currentDay, remoteProgress.currentDay),
-        days: {},
-        weekReflections: {}
-      };
+      // Определяем, какие данные новее
+      const localDate = new Date(localProgress.startDate);
+      const serverDate = new Date(serverProgress.startDate);
+      
+      // Используем более новые данные как основу
+      const baseProgress = localDate > serverDate ? localProgress : serverProgress;
+      const otherProgress = localDate > serverDate ? serverProgress : localProgress;
       
       // Объединяем дни
-      const allDayIds = new Set([
-        ...Object.keys(localProgress.days),
-        ...Object.keys(remoteProgress.days)
-      ].map(Number));
+      const mergedDays: Record<number, DayProgress> = { ...baseProgress.days };
       
-      allDayIds.forEach(dayId => {
-        const localDay = localProgress.days[dayId];
-        const remoteDay = remoteProgress.days[dayId];
-        
-        if (localDay && remoteDay) {
-          // Если день есть в обоих прогрессах, выбираем более заполненный
-          mergedProgress.days[dayId] = conflictResolver.resolveDayConflict(localDay, remoteDay);
-        } else if (localDay) {
-          // Если день есть только в локальном прогрессе
-          mergedProgress.days[dayId] = localDay;
-        } else if (remoteDay) {
-          // Если день есть только в удаленном прогрессе
-          mergedProgress.days[dayId] = remoteDay;
+      for (const [dayNumber, dayData] of Object.entries(otherProgress.days)) {
+        const num = parseInt(dayNumber, 10);
+        if (!mergedDays[num] || new Date(dayData.date) > new Date(mergedDays[num].date)) {
+          mergedDays[num] = dayData;
         }
-      });
+      }
       
-      // Объединяем недельные рефлексии
-      const allWeekIds = new Set([
-        ...Object.keys(localProgress.weekReflections),
-        ...Object.keys(remoteProgress.weekReflections)
-      ].map(Number));
+      // Объединяем размышления за неделю
+      const mergedWeekReflections: Record<number, WeekProgress> = { ...baseProgress.weekReflections };
       
-      allWeekIds.forEach(weekId => {
-        const localReflection = localProgress.weekReflections[weekId];
-        const remoteReflection = remoteProgress.weekReflections[weekId];
-        
-        if (localReflection && remoteReflection) {
-          // Если рефлексия есть в обоих прогрессах, выбираем более заполненную
-          mergedProgress.weekReflections[weekId] = conflictResolver.resolveReflectionConflict(
-            localReflection, 
-            remoteReflection
-          );
-        } else if (localReflection) {
-          // Если рефлексия есть только в локальном прогрессе
-          mergedProgress.weekReflections[weekId] = localReflection;
-        } else if (remoteReflection) {
-          // Если рефлексия есть только в удаленном прогрессе
-          mergedProgress.weekReflections[weekId] = remoteReflection;
+      for (const [weekNumber, weekData] of Object.entries(otherProgress.weekReflections)) {
+        const num = parseInt(weekNumber, 10);
+        if (!mergedWeekReflections[num] || weekData.reflectionCompleted) {
+          mergedWeekReflections[num] = weekData;
         }
-      });
+      }
       
-      return mergedProgress;
+      // Возвращаем объединенные данные
+      return {
+        ...baseProgress,
+        days: mergedDays,
+        weekReflections: mergedWeekReflections
+      };
     } catch (error) {
-      logService.error('Ошибка при разрешении конфликта прогресса', error);
-      // В случае ошибки возвращаем локальный прогресс
-      return localProgress;
+      logService.error('Error resolving progress conflict:', error);
+      // В случае ошибки возвращаем более новые данные
+      return new Date(localProgress.startDate) > new Date(serverProgress.startDate) ? localProgress : serverProgress;
     }
   },
   
@@ -101,6 +71,11 @@ export const conflictResolver = {
       } else {
         // Если заполнение одинаковое, объединяем данные
         return {
+          dayNumber: localDay.dayNumber,
+          date: localDay.date,
+          thoughtsCompleted: localDay.thoughtsCompleted || remoteDay.thoughtsCompleted,
+          audioCompleted: localDay.audioCompleted || remoteDay.audioCompleted,
+          reflectionCompleted: localDay.reflectionCompleted || remoteDay.reflectionCompleted,
           completed: localDay.completed || remoteDay.completed,
           gratitude: conflictResolver.mergeArrays(localDay.gratitude, remoteDay.gratitude),
           additionalGratitude: conflictResolver.mergeArrays(
@@ -129,7 +104,7 @@ export const conflictResolver = {
    * @param remoteReflection Удаленная рефлексия
    * @returns Объединенная рефлексия
    */
-  resolveReflectionConflict: (localReflection: WeekReflection, remoteReflection: WeekReflection): WeekReflection => {
+  resolveReflectionConflict: (localReflection: WeekProgress, remoteReflection: WeekProgress): WeekProgress => {
     try {
       // Вычисляем заполненность каждой рефлексии
       const localCompletion = conflictResolver.calculateReflectionCompletion(localReflection);
@@ -143,6 +118,10 @@ export const conflictResolver = {
       } else {
         // Если заполнение одинаковое, объединяем данные
         return {
+          weekNumber: localReflection.weekNumber,
+          reflectionCompleted: localReflection.reflectionCompleted || remoteReflection.reflectionCompleted,
+          days: localReflection.days,
+          progress: localReflection.progress,
           gratitudeSelf: localReflection.gratitudeSelf || remoteReflection.gratitudeSelf,
           gratitudeOthers: localReflection.gratitudeOthers || remoteReflection.gratitudeOthers,
           gratitudeWorld: localReflection.gratitudeWorld || remoteReflection.gratitudeWorld,
@@ -205,7 +184,7 @@ export const conflictResolver = {
    * @param reflection Недельная рефлексия
    * @returns Процент заполненности (0-100)
    */
-  calculateReflectionCompletion: (reflection: WeekReflection): number => {
+  calculateReflectionCompletion: (reflection: WeekProgress): number => {
     try {
       let total = 0;
       

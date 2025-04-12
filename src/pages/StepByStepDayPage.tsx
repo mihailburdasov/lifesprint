@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
 import AudioPlayer from '../components/common/AudioPlayer';
 import Button from '../components/common/Button';
 import { useProgress } from '../context/ProgressContext';
+import { useTheme } from '../context/ThemeContext';
 import { formatDate, getDayTitle } from '../utils/dateUtils';
 import { getStepContent, getMotivationalPhrase } from '../data/dailyContent';
 import useInputFocus from '../hooks/useInputFocus';
+import { DayProgress } from '../types/progress';
 
 interface StepParams {
   dayId: string;
@@ -17,7 +19,12 @@ interface StepParams {
 const StepByStepDayPage: React.FC = () => {
   const { dayId, stepId } = useParams<StepParams>();
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const { progress, updateDayProgress, updateWeekReflection, isDayAccessible, isReflectionDay: checkReflectionDay } = useProgress();
+  
+  // State variables
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Используем хук для предотвращения перекрытия полей ввода мобильной клавиатурой
   useInputFocus();
@@ -35,8 +42,13 @@ const StepByStepDayPage: React.FC = () => {
   dayDate.setDate(dayDate.getDate() + dayNumber - 1);
   
   // Get day data
-  const dayData = progress.days[dayNumber] || {
-    completed: false,
+  const [dayData, setDayData] = useState<DayProgress>({
+    dayNumber,
+    date: formatDate(dayDate),
+    thoughtsCompleted: false,
+    exerciseCompleted: false,
+    audioCompleted: false,
+    reflectionCompleted: false,
     gratitude: ['', '', ''],
     achievements: ['', '', ''],
     goals: [
@@ -44,8 +56,10 @@ const StepByStepDayPage: React.FC = () => {
       { text: '', completed: false },
       { text: '', completed: false }
     ],
-    exerciseCompleted: false
-  };
+    additionalGratitude: [],
+    additionalAchievements: [],
+    completed: false
+  });
   
   // Get week reflection data if it's a reflection day
   const reflectionData = isReflection ? (progress.weekReflections[weekNumber] || {
@@ -76,6 +90,13 @@ const StepByStepDayPage: React.FC = () => {
   // Get content for the current step
   const stepContent = getStepContent(dayNumber, stepNumber);
   
+  // Load day data on mount
+  useEffect(() => {
+    if (progress.days[dayNumber]) {
+      setDayData(progress.days[dayNumber]);
+    }
+  }, [dayNumber, progress.days]);
+  
   // Handle navigation to previous/next step
   const goToPreviousStep = () => {
     if (stepNumber > 1) {
@@ -83,17 +104,28 @@ const StepByStepDayPage: React.FC = () => {
     }
   };
   
-  const goToNextStep = () => {
-    if (stepNumber < (isReflection ? 8 : 6)) {
-      navigate(`/day/${dayNumber}/step/${stepNumber + 1}`);
-    } else {
-      // If it's the last step, mark the day as completed and go to dashboard
-      if (isReflection) {
-        updateWeekReflection(weekNumber, { exerciseCompleted: true });
-      } else {
-        updateDayProgress(dayNumber, { completed: true });
+  const goToNextStep = async () => {
+    try {
+      if (!validateStep()) {
+        setError('Пожалуйста, заполните все обязательные поля');
+        return;
       }
-      navigate('/');
+
+      setIsLoading(true);
+      setError(null);
+
+      if (stepNumber < (isReflection ? 8 : 6)) {
+        await updateDayProgress(dayNumber, dayData);
+        navigate(`/day/${dayNumber}/step/${stepNumber + 1}`);
+      } else {
+        await updateDayProgress(dayNumber, { ...dayData, completed: true });
+        navigate('/');
+      }
+    } catch (err) {
+      setError('Произошла ошибка при сохранении прогресса');
+      console.error('Error saving progress:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -101,65 +133,64 @@ const StepByStepDayPage: React.FC = () => {
   const handleGratitudeChange = (index: number, value: string) => {
     const newGratitude = [...dayData.gratitude];
     newGratitude[index] = value;
-    updateDayProgress(dayNumber, { gratitude: newGratitude });
+    setDayData({ ...dayData, gratitude: newGratitude });
   };
   
   const handleAdditionalGratitudeChange = (index: number, value: string) => {
     const newAdditionalGratitude = [...additionalGratitude];
     newAdditionalGratitude[index] = value;
     setAdditionalGratitude(newAdditionalGratitude);
-    updateDayProgress(dayNumber, { additionalGratitude: newAdditionalGratitude });
+    setDayData({ ...dayData, additionalGratitude: newAdditionalGratitude });
   };
   
   const addGratitudeField = () => {
     if (additionalGratitude.length < 4) { // Max 7 total (3 default + 4 additional)
       const newAdditionalGratitude = [...additionalGratitude, ''];
       setAdditionalGratitude(newAdditionalGratitude);
-      updateDayProgress(dayNumber, { additionalGratitude: newAdditionalGratitude });
+      setDayData({ ...dayData, additionalGratitude: newAdditionalGratitude });
     }
   };
   
   const handleAchievementChange = (index: number, value: string) => {
     const newAchievements = [...dayData.achievements];
     newAchievements[index] = value;
-    updateDayProgress(dayNumber, { achievements: newAchievements });
+    setDayData({ ...dayData, achievements: newAchievements });
   };
   
   const handleAdditionalAchievementChange = (index: number, value: string) => {
     const newAdditionalAchievements = [...additionalAchievements];
     newAdditionalAchievements[index] = value;
     setAdditionalAchievements(newAdditionalAchievements);
-    updateDayProgress(dayNumber, { additionalAchievements: newAdditionalAchievements });
+    setDayData({ ...dayData, additionalAchievements: newAdditionalAchievements });
   };
   
   const addAchievementField = () => {
     if (additionalAchievements.length < 4) { // Max 7 total (3 default + 4 additional)
       const newAdditionalAchievements = [...additionalAchievements, ''];
       setAdditionalAchievements(newAdditionalAchievements);
-      updateDayProgress(dayNumber, { additionalAchievements: newAdditionalAchievements });
+      setDayData({ ...dayData, additionalAchievements: newAdditionalAchievements });
     }
   };
   
   const handleGoalChange = (index: number, value: string) => {
     const newGoals = [...dayData.goals];
     newGoals[index] = { ...newGoals[index], text: value };
-    updateDayProgress(dayNumber, { goals: newGoals });
+    setDayData({ ...dayData, goals: newGoals });
   };
   
   const handleGoalToggle = (index: number) => {
-    // Prevent toggling completion for empty goals
     if (!dayData.goals[index].text.trim()) {
-      alert('Пожалуйста, заполните задачу перед тем, как отметить её выполненной.');
+      setError('Пожалуйста, заполните задачу перед тем, как отметить её выполненной.');
       return;
     }
     
     const newGoals = [...dayData.goals];
     newGoals[index] = { ...newGoals[index], completed: !newGoals[index].completed };
-    updateDayProgress(dayNumber, { goals: newGoals });
+    setDayData({ ...dayData, goals: newGoals });
   };
   
   const handleExerciseComplete = () => {
-    updateDayProgress(dayNumber, { exerciseCompleted: !dayData.exerciseCompleted });
+    setDayData({ ...dayData, exerciseCompleted: !dayData.exerciseCompleted });
   };
   
   // Handle reflection day input changes
@@ -211,6 +242,20 @@ const StepByStepDayPage: React.FC = () => {
     if (!reflectionData) return;
     
     updateWeekReflection(weekNumber, { exerciseCompleted: !reflectionData.exerciseCompleted });
+  };
+  
+  // Validate current step
+  const validateStep = (): boolean => {
+    switch(stepNumber) {
+      case 3: // Gratitude step
+        return true; // Убираем валидацию для благодарностей
+      case 4: // Achievements step
+        return true; // Убираем валидацию для достижений
+      case 5: // Goals step
+        return true; // Убираем валидацию для целей
+      default:
+        return true;
+    }
   };
   
   // Render content based on the current step for regular days
@@ -728,7 +773,7 @@ const StepByStepDayPage: React.FC = () => {
             {isReflection ? renderReflectionStepContent() : renderRegularStepContent()}
             
             {/* Navigation buttons */}
-            <div className="mt-8 flex justify-between">
+            <div className="flex justify-between items-center gap-4 mt-6">
               {stepNumber > 1 ? (
                 <Button variant="outline" onClick={goToPreviousStep}>
                   ← Назад
@@ -737,10 +782,17 @@ const StepByStepDayPage: React.FC = () => {
                 <div></div> // Empty div to maintain layout
               )}
               
-              <Button variant="primary" onClick={goToNextStep}>
+              <Button variant="primary" onClick={goToNextStep} disabled={isLoading}>
                 {stepNumber < (isReflection ? 8 : 6) ? 'Далее →' : 'Готово'}
               </Button>
             </div>
+
+            {/* Error message */}
+            {error && (
+              <div className="mt-4 text-red-500 text-center">
+                {error}
+              </div>
+            )}
           </>
         )}
       </div>

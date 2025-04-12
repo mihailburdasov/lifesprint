@@ -34,10 +34,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '', autoPlay
     if (!audio) return;
     
     if (autoPlay && src) {
-      // Set isPlaying to true immediately when autoPlay is true
       setIsPlaying(true);
-      
-      // We need to set a small timeout to ensure the audio is loaded
       const playPromise = setTimeout(() => {
         audio.play().catch(err => {
           console.error('Error auto-playing audio:', err);
@@ -66,12 +63,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '', autoPlay
       setIsPlaying(false);
     };
 
-    // Add event listeners
     audio.addEventListener('loadedmetadata', setAudioData);
     audio.addEventListener('timeupdate', setAudioTime);
     audio.addEventListener('ended', handleEnded);
 
-    // Clean up event listeners
     return () => {
       audio.removeEventListener('loadedmetadata', setAudioData);
       audio.removeEventListener('timeupdate', setAudioTime);
@@ -81,33 +76,25 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '', autoPlay
 
   // Add keyboard shortcut for play/pause (spacebar)
   useEffect(() => {
-    // Create a unique ID for this audio player instance
     const playerId = `audio-player-${Math.random().toString(36).substr(2, 9)}`;
     
-    // Store the player ID in a data attribute for identification
     if (audioRef.current) {
       audioRef.current.dataset.playerId = playerId;
     }
     
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle spacebar if:
-      // 1. The key is Space
-      // 2. The target is not an input, textarea, or button
-      // 3. This audio player is visible in the viewport
       if (e.code === 'Space' && 
           !(e.target instanceof HTMLInputElement) && 
           !(e.target instanceof HTMLTextAreaElement) && 
           !(e.target instanceof HTMLButtonElement)) {
         
-        // Check if this audio player is in the viewport
         if (audioRef.current && isElementInViewport(audioRef.current)) {
-          e.preventDefault(); // Prevent page scrolling
+          e.preventDefault();
           togglePlay();
         }
       }
     };
     
-    // Helper function to check if an element is in the viewport
     const isElementInViewport = (el: HTMLElement) => {
       const rect = el.getBoundingClientRect();
       return (
@@ -123,7 +110,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '', autoPlay
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [togglePlay]); // Re-add event listener when togglePlay changes
+  }, [togglePlay]);
 
   // Handle mute/unmute
   const toggleMute = () => {
@@ -134,14 +121,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '', autoPlay
     setIsMuted(!isMuted);
   };
 
-  // Handle seeking with mouse or touch
+  // Handle seeking
   const handleProgressChange = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     const audio = audioRef.current;
     const progress = progressRef.current;
     if (!audio || !progress) return;
 
     const rect = progress.getBoundingClientRect();
-    // Get position from either mouse or touch event
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const pos = (clientX - rect.left) / rect.width;
     audio.currentTime = pos * audio.duration;
@@ -159,10 +145,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '', autoPlay
       <audio ref={audioRef} src={src} />
       
       <div className="flex items-center space-x-2 sm:space-x-3">
-        <button 
+        <button
+          className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           onClick={togglePlay}
-          className="w-10 h-10 sm:w-10 sm:h-10 flex items-center justify-center bg-primary text-white rounded-full focus:outline-none hover:bg-opacity-90"
-          aria-label={isPlaying ? "Pause" : "Play"}
+          aria-label={isPlaying ? 'Pause' : 'Play'}
         >
           {isPlaying ? <FaPause size={14} /> : <FaPlay size={14} className="ml-1" />}
         </button>
@@ -190,12 +176,12 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, className = '', autoPlay
           </div>
         </div>
         
-        <button 
+        <button
+          className="ml-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           onClick={toggleMute}
-          className="w-10 h-10 sm:w-10 sm:h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 rounded-full focus:outline-none hover:bg-gray-200 dark:hover:bg-gray-700"
-          aria-label={isMuted ? "Unmute" : "Mute"}
+          aria-label={isMuted ? 'Unmute' : 'Mute'}
         >
-          {isMuted ? <FaVolumeMute size={18} /> : <FaVolumeUp size={18} />}
+          {isMuted ? <FaVolumeMute size={14} /> : <FaVolumeUp size={14} />}
         </button>
       </div>
     </div>

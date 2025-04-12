@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient';
 import { User } from '../context/UserContext';
-import { UserProgress } from '../context/ProgressContext';
+import { Progress } from '../types/progress';
 
 /**
  * Helper function to create a delay
@@ -30,7 +30,6 @@ export const migrateLocalDataToSupabase = async (
   try {
     // Get all local users
     const localUsers: (User & { password?: string })[] = [];
-    const userProgressMap: Record<string, UserProgress> = {};
     
     // Iterate through all keys in localStorage
     for (let i = 0; i < localStorage.length; i++) {
@@ -46,15 +45,6 @@ export const migrateLocalDataToSupabase = async (
             
             // Extract password and other user data
             localUsers.push(userData);
-            
-            // Get user progress
-            const progressKey = `lifesprint_progress_${userId}`;
-            const progressJson = localStorage.getItem(progressKey);
-            
-            if (progressJson) {
-              const progress = JSON.parse(progressJson);
-              userProgressMap[userId] = progress;
-            }
           } catch (error) {
             console.error('Ошибка при парсинге данных пользователя:', error);
           }
@@ -147,25 +137,6 @@ export const migrateLocalDataToSupabase = async (
           if (profileError) {
             migrationErrors.push(`Ошибка при создании профиля для ${user.email}: ${profileError.message}`);
             // Continue with progress migration even if profile creation fails
-          }
-          
-          // 3. Migrate user progress if it exists
-          const userProgress = userProgressMap[user.id];
-          
-          if (userProgress) {
-            const { error: progressError } = await supabase
-              .from('user_progress')
-              .insert({
-                user_id: supabaseUserId,
-                start_date: new Date(userProgress.startDate).toISOString(),
-                current_day: userProgress.currentDay,
-                days: userProgress.days,
-                week_reflections: userProgress.weekReflections
-              });
-            
-            if (progressError) {
-              migrationErrors.push(`Ошибка при миграции прогресса для ${user.email}: ${progressError.message}`);
-            }
           }
           
           migratedCount++;

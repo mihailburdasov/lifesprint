@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FaHome, FaCalendarAlt, FaUser, FaBars, FaTimes, FaSun, FaMoon, FaSignOutAlt, FaCog } from 'react-icons/fa';
 import { useTheme } from '../../context/ThemeContext';
@@ -24,6 +24,17 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  const MenuIcon: React.FC<{ isOpen: boolean }> = ({ isOpen }) => {
+    if (isOpen) {
+      return <FaTimes />;
+    }
+    return <FaBars />;
+  };
+
+  const NavItem: React.FC<{ icon: React.FC<{ className?: string }> }> = ({ icon: Icon }) => (
+  <Icon className="mr-3" />
+);
+
   return (
     <>
       {/* Mobile topbar with logo and menu button */}
@@ -33,7 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
           onClick={toggleMobileMenu}
           className="p-2 rounded-md bg-primary text-white shadow-sm"
         >
-          {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+          <MenuIcon isOpen={isMobileMenuOpen} />
         </button>
       </div>
       
@@ -69,7 +80,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                 className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive('/')}`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <FaHome className="mr-3" />
+                <NavItem icon={FaHome} />
                 <span>Главная</span>
               </Link>
             </li>
@@ -79,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                 className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive('/day/' + (new Date().getDate() <= 28 ? new Date().getDate() : 28))}`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <FaCalendarAlt className="mr-3" />
+                <NavItem icon={FaCalendarAlt} />
                 <span>Текущий день</span>
               </Link>
             </li>
@@ -90,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                   className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive('/profile')}`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <FaUser className="mr-3" />
+                  <NavItem icon={FaUser} />
                   <span>Профиль</span>
                 </Link>
               ) : (
@@ -99,7 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                   className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive('/auth')}`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <FaUser className="mr-3" />
+                  <NavItem icon={FaUser} />
                   <span>Вход</span>
                 </Link>
               )}
@@ -112,7 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                   className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive('/settings')}`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <FaCog className="mr-3" />
+                  <NavItem icon={FaCog} />
                   <span>Настройки</span>
                 </Link>
               </li>
@@ -128,7 +139,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                   }}
                   className="flex items-center w-full px-4 py-2 rounded-md transition-colors text-text-light-light dark:text-text-light-dark hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
-                  <FaSignOutAlt className="mr-3" />
+                  <NavItem icon={FaSignOutAlt} />
                   <span>Выйти</span>
                 </button>
               </li>
@@ -152,6 +163,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
             <span className="text-text-light-light dark:text-text-light-dark">
               {theme === 'light' ? 'Тёмная тема' : 'Светлая тема'}
             </span>
+            <span className="sr-only">Переключить тему</span>
             {theme === 'light' ? (
               <FaMoon className="text-gray-600" />
             ) : (

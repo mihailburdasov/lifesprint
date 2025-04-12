@@ -31,7 +31,7 @@ export const apiService = {
   /**
    * Добавление в очередь синхронизации
    */
-  addToSyncQueue: syncService.addToSyncQueue.bind(syncService),
+  addToQueue: syncService.addToQueue.bind(syncService),
   
   /**
    * Обработка очереди синхронизации

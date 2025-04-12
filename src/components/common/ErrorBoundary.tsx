@@ -1,50 +1,49 @@
-import React from 'react';
-import { ErrorBoundary } from 'react-error-boundary';
-import * as Sentry from '@sentry/react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 
-interface FallbackProps {
-  error: Error;
-  resetErrorBoundary: () => void;
+interface Props {
+  children: ReactNode;
 }
 
-const ErrorFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) => (
-  <div className="error-container p-4 bg-red-50 border border-red-200 rounded-md m-4">
-    <h2 className="text-lg font-medium text-red-800 mb-2">Что-то пошло не так</h2>
-    <p className="text-sm text-red-600 mb-4">{error.message}</p>
-    <button 
-      onClick={resetErrorBoundary}
-      className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
-    >
-      Попробовать снова
-    </button>
-  </div>
-);
+interface State {
+  hasError: boolean;
+  error: Error | null;
+}
 
-export const AppErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ErrorBoundary
-    FallbackComponent={ErrorFallback}
-    onError={(error, info) => {
-      // Отправляем ошибку в Sentry
-      Sentry.captureException(error, { 
-        extra: { 
-          componentStack: info.componentStack 
-        } 
-      });
-      
-      // Также можно логировать ошибки в консоль в режиме разработки
-      if (process.env.NODE_ENV !== 'production') {
-        console.error('Ошибка в компоненте:', error);
-        console.error('Информация о компоненте:', info.componentStack);
-      }
-    }}
-    onReset={() => {
-      // Действия при сбросе ошибки, например, перезагрузка данных
-      window.location.href = '/';
-    }}
-  >
-    {children}
-  </ErrorBoundary>
-);
+export class AppErrorBoundary extends Component<Props, State> {
+  public state: State = {
+    hasError: false,
+    error: null
+  };
+
+  public static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
+  }
+
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Uncaught error:', error, errorInfo);
+  }
+
+  public render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center p-8">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Что-то пошло не так</h1>
+            <p className="text-gray-600 mb-4">Произошла ошибка в приложении</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Перезагрузить страницу
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 // Компонент для тестирования ошибок (можно удалить в продакшене)
 export const ErrorThrower: React.FC = () => {

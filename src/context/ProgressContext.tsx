@@ -1,414 +1,429 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getCurrentMonthSprintStart } from '../utils/dateUtils';
-import { progressService } from '../utils/progressService';
-import { syncService } from '../utils/syncService';
-import { useUser } from './UserContext';
-import { logService } from '../utils/logService';
+import { Progress, ProgressContextType, WeekProgress } from '../types/progress';
+import { storageUtils } from '../utils/storageUtils';
+import { dateUtils } from '../utils/dateUtils';
 
-// Define types for our context
-export interface DayProgress {
-  completed: boolean;
-  gratitude: string[];
-  additionalGratitude?: string[]; // Additional gratitude fields (not counted in progress)
-  achievements: string[];
-  additionalAchievements?: string[]; // Additional achievement fields (not counted in progress)
-  goals: { text: string; completed: boolean }[];
-  exerciseCompleted: boolean;
-}
+const ProgressContext = createContext<ProgressContextType | null>(null);
 
-export interface WeekReflection {
-  gratitudeSelf: string;
-  gratitudeOthers: string;
-  gratitudeWorld: string;
-  achievements: string[];
-  improvements: string[];
-  insights: string[];
-  rules: string[];
-  exerciseCompleted: boolean;
-}
-
-export interface UserProgress {
-  startDate: Date;
-  currentDay: number;
-  days: Record<number, DayProgress>;
-  weekReflections: Record<number, WeekReflection>;
-}
-
-interface ProgressContextType {
-  progress: UserProgress;
-  isLoading: boolean; // Добавляем isLoading в тип контекста
-  updateDayProgress: (dayNumber: number, data: Partial<DayProgress>) => void;
-  updateWeekReflection: (weekNumber: number, data: Partial<WeekReflection>) => void;
-  getDayCompletion: (dayNumber: number) => number;
-  getReflectionDayWidgetProgress: (dayNumber: number) => Record<string, number>;
-  isReflectionDay: (dayNumber: number) => boolean;
-  isDayAccessible: (dayNumber: number) => boolean;
-  isWeekAccessible: (weekNumber: number) => boolean;
-}
-
-// Create the context
-const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
-
-// Default empty day progress
-const defaultDayProgress: DayProgress = {
-  completed: false,
-  gratitude: ['', '', ''],
-  achievements: ['', '', ''],
-  goals: [
-    { text: '', completed: false },
-    { text: '', completed: false },
-    { text: '', completed: false }
-  ],
-  exerciseCompleted: false
-};
-
-// Default empty week reflection
-const defaultWeekReflection: WeekReflection = {
-  gratitudeSelf: '',
-  gratitudeOthers: '',
-  gratitudeWorld: '',
-  achievements: ['', '', ''],
-  improvements: ['', '', ''],
-  insights: ['', '', ''],
-  rules: ['', '', ''],
-  exerciseCompleted: false
-};
-
-// Provider component
-export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isAuthenticated } = useUser();
-  const [progress, setProgress] = useState<UserProgress | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  
-  // Загрузка прогресса пользователя при авторизации
-  useEffect(() => {
-    const loadUserProgress = async () => {
-      if (isAuthenticated && user) {
-        setIsLoading(true);
-        
-        try {
-          // Получаем прогресс пользователя через progressService
-          const response = await progressService.getUserProgress(user.id);
-          
-          if (response.success && response.data) {
-            setProgress(response.data);
-          } else {
-            // Если прогресс не найден, создаем новый
-            const newProgress = await progressService.initUserProgress(user.id);
-            setProgress(newProgress);
-          }
-        } catch (error) {
-          logService.error('Ошибка при получении прогресса пользователя', error);
-          
-          // В случае ошибки создаем новый прогресс
-          const currentMonthStart = getCurrentMonthSprintStart();
-          const today = new Date();
-          const diffTime = today.getTime() - currentMonthStart.getTime();
-          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-          const currentDay = Math.min(Math.max(diffDays, 1), 28); // Между 1 и 28
-          
-          const newProgress: UserProgress = {
-            startDate: currentMonthStart,
-            currentDay: currentDay,
-            days: {},
-            weekReflections: {}
-          };
-          
-          setProgress(newProgress);
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        // Если пользователь не авторизован, сбрасываем прогресс
-        setProgress(null);
-        setIsLoading(false);
-      }
-    };
-    
-    loadUserProgress();
-  }, [isAuthenticated, user]);
-  
-  // Сохранение прогресса пользователя при изменении
-  useEffect(() => {
-    const saveUserProgress = async () => {
-      if (isAuthenticated && user && progress) {
-        try {
-          // Обновляем прогресс через progressService
-          const response = await progressService.updateUserProgress(user.id, progress);
-          
-          // Если обновление не удалось, добавляем операцию в очередь синхронизации
-          if (!response.success) {
-            syncService.addToSyncQueue(user.id, {
-              type: 'progress',
-              action: 'update',
-              data: progress
-            });
-          }
-        } catch (error) {
-          logService.error('Ошибка при сохранении прогресса пользователя', error);
-          
-          // В случае ошибки добавляем операцию в очередь синхронизации
-          syncService.addToSyncQueue(user.id, {
-            type: 'progress',
-            action: 'update',
-            data: progress
-          });
-        }
-      }
-    };
-    
-    // Используем debounce, чтобы не вызывать сохранение слишком часто
-    const timeoutId = setTimeout(saveUserProgress, 500);
-    
-    return () => clearTimeout(timeoutId);
-  }, [progress, isAuthenticated, user]);
-  
-  // Update current day to always show the current calendar day
-  useEffect(() => {
-    if (!progress) return;
-    
-    // Function to update the current day to match the calendar day
-    const updateCurrentDay = () => {
-      if (!progress) return;
-      
-      const today = new Date();
-      // Get the current day of the month (1-31)
-      const calendarDay = today.getDate();
-      // Ensure it's between 1-28 for our app's purposes
-      const newCurrentDay = Math.min(Math.max(calendarDay, 1), 28);
-      
-      // Only update if the current day has changed
-      if (newCurrentDay !== progress.currentDay) {
-        setProgress(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            currentDay: newCurrentDay
-          };
-        });
-      }
-    };
-    
-    // Update immediately
-    updateCurrentDay();
-    
-    // Set up an interval to check for date changes
-    // This will run at midnight to update the current day
-    const now = new Date();
-    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    const timeUntilMidnight = tomorrow.getTime() - now.getTime();
-    
-    // Set timeout to run at midnight
-    const midnightTimeout = setTimeout(() => {
-      updateCurrentDay();
-      
-      // Then set up a daily interval
-      const dailyInterval = setInterval(updateCurrentDay, 24 * 60 * 60 * 1000);
-      
-      // Clean up the interval on unmount
-      return () => clearInterval(dailyInterval);
-    }, timeUntilMidnight);
-    
-    // Clean up the timeout on unmount
-    return () => clearTimeout(midnightTimeout);
-  }, [progress]);
-  
-  // Обновление прогресса дня
-  const updateDayProgress = (dayNumber: number, data: Partial<DayProgress>) => {
-    if (!progress || !user) return;
-    
-    // Обновляем локальное состояние
-    setProgress(prev => {
-      if (!prev) return null;
-      
-      const currentDayProgress = prev.days[dayNumber] || { ...defaultDayProgress };
-      const updatedDayProgress = { ...currentDayProgress, ...data };
-      
-      return {
-        ...prev,
-        days: {
-          ...prev.days,
-          [dayNumber]: updatedDayProgress
-        }
-      };
-    });
-    
-    // Обновляем прогресс дня через progressService
-    progressService.updateDayProgress(user.id, dayNumber, data).catch(error => {
-      logService.error('Ошибка при обновлении прогресса дня', error);
-      
-      // В случае ошибки добавляем операцию в очередь синхронизации
-      if (progress) {
-        syncService.addToSyncQueue(user.id, {
-          type: 'progress',
-          action: 'update',
-          data: progress
-        });
-      }
-    });
-  };
-  
-  // Обновление недельной рефлексии
-  const updateWeekReflection = (weekNumber: number, data: Partial<WeekReflection>) => {
-    if (!progress || !user) return;
-    
-    // Обновляем локальное состояние
-    setProgress(prev => {
-      if (!prev) return null;
-      
-      const currentReflection = prev.weekReflections[weekNumber] || { ...defaultWeekReflection };
-      const updatedReflection = { ...currentReflection, ...data };
-      
-      return {
-        ...prev,
-        weekReflections: {
-          ...prev.weekReflections,
-          [weekNumber]: updatedReflection
-        }
-      };
-    });
-    
-    // Обновляем недельную рефлексию через progressService
-    progressService.updateWeekReflection(user.id, weekNumber, data).catch(error => {
-      logService.error('Ошибка при обновлении недельной рефлексии', error);
-      
-      // В случае ошибки добавляем операцию в очередь синхронизации
-      if (progress) {
-        syncService.addToSyncQueue(user.id, {
-          type: 'progress',
-          action: 'update',
-          data: progress
-        });
-      }
-    });
-  };
-  
-  // Вычисление процента заполнения дня
-  const getDayCompletion = (dayNumber: number): number => {
-    if (!progress) return 0;
-    
-    // For regular days
-    if (dayNumber % 7 !== 0) {
-      const dayProgress = progress.days[dayNumber];
-      if (!dayProgress) return 0;
-      
-      return progressService.getDayCompletion(dayProgress);
-    } 
-    // For reflection days (7, 14, 21, 28)
-    else {
-      const weekNumber = dayNumber / 7;
-      const reflection = progress.weekReflections[weekNumber];
-      if (!reflection) return 0;
-      
-      return progressService.getReflectionCompletion(reflection);
-    }
-  };
-  
-  // Вычисление процента заполнения для виджета "Текущий день" для дней рефлексии (7, 14, 21, 28)
-  const getReflectionDayWidgetProgress = (dayNumber: number): Record<string, number> => {
-    if (!progress) return {
-      gratitude: 0,
-      achievements: 0,
-      improvements: 0,
-      insights: 0,
-      rules: 0,
-      exercise: 0
-    };
-    
-    // Only for reflection days
-    if (dayNumber % 7 !== 0) return {
-      gratitude: 0,
-      achievements: 0,
-      improvements: 0,
-      insights: 0,
-      rules: 0,
-      exercise: 0
-    };
-    
-    const weekNumber = dayNumber / 7;
-    const reflection = progress.weekReflections[weekNumber] || { ...defaultWeekReflection };
-    
-    // Count filled items
-    let gratitudeCount = 0;
-    if (reflection.gratitudeSelf && reflection.gratitudeSelf.trim() !== '') gratitudeCount++;
-    if (reflection.gratitudeOthers && reflection.gratitudeOthers.trim() !== '') gratitudeCount++;
-    if (reflection.gratitudeWorld && reflection.gratitudeWorld.trim() !== '') gratitudeCount++;
-    
-    const achievementsFilled = reflection.achievements ? reflection.achievements.filter(a => a && a.trim() !== '').length : 0;
-    const improvementsFilled = reflection.improvements ? reflection.improvements.filter(i => i && i.trim() !== '').length : 0;
-    const insightsFilled = reflection.insights ? reflection.insights.filter(i => i && i.trim() !== '').length : 0;
-    const rulesFilled = reflection.rules ? reflection.rules.filter(r => r && r.trim() !== '').length : 0;
-    
-    // Calculate percentages (1 item = 33.3%, 3 items = 100%)
-    return {
-      gratitude: Math.min(100, Math.round((gratitudeCount / 3) * 100)),
-      achievements: Math.min(100, Math.round((achievementsFilled / 3) * 100)),
-      improvements: Math.min(100, Math.round((improvementsFilled / 3) * 100)),
-      insights: Math.min(100, Math.round((insightsFilled / 3) * 100)),
-      rules: Math.min(100, Math.round((rulesFilled / 3) * 100)),
-      exercise: reflection.exerciseCompleted ? 100 : 0
-    };
-  };
-  
-  // Проверка, является ли день днем рефлексии
-  const isReflectionDay = (dayNumber: number): boolean => {
-    return progressService.isReflectionDay(dayNumber);
-  };
-  
-  // Проверка, доступен ли день (дни 1-14 доступны)
-  const isDayAccessible = (dayNumber: number): boolean => {
-    return dayNumber <= 14;
-  };
-  
-  // Проверка, доступна ли неделя (недели 1-2 доступны)
-  const isWeekAccessible = (weekNumber: number): boolean => {
-    return weekNumber <= 2;
-  };
-  
-  // Создаем безопасный прогресс, даже если настоящий прогресс не загружен
-  const safeProgress: UserProgress = progress || {
-    startDate: new Date(),
-    currentDay: 1,
-    days: {},
-    weekReflections: {}
-  };
-  
-  // Безопасные функции, которые работают даже если прогресс не загружен
-  const safeUpdateDayProgress = (dayNumber: number, data: Partial<DayProgress>) => {
-    if (!progress) return;
-    updateDayProgress(dayNumber, data);
-  };
-  
-  const safeUpdateWeekReflection = (weekNumber: number, data: Partial<WeekReflection>) => {
-    if (!progress) return;
-    updateWeekReflection(weekNumber, data);
-  };
-  
-  // Всегда предоставляем контекст, даже если прогресс загружается или не загружен
-  return (
-    <ProgressContext.Provider 
-      value={{ 
-        progress: safeProgress,
-        isLoading, // Добавляем isLoading в объект контекста
-        updateDayProgress: safeUpdateDayProgress, 
-        updateWeekReflection: safeUpdateWeekReflection, 
-        getDayCompletion,
-        getReflectionDayWidgetProgress,
-        isReflectionDay,
-        isDayAccessible,
-        isWeekAccessible
-      }}
-    >
-      {children}
-    </ProgressContext.Provider>
-  );
-};
-
-// Custom hook to use the progress context
 export const useProgress = () => {
   const context = useContext(ProgressContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useProgress must be used within a ProgressProvider');
   }
   return context;
+};
+
+export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [progress, setProgress] = useState<Progress>(() => {
+    const savedProgress = storageUtils.get<Progress>('progress');
+    if (savedProgress) {
+      return savedProgress;
+    }
+    // Test data
+    return {
+      startDate: new Date().toISOString(),
+      currentDay: 14, // Set to day 14 to have access to first two weeks
+      currentWeek: 2,
+      days: {
+        1: {
+          dayNumber: 1,
+          date: new Date().toISOString(),
+          thoughtsCompleted: true,
+          exerciseCompleted: true,
+          audioCompleted: true,
+          reflectionCompleted: true,
+          gratitude: ['Grateful for family', 'Grateful for health', 'Grateful for opportunities'],
+          achievements: ['Completed project', 'Exercised', 'Learned something new'],
+          goals: [
+            { text: 'Complete task 1', completed: true },
+            { text: 'Exercise', completed: true },
+            { text: 'Read a book', completed: false }
+          ],
+          additionalGratitude: [],
+          additionalAchievements: [],
+          completed: true
+        },
+        7: { // Reflection day for week 1
+          dayNumber: 7,
+          date: new Date().toISOString(),
+          thoughtsCompleted: true,
+          exerciseCompleted: true,
+          audioCompleted: true,
+          reflectionCompleted: true,
+          gratitude: [],
+          achievements: [],
+          goals: [],
+          additionalGratitude: [],
+          additionalAchievements: [],
+          completed: true
+        },
+        8: {
+          dayNumber: 8,
+          date: new Date().toISOString(),
+          thoughtsCompleted: true,
+          exerciseCompleted: false,
+          audioCompleted: true,
+          reflectionCompleted: false,
+          gratitude: ['Morning coffee', '', ''],
+          achievements: ['Started new project', '', ''],
+          goals: [
+            { text: 'Plan week', completed: true },
+            { text: '', completed: false },
+            { text: '', completed: false }
+          ],
+          additionalGratitude: [],
+          additionalAchievements: [],
+          completed: false
+        }
+      },
+      weekReflections: {
+        1: {
+          weekNumber: 1,
+          reflectionCompleted: true,
+          gratitudeSelf: 'Proud of consistency',
+          gratitudeOthers: 'Support from team',
+          gratitudeWorld: 'Beautiful weather',
+          achievements: ['Completed all tasks', 'Maintained exercise routine', 'Improved productivity'],
+          improvements: ['Better time management', 'More focus', 'Regular breaks'],
+          insights: ['Consistency is key', 'Small steps matter', 'Progress over perfection'],
+          rules: ['Start day early', 'Exercise daily', 'Plan ahead'],
+          exerciseCompleted: true,
+          days: [],
+          progress: 0
+        },
+        2: {
+          weekNumber: 2,
+          reflectionCompleted: false,
+          gratitudeSelf: '',
+          gratitudeOthers: 'Family support',
+          gratitudeWorld: '',
+          achievements: ['Started new project', '', ''],
+          improvements: ['Need better planning', '', ''],
+          insights: ['Take more initiative', '', ''],
+          rules: ['Review goals daily', '', ''],
+          exerciseCompleted: false,
+          days: [],
+          progress: 0
+        }
+      }
+    };
+  });
+
+  useEffect(() => {
+    storageUtils.set('progress', progress);
+  }, [progress]);
+  
+  const updateDayProgress = async (dayNumber: number, data: Partial<Progress['days'][number]>) => {
+    setProgress(prev => ({
+        ...prev,
+        days: {
+          ...prev.days,
+        [dayNumber]: {
+          ...prev.days[dayNumber],
+          ...data
+        }
+      }
+    }));
+  };
+
+  const updateWeekReflection = async (weekNumber: number, data: Partial<Progress['weekReflections'][number]>) => {
+    setProgress(prev => ({
+      ...prev,
+      weekReflections: {
+        ...prev.weekReflections,
+        [weekNumber]: {
+          ...prev.weekReflections[weekNumber],
+          ...data
+        }
+      }
+    }));
+  };
+
+  const updateWeekProgress = async (weekNumber: number, data: Partial<WeekProgress>) => {
+    setProgress(prev => ({
+        ...prev,
+        weekReflections: {
+          ...prev.weekReflections,
+        [weekNumber]: {
+          ...prev.weekReflections[weekNumber],
+          ...data
+        }
+      }
+    }));
+  };
+
+  const isDayAccessible = (dayNumber: number): boolean => {
+    return dayNumber <= progress.currentDay;
+  };
+
+  const isWeekAccessible = (weekNumber: number): boolean => {
+    return weekNumber <= progress.currentWeek;
+  };
+
+  const isReflectionDay = (dayNumber: number): boolean => {
+    return dayNumber % 7 === 0;
+  };
+
+  const getDayProgress = (dayNumber: number): number => {
+    const day = progress.days[dayNumber];
+    if (!day) return 0;
+
+    let completedTasks = 0;
+    let totalTasks = 0;
+
+    // Check gratitude
+    if (day.gratitude.length > 0) {
+      totalTasks++;
+      if (day.gratitude.every(item => item.trim() !== '')) {
+        completedTasks++;
+      }
+    }
+
+    // Check achievements
+    if (day.achievements.length > 0) {
+      totalTasks++;
+      if (day.achievements.every(item => item.trim() !== '')) {
+        completedTasks++;
+      }
+    }
+
+    // Check goals
+    if (day.goals.length > 0) {
+      totalTasks++;
+      if (day.goals.every(goal => goal.text.trim() !== '')) {
+        completedTasks++;
+      }
+    }
+
+    // Check exercise
+    totalTasks++;
+    if (day.exerciseCompleted) {
+      completedTasks++;
+    }
+
+    return totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+  };
+
+  const getWeekProgress = (weekNumber: number): number => {
+    const week = progress.weekReflections[weekNumber];
+    if (!week) return 0;
+
+    let completedTasks = 0;
+    let totalTasks = 0;
+
+    // Check gratitude
+    if (week.gratitudeSelf && week.gratitudeOthers && week.gratitudeWorld) {
+      totalTasks++;
+      if (week.gratitudeSelf.trim() !== '' && 
+          week.gratitudeOthers.trim() !== '' && 
+          week.gratitudeWorld.trim() !== '') {
+        completedTasks++;
+      }
+    }
+
+    // Check achievements
+    if (week.achievements.length > 0) {
+      totalTasks++;
+      if (week.achievements.every(item => item.trim() !== '')) {
+        completedTasks++;
+      }
+    }
+
+    // Check improvements
+    if (week.improvements.length > 0) {
+      totalTasks++;
+      if (week.improvements.every(item => item.trim() !== '')) {
+        completedTasks++;
+      }
+    }
+
+    // Check insights
+    if (week.insights.length > 0) {
+      totalTasks++;
+      if (week.insights.every(item => item.trim() !== '')) {
+        completedTasks++;
+      }
+    }
+
+    // Check rules
+    if (week.rules.length > 0) {
+      totalTasks++;
+      if (week.rules.every(item => item.trim() !== '')) {
+        completedTasks++;
+      }
+    }
+
+    // Check exercise
+    totalTasks++;
+    if (week.exerciseCompleted) {
+      completedTasks++;
+    }
+
+    return totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+  };
+
+  const getDayCompletion = (dayNumber: number): number => {
+    const day = progress.days[dayNumber];
+    if (!day) return 0;
+
+    // Для дней рефлексии (7, 14, 21, 28)
+    if (isReflectionDay(dayNumber)) {
+      const weekNumber = Math.ceil(dayNumber / 7);
+      const reflection = progress.weekReflections[weekNumber];
+      if (!reflection) return 0;
+      
+      let completionPercentage = 0;
+
+      // Благодарности (максимум 15%)
+      const gratitudeCount = [
+        reflection.gratitudeSelf,
+        reflection.gratitudeOthers,
+        reflection.gratitudeWorld
+      ].filter(item => item.trim() !== '').length;
+      completionPercentage += gratitudeCount * 5; // 5% за каждую благодарность
+
+      // Достижения (максимум 15%)
+      const achievementsCount = reflection.achievements.filter(item => item.trim() !== '').length;
+      completionPercentage += achievementsCount * 5; // 5% за каждое достижение
+
+      // Зоны роста (максимум 15%)
+      const improvementsCount = reflection.improvements.filter(item => item.trim() !== '').length;
+      completionPercentage += improvementsCount * 5; // 5% за каждую зону роста
+
+      // Озарения (максимум 15%)
+      const insightsCount = reflection.insights.filter(item => item.trim() !== '').length;
+      completionPercentage += insightsCount * 5; // 5% за каждое озарение
+
+      // Правила (максимум 30%)
+      const rulesCount = reflection.rules.filter(item => item.trim() !== '').length;
+      completionPercentage += rulesCount * 10; // 10% за каждое правило
+
+      // Упражнение на осознанность (10%)
+      if (reflection.exerciseCompleted) {
+        completionPercentage += 10;
+      }
+
+      return Math.min(completionPercentage, 100);
+    }
+
+    // Для обычных дней - новая логика
+    let completionPercentage = 0;
+    
+    // Благодарности (максимум 15%)
+    const gratitudeCount = day.gratitude.filter(item => item.trim() !== '').length;
+    completionPercentage += gratitudeCount * 5; // 5% за каждую благодарность
+    
+    // Достижения (максимум 15%)
+    const achievementsCount = day.achievements.filter(item => item.trim() !== '').length;
+    completionPercentage += achievementsCount * 5; // 5% за каждое достижение
+    
+    // Задачи (максимум 60%: 15% за заполнение + 45% за выполнение)
+    day.goals.forEach(goal => {
+      if (goal.text.trim() !== '') {
+        completionPercentage += 5; // 5% за заполнение
+        if (goal.completed) {
+          completionPercentage += 15; // 15% за выполнение
+        }
+      }
+    });
+    
+    // Упражнение (10%)
+    if (day.exerciseCompleted) {
+      completionPercentage += 10;
+    }
+    
+    return Math.min(completionPercentage, 100);
+  };
+
+  const getReflectionDayWidgetProgress = (dayNumber: number) => {
+    const weekNumber = Math.ceil(dayNumber / 7);
+    const weekReflection = progress.weekReflections[weekNumber];
+    
+    if (!weekReflection) {
+      return {
+      gratitude: 0,
+      achievements: 0,
+      improvements: 0,
+      insights: 0,
+      rules: 0,
+      exercise: 0
+    };
+    }
+
+    return {
+      gratitude: weekReflection.gratitudeSelf && weekReflection.gratitudeOthers && weekReflection.gratitudeWorld ? 100 : 0,
+      achievements: weekReflection.achievements.filter(a => a.trim() !== '').length * (100 / 3),
+      improvements: weekReflection.improvements.filter(i => i.trim() !== '').length * (100 / 3),
+      insights: weekReflection.insights.filter(i => i.trim() !== '').length * (100 / 3),
+      rules: weekReflection.rules.filter(r => r.trim() !== '').length * (100 / 3),
+      exercise: weekReflection.exerciseCompleted ? 100 : 0
+    };
+  };
+
+  const getDayWidgetProgress = (dayNumber: number) => {
+    const day = progress.days[dayNumber];
+    if (!day) {
+      return {
+        gratitude: 0,
+        achievements: 0,
+        goals: 0
+      };
+    }
+
+    // Благодарности (каждая = 33.3%)
+    const gratitudeProgress = day.gratitude.filter(item => item.trim() !== '').length * (100 / 3);
+
+    // Достижения (каждое = 33.3%)
+    const achievementsProgress = day.achievements.filter(item => item.trim() !== '').length * (100 / 3);
+
+    // Задачи (заполнение = 10%, выполнение = 23.33%)
+    let goalsProgress = 0;
+    day.goals.forEach(goal => {
+      if (goal.text.trim() !== '') {
+        goalsProgress += 10; // 10% за заполнение
+        if (goal.completed) {
+          goalsProgress += 23.33; // 23.33% за выполнение
+        }
+      }
+    });
+
+    return {
+      gratitude: Math.min(gratitudeProgress, 100),
+      achievements: Math.min(achievementsProgress, 100),
+      goals: Math.min(goalsProgress, 100)
+    };
+  };
+
+  const weeks = Object.entries(progress.weekReflections).map(([weekNumber, data]) => ({
+    ...data,
+    weekNumber: parseInt(weekNumber, 10),
+    progress: getWeekProgress(parseInt(weekNumber, 10)),
+    days: Object.entries(progress.days)
+      .filter(([dayNumber]) => Math.ceil(parseInt(dayNumber, 10) / 7) === parseInt(weekNumber, 10))
+      .map(([_, dayData]) => dayData)
+  }));
+
+  const value = {
+    progress,
+    currentDay: progress.currentDay,
+    currentWeek: progress.currentWeek,
+    weeks,
+    updateDayProgress,
+    updateWeekReflection,
+    updateWeekProgress,
+    isDayAccessible,
+    isWeekAccessible,
+    isReflectionDay,
+    getDayProgress,
+    getWeekProgress,
+    getDayCompletion,
+    getReflectionDayWidgetProgress,
+    getDayWidgetProgress
+  };
+
+  return (
+    <ProgressContext.Provider value={value}>
+      {children}
+    </ProgressContext.Provider>
+  );
 };

@@ -1,12 +1,14 @@
-import { UserProgress } from '../context/ProgressContext';
+import { Progress, DayProgress, WeekProgress } from '../types/progress';
 import { supabase } from './supabaseClient';
 import { logService } from './logService';
 import { ApiResponse } from './authService';
 import { conflictResolver } from './conflictResolver';
 import { getCurrentMonthSprintStart } from './dateUtils';
+import { dateUtils } from './dateUtils';
 
 // Префиксы для ключей в localStorage
-const PROGRESS_PREFIX = 'lifesprint_progress_';
+const PROGRESS_KEY = 'progress';
+const LAST_SYNC_KEY = 'last_sync';
 
 /**
  * Сервис для работы с прогрессом пользователя
@@ -14,8 +16,9 @@ const PROGRESS_PREFIX = 'lifesprint_progress_';
 export const progressService = {
   /**
    * Получение прогресса пользователя
+   * @returns Прогресс пользователя
    */
-  async getUserProgress(userId: string): Promise<ApiResponse<UserProgress>> {
+  async getUserProgress(userId: string): Promise<ApiResponse<Progress>> {
     try {
       // Сначала пробуем получить прогресс из Supabase
       const { data: progressData, error } = await supabase
@@ -23,202 +26,116 @@ export const progressService = {
         .select('*')
         .eq('user_id', userId)
         .single();
-      
+        
       if (!error && progressData) {
-        // Преобразуем данные из Supabase в формат UserProgress
-        const progress: UserProgress = {
-          startDate: new Date(progressData.start_date),
+        // Преобразуем данные из Supabase в формат Progress
+        const progress: Progress = {
+          startDate: progressData.start_date,
           currentDay: progressData.current_day,
+          currentWeek: progressData.current_week,
           days: progressData.days || {},
           weekReflections: progressData.week_reflections || {}
         };
         
-        return {
-          success: true,
-          data: progress
-        };
+        return { success: true, data: progress };
       }
       
-      // Если не удалось получить из Supabase, пробуем из localStorage
-      const progressJson = localStorage.getItem(`${PROGRESS_PREFIX}${userId}`);
-      
+      // Если в Supabase нет данных, пробуем получить из localStorage
+      const progressJson = localStorage.getItem(`progress_${userId}`);
       if (!progressJson) {
-        // Если прогресс не найден, инициализируем его
-        const newProgress = await this.initUserProgress(userId);
-        
-        return {
-          success: true,
-          data: newProgress
-        };
+        return { success: false, error: 'Progress not found' };
       }
       
-      const progress = JSON.parse(progressJson) as UserProgress;
+      const progress = JSON.parse(progressJson) as Progress;
       
-      // Преобразование строковой даты в объект Date
-      if (typeof progress.startDate === 'string') {
-        progress.startDate = new Date(progress.startDate);
-      }
-      
-      return {
-        success: true,
-        data: progress
-      };
+      return { success: true, data: progress };
     } catch (error) {
-      logService.error('Ошибка при получении прогресса пользователя', error);
-      return {
-        success: false,
-        error: 'Произошла ошибка при получении прогресса пользователя'
-      };
+      logService.error('Error getting user progress:', error);
+      return { success: false, error: 'Failed to get progress' };
     }
   },
   
   /**
    * Обновление прогресса пользователя
    */
-  async updateUserProgress(userId: string, progressData: UserProgress): Promise<ApiResponse<UserProgress>> {
+  async updateUserProgress(userId: string, progressData: Progress): Promise<ApiResponse<Progress>> {
     try {
       // Пробуем обновить прогресс в Supabase с повторными попытками
-      let attempts = 0;
-      const maxAttempts = 3;
+      let retryCount = 0;
+      const maxRetries = 3;
       
-      // Функция для вычисления времени задержки
-      const getDelayTime = (attemptNumber: number): number => {
-        return 1000 * Math.pow(2, attemptNumber - 1);
-      };
-      
-      while (attempts < maxAttempts) {
+      while (retryCount < maxRetries) {
         try {
           const { error } = await supabase
             .from('user_progress')
             .upsert({
               user_id: userId,
-              start_date: progressData.startDate.toISOString(),
+              start_date: progressData.startDate,
               current_day: progressData.currentDay,
+              current_week: progressData.currentWeek,
               days: progressData.days,
-              week_reflections: progressData.weekReflections,
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'user_id'
+              week_reflections: progressData.weekReflections
             });
-          
+            
           if (!error) {
-            // Успешное обновление
-            return {
-              success: true,
-              data: progressData
-            };
+            // Сохраняем в localStorage
+            localStorage.setItem(`progress_${userId}`, JSON.stringify(progressData));
+            return { success: true, data: progressData };
           }
           
-          attempts++;
-          
-          // Ждем перед следующей попыткой (экспоненциальная задержка)
-          if (attempts < maxAttempts) {
-            const delayTime = getDelayTime(attempts);
-            await new Promise(resolve => setTimeout(resolve, delayTime));
+          retryCount++;
+          if (retryCount < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
           }
-        } catch (e) {
-          attempts++;
-          
-          // Ждем перед следующей попыткой
-          if (attempts < maxAttempts) {
-            const delayTime = getDelayTime(attempts);
-            await new Promise(resolve => setTimeout(resolve, delayTime));
-          }
-        }
-      }
-      
-      // Если все попытки не удались, проверяем наличие локальных данных и разрешаем конфликты
-      const localProgressJson = localStorage.getItem(`${PROGRESS_PREFIX}${userId}`);
-      if (localProgressJson) {
-        try {
-          const localProgress = JSON.parse(localProgressJson) as UserProgress;
-          
-          // Преобразуем строковую дату в объект Date
-          if (typeof localProgress.startDate === 'string') {
-            localProgress.startDate = new Date(localProgress.startDate);
-          }
-          
-          // Разрешаем конфликты между локальными и новыми данными
-          const mergedProgress = conflictResolver.resolveProgressConflict(localProgress, progressData);
-          
-          // Сохраняем объединенные данные
-          localStorage.setItem(`${PROGRESS_PREFIX}${userId}`, JSON.stringify(mergedProgress));
-          
-          // Обновляем данные для возврата
-          progressData = mergedProgress;
         } catch (error) {
-          logService.error('Ошибка при разрешении конфликтов прогресса', error);
-          // В случае ошибки просто сохраняем новые данные
-          localStorage.setItem(`${PROGRESS_PREFIX}${userId}`, JSON.stringify(progressData));
+          retryCount++;
+          if (retryCount === maxRetries) {
+            throw error;
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
         }
-      } else {
-        // Если локальных данных нет, просто сохраняем новые
-        localStorage.setItem(`${PROGRESS_PREFIX}${userId}`, JSON.stringify(progressData));
       }
       
-      return {
-        success: false,
-        error: 'Не удалось синхронизировать данные с сервером. Данные сохранены локально и будут синхронизированы позже.',
-        data: progressData
-      };
+      throw new Error('Failed to update progress after retries');
     } catch (error) {
-      logService.error('Ошибка при обновлении прогресса пользователя', error);
+      logService.error('Error updating user progress:', error);
       
-      // В случае ошибки сохраняем в localStorage
-      localStorage.setItem(`${PROGRESS_PREFIX}${userId}`, JSON.stringify(progressData));
-      
-      return {
-        success: false,
-        error: 'Произошла ошибка при обновлении прогресса пользователя. Данные сохранены локально и будут синхронизированы позже.',
-        data: progressData
-      };
+      // В случае ошибки пробуем сохранить локально
+      try {
+        localStorage.setItem(`progress_${userId}`, JSON.stringify(progressData));
+        return { success: true, data: progressData };
+      } catch (localError) {
+        logService.error('Error saving progress locally:', localError);
+        return { success: false, error: 'Failed to update progress' };
+      }
     }
   },
   
   /**
    * Инициализация прогресса пользователя
    */
-  async initUserProgress(userId: string): Promise<UserProgress> {
+  async initUserProgress(userId: string): Promise<Progress> {
     // Получение текущей даты начала спринта
-    const startDate = getCurrentMonthSprintStart();
-    
-    // Использование текущего календарного дня
-    const today = new Date();
-    const calendarDay = today.getDate();
-    const currentDay = Math.min(Math.max(calendarDay, 1), 28); // Между 1 и 28
+    const startDate = new Date().toISOString();
+    const currentDay = 1;
+    const currentWeek = 1;
     
     // Создание нового прогресса
-    const newProgress: UserProgress = {
+    const newProgress: Progress = {
       startDate,
       currentDay,
+      currentWeek,
       days: {},
       weekReflections: {}
     };
     
-    try {
-      // Сначала пробуем сохранить в Supabase
-      const { error } = await supabase
-        .from('user_progress')
-        .insert({
-          user_id: userId,
-          start_date: startDate.toISOString(),
-          current_day: currentDay,
-          days: {},
-          week_reflections: {}
-        });
-      
-      if (error) {
-        logService.error('Ошибка при инициализации прогресса в Supabase', error);
-        // Если не удалось сохранить в Supabase, сохраняем локально
-        localStorage.setItem(`${PROGRESS_PREFIX}${userId}`, JSON.stringify(newProgress));
-      }
-    } catch (error) {
-      logService.error('Ошибка при инициализации прогресса', error);
-      // В случае ошибки сохраняем локально
-      localStorage.setItem(`${PROGRESS_PREFIX}${userId}`, JSON.stringify(newProgress));
+    // Сохраняем прогресс
+    const result = await this.updateUserProgress(userId, newProgress);
+    if (!result.success || !result.data) {
+      throw new Error(result.error || 'Failed to initialize progress');
     }
     
-    return newProgress;
+    return result.data;
   },
   
   /**
@@ -522,5 +439,72 @@ export const progressService = {
    */
   getWeekNumber(dayNumber: number): number {
     return Math.ceil(dayNumber / 7);
+  },
+  
+  /**
+   * Получение прогресса пользователя
+   * @returns Прогресс пользователя
+   */
+  async getProgress(): Promise<Progress> {
+    try {
+      // Получаем данные из localStorage
+      const storedData = localStorage.getItem(PROGRESS_KEY);
+      
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        // Проверяем, что все обязательные поля присутствуют
+        if (this.isValidProgress(parsedData)) {
+          return parsedData;
+        }
+      }
+      
+      // Если данных нет или они невалидны, создаем новый прогресс
+      const newProgress = this.createNewProgress();
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(newProgress));
+      return newProgress;
+    } catch (error) {
+      logService.error('Ошибка при получении прогресса', error);
+      // В случае ошибки возвращаем новый прогресс
+      return this.createNewProgress();
+    }
+  },
+  
+  /**
+   * Проверка валидности прогресса
+   * @param data Данные для проверки
+   * @returns true, если данные валидны
+   */
+  isValidProgress(data: unknown): data is Progress {
+    if (typeof data !== 'object' || data === null) {
+      return false;
+    }
+    
+    const progress = data as Progress;
+    return (
+      typeof progress.startDate === 'string' &&
+      typeof progress.currentDay === 'number' &&
+      typeof progress.currentWeek === 'number' &&
+      typeof progress.days === 'object' &&
+      typeof progress.weekReflections === 'object'
+    );
+  },
+  
+  /**
+   * Создание нового прогресса
+   * @returns Новый прогресс
+   */
+  createNewProgress(): Progress {
+    const currentDate = new Date();
+    const startDate = dateUtils.formatDate(currentDate);
+    const currentDay = dateUtils.getCurrentDayNumber();
+    const currentWeek = dateUtils.getCurrentWeekNumber();
+    
+    return {
+      startDate,
+      currentDay,
+      currentWeek,
+      days: {},
+      weekReflections: {}
+    };
   }
 };

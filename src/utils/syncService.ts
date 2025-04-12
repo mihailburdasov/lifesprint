@@ -1,14 +1,18 @@
+import { Progress, DayProgress, WeekProgress } from '../types/progress';
 import { supabase } from './supabaseClient';
 import { logService } from './logService';
 import { ApiResponse } from './authService';
 import { conflictResolver } from './conflictResolver';
+import { progressService } from './progressService';
+import { dateUtils } from './dateUtils';
 
 // Префиксы для ключей в localStorage
 const SYNC_QUEUE_PREFIX = 'lifesprint_sync_queue_';
 const SYNC_STATUS_PREFIX = 'lifesprint_sync_status_';
+const LAST_SYNC_KEY = 'lifesprint_last_sync';
 
 // Интерфейс для операции синхронизации
-export interface SyncOperation {
+interface SyncOperation {
   id: string;
   type: 'progress' | 'user' | 'settings';
   action: 'create' | 'update' | 'delete';
@@ -66,30 +70,37 @@ export const syncService = {
   /**
    * Добавление операции в очередь синхронизации
    */
-  addToSyncQueue(userId: string, operation: Omit<SyncOperation, 'id' | 'timestamp' | 'retryCount'>): void {
+  async addToQueue(operation: SyncOperation): Promise<void> {
     try {
-      const queue = this.getSyncQueue(userId);
-      
-      // Создаем новую операцию
-      const newOperation: SyncOperation = {
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        timestamp: Date.now(),
-        retryCount: 0,
-        ...operation
-      };
-      
-      // Добавляем операцию в очередь
-      queue.push(newOperation);
-      
-      // Сохраняем очередь
-      this.saveSyncQueue(userId, queue);
-      
-      // Запускаем синхронизацию, если есть подключение к интернету
-      if (navigator.onLine) {
-        this.syncData(userId);
-      }
+      const queue = await this.getQueue();
+      queue.push(operation);
+      await this.saveQueue(queue);
     } catch (error) {
-      logService.error('Ошибка при добавлении операции в очередь синхронизации', error);
+      logService.error('Ошибка при добавлении операции в очередь:', error);
+    }
+  },
+  
+  /**
+   * Получение очереди синхронизации
+   */
+  async getQueue(): Promise<SyncOperation[]> {
+    try {
+      const queueJson = localStorage.getItem(SYNC_QUEUE_PREFIX);
+      return queueJson ? JSON.parse(queueJson) : [];
+    } catch (error) {
+      logService.error('Ошибка при получении очереди:', error);
+      return [];
+    }
+  },
+  
+  /**
+   * Сохранение очереди синхронизации
+   */
+  async saveQueue(queue: SyncOperation[]): Promise<void> {
+    try {
+      localStorage.setItem(SYNC_QUEUE_PREFIX, JSON.stringify(queue));
+    } catch (error) {
+      logService.error('Ошибка при сохранении очереди:', error);
     }
   },
   
@@ -243,7 +254,7 @@ export const syncService = {
       
       return {
         success: failedOperations.length === 0,
-        error: failedOperations.length > 0 ? 'Некоторые операции не удалось синхронизировать' : null
+        error: failedOperations.length > 0 ? 'Некоторые операции не удалось синхронизировать' : undefined
       };
     } catch (error) {
       logService.error('Ошибка при синхронизации данных', error);
@@ -268,7 +279,7 @@ export const syncService = {
     try {
       switch (operation.type) {
         case 'progress':
-          return await this.syncProgress(userId, operation);
+          return await this.syncProgress(userId);
         case 'user':
           return await this.syncUser(userId, operation);
         case 'settings':
@@ -284,93 +295,42 @@ export const syncService = {
   },
   
   /**
-   * Синхронизация прогресса
+   * Синхронизация прогресса с сервером
    */
-  async syncProgress(userId: string, operation: SyncOperation): Promise<boolean> {
+  async syncProgress(userId: string): Promise<boolean> {
     try {
-      switch (operation.action) {
-        case 'create':
-        case 'update':
-          // Получаем текущий прогресс из Supabase
-          const { data: progressData, error: progressError } = await supabase
-            .from('user_progress')
-            .select('*')
-            .eq('user_id', userId)
-            .single();
+      // Получаем текущий прогресс
+      const progress = await progressService.getProgress();
+      
+      // Получаем последнюю дату синхронизации
+      const lastSync = localStorage.getItem(LAST_SYNC_KEY);
+      const lastSyncDate = lastSync ? new Date(lastSync) : null;
+      
+      // Если прошло больше часа с последней синхронизации
+      if (!lastSyncDate || (new Date().getTime() - lastSyncDate.getTime()) > 3600000) {
+        // Получаем прогресс с сервера
+        const serverProgress = await progressService.getUserProgress(userId);
+        
+        if (serverProgress.success && serverProgress.data) {
+          // Разрешаем конфликты
+          const resolvedProgress = conflictResolver.resolveProgressConflict(
+            progress,
+            serverProgress.data
+          );
           
-          if (!progressError && progressData) {
-            // Преобразуем данные из Supabase в формат UserProgress
-            const serverProgress = {
-              startDate: new Date(progressData.start_date),
-              currentDay: progressData.current_day,
-              days: progressData.days || {},
-              weekReflections: progressData.week_reflections || {}
-            };
-            
-            // Разрешаем конфликты между серверными и локальными данными
-            const mergedProgress = conflictResolver.resolveProgressConflict(serverProgress, operation.data);
-            
-            // Обновляем прогресс в Supabase
-            const { error: updateError } = await supabase
-              .from('user_progress')
-              .upsert({
-                user_id: userId,
-                start_date: mergedProgress.startDate.toISOString(),
-                current_day: mergedProgress.currentDay,
-                days: mergedProgress.days,
-                week_reflections: mergedProgress.weekReflections,
-                updated_at: new Date().toISOString()
-              }, {
-                onConflict: 'user_id'
-              });
-            
-            if (updateError) {
-              logService.error('Ошибка при обновлении прогресса в Supabase', updateError);
-              return false;
-            }
-            
-            return true;
-          } else {
-            // Если прогресс не найден, создаем новый
-            const { error: insertError } = await supabase
-              .from('user_progress')
-              .insert({
-                user_id: userId,
-                start_date: operation.data.startDate.toISOString(),
-                current_day: operation.data.currentDay,
-                days: operation.data.days,
-                week_reflections: operation.data.weekReflections,
-                updated_at: new Date().toISOString()
-              });
-            
-            if (insertError) {
-              logService.error('Ошибка при создании прогресса в Supabase', insertError);
-              return false;
-            }
-            
+          // Обновляем прогресс
+          const updateResult = await progressService.updateUserProgress(userId, resolvedProgress);
+          
+          if (updateResult.success) {
+            // Сохраняем дату последней синхронизации
+            localStorage.setItem(LAST_SYNC_KEY, new Date().toString());
             return true;
           }
-        
-        case 'delete':
-          // Удаляем прогресс из Supabase
-          const { error: deleteError } = await supabase
-            .from('user_progress')
-            .delete()
-            .eq('user_id', userId);
-          
-          if (deleteError) {
-            logService.error('Ошибка при удалении прогресса из Supabase', deleteError);
-            return false;
-          }
-          
-          return true;
-        
-        default:
-          logService.error(`Неизвестное действие операции: ${operation.action}`, operation);
-          return false;
+        }
       }
+      return false;
     } catch (error) {
-      logService.error('Ошибка при синхронизации прогресса', error);
+      logService.error('Ошибка при синхронизации прогресса:', error);
       return false;
     }
   },
@@ -556,6 +516,77 @@ export const syncService = {
         this.syncData(userId);
       }
     }, intervalMinutes * 60 * 1000);
+  },
+  
+  /**
+   * Создание нового прогресса
+   */
+  createNewProgress(): Progress {
+    const currentDate = new Date();
+    const startDate = dateUtils.formatDate(currentDate);
+    const currentDay = dateUtils.getCurrentDayNumber();
+    const currentWeek = dateUtils.getCurrentWeekNumber();
+    
+    return {
+      startDate,
+      currentDay,
+      currentWeek,
+      days: {},
+      weekReflections: {}
+    };
+  },
+  
+  /**
+   * Обработка очереди синхронизации
+   */
+  async processQueue(userId: string): Promise<void> {
+    try {
+      const queue = await this.getQueue();
+      
+      for (const operation of queue) {
+        try {
+          let success = false;
+          
+          switch (operation.type) {
+            case 'progress':
+              await this.syncProgress(userId);
+              success = true;
+              break;
+            case 'user':
+              success = await this.syncUser(userId, operation);
+              break;
+            case 'settings':
+              success = await this.syncSettings(userId, operation);
+              break;
+          }
+          
+          if (success) {
+            // Удаляем операцию из очереди
+            const updatedQueue = queue.filter(op => op.id !== operation.id);
+            await this.saveQueue(updatedQueue);
+          } else {
+            // Увеличиваем счетчик попыток
+            operation.retryCount++;
+            
+            // Если превышен лимит попыток, удаляем операцию
+            if (operation.retryCount >= 3) {
+              const updatedQueue = queue.filter(op => op.id !== operation.id);
+              await this.saveQueue(updatedQueue);
+            } else {
+              // Обновляем операцию в очереди
+              const updatedQueue = queue.map(op => 
+                op.id === operation.id ? operation : op
+              );
+              await this.saveQueue(updatedQueue);
+            }
+          }
+        } catch (error) {
+          logService.error('Ошибка при обработке операции:', error);
+        }
+      }
+    } catch (error) {
+      logService.error('Ошибка при обработке очереди:', error);
+    }
   }
 };
 

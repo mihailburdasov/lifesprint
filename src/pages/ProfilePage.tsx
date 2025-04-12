@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
 import { useUser } from '../context/UserContext';
-import { useProgress, DayProgress, WeekReflection } from '../context/ProgressContext';
+import { useProgress } from '../context/ProgressContext';
+import { FaUser, FaCog, FaSignOutAlt, FaChartLine, FaTrophy, FaBullseye, FaCalendarAlt } from 'react-icons/fa';
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading } = useUser();
+  const { user, isAuthenticated, isLoading, logout } = useUser();
   const { progress, getDayCompletion } = useProgress();
   
   // Статистика пользователя
@@ -49,24 +50,23 @@ const ProfilePage: React.FC = () => {
     const daysSinceStart = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     const totalAccessibleDays = Math.min(daysSinceStart, 28); // Максимум 28 дней в спринте
     
-    // Подсчет благодарностей, достижений и целей из обычных дней
+    // Подсчет благодарностей, достижений и целей
     let goalsCompletedCount = 0;
     
     Object.entries(progress.days).forEach(([dayNumberStr, day]) => {
-      const typedDay = day as DayProgress;
       const dayNumber = parseInt(dayNumberStr, 10);
       
       // Подсчет благодарностей
-      thanksCount += typedDay.gratitude.filter(item => item.trim() !== '').length;
+      thanksCount += day.gratitude.filter(item => item.trim() !== '').length;
       
       // Подсчет достижений
-      achievementsCount += typedDay.achievements.filter(item => item.trim() !== '').length;
+      achievementsCount += day.achievements.filter(item => item.trim() !== '').length;
       
       // Подсчет целей
-      goalsCount += typedDay.goals.filter(goal => goal.text.trim() !== '').length;
+      goalsCount += day.goals.filter(goal => goal.text.trim() !== '').length;
       
       // Подсчет выполненных целей
-      goalsCompletedCount += typedDay.goals.filter(goal => goal.completed).length;
+      goalsCompletedCount += day.goals.filter(goal => goal.completed).length;
       
       // Проверяем, заполнен ли день
       const dayCompletion = getDayCompletion(dayNumber);
@@ -87,19 +87,6 @@ const ProfilePage: React.FC = () => {
       }
     });
     
-    // Подсчет благодарностей из дней рефлексии
-    Object.values(progress.weekReflections).forEach(reflection => {
-      const typedReflection = reflection as WeekReflection;
-      
-      // Благодарности в дни рефлексии (себе, другим, миру)
-      if (typedReflection.gratitudeSelf.trim() !== '') thanksCount++;
-      if (typedReflection.gratitudeOthers.trim() !== '') thanksCount++;
-      if (typedReflection.gratitudeWorld.trim() !== '') thanksCount++;
-      
-      // Достижения в дни рефлексии
-      achievementsCount += typedReflection.achievements.filter(item => item.trim() !== '').length;
-    });
-    
     // Вычисляем процент заполнения профиля
     const completionPercentage = totalAccessibleDays > 0 
       ? Math.round((completedDays / totalAccessibleDays) * 100) 
@@ -118,24 +105,72 @@ const ProfilePage: React.FC = () => {
     });
   }, [progress, getDayCompletion]);
   
-  
-  return (
-    <div className="profile-page flex min-h-screen bg-background-light dark:bg-background-dark">
-      <Sidebar />
-      
-      {isLoading ? (
-        <div className="content flex-1 md:ml-64 p-6 flex justify-center items-center">
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Ошибка при выходе:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen bg-background-light dark:bg-background-dark">
+        <Sidebar />
+        <div className="flex-1 md:ml-64 p-6 flex justify-center items-center">
           <div className="text-center">
             <p className="text-lg">Загрузка...</p>
           </div>
         </div>
-      ) : !isAuthenticated ? null : (
-        <div className="content flex-1 md:ml-64 p-3 sm:p-4 md:p-6 pt-16 md:pt-6">
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return (
+    <div className="flex min-h-screen bg-background-light dark:bg-background-dark">
+      <Sidebar />
+      <div className="flex-1 md:ml-64 p-3 sm:p-4 md:p-6 pt-16 md:pt-6">
         <div className="bg-surface-light dark:bg-surface-dark rounded-xl shadow-md p-6">
-          <h1 className="text-2xl font-bold mb-6">Ваша статистика: {user?.name}</h1>
-          
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">Профиль</h1>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => navigate('/settings')}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Настройки"
+              >
+                <FaCog className="text-xl" />
+              </button>
+              <button
+                onClick={handleLogout}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Выйти"
+              >
+                <FaSignOutAlt className="text-xl" />
+              </button>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center">
+                <FaUser className="text-2xl text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold">{user?.name}</h2>
+                <p className="text-text-light-light dark:text-text-light-dark">{user?.email}</p>
+              </div>
+            </div>
+          </div>
+
           {/* Статистика пользователя */}
           <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-4">Ваша статистика</h3>
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               <div className="bg-surface-light dark:bg-surface-dark p-4 rounded-lg shadow-sm">
@@ -216,9 +251,26 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Действия */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center justify-center space-x-2 p-4 bg-surface-light dark:bg-surface-dark rounded-lg shadow-sm hover:shadow-md transition-shadow"
+            >
+              <FaChartLine className="text-xl text-primary" />
+              <span>Продолжить спринт</span>
+            </button>
+            <button
+              onClick={() => navigate('/settings')}
+              className="flex items-center justify-center space-x-2 p-4 bg-surface-light dark:bg-surface-dark rounded-lg shadow-sm hover:shadow-md transition-shadow"
+            >
+              <FaCog className="text-xl text-primary" />
+              <span>Настройки</span>
+            </button>
+          </div>
         </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
