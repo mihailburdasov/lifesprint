@@ -1,20 +1,14 @@
 import React from 'react';
-import { createRoot } from 'react-dom/client';
-import './index.css';
-import App from './App';
-import { setupTokenRefresh } from './utils/supabaseClient';
+import ReactDOM from 'react-dom/client';
+import App from './app/index';
+import './shared/styles';
 
-// Инициализация Supabase
-setupTokenRefresh();
+const root = ReactDOM.createRoot(
+  document.getElementById('root') as HTMLElement
+);
 
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-  console.error('Элемент root не найден');
-} else {
-  const root = createRoot(rootElement);
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
-}
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

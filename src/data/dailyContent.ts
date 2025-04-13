@@ -2,78 +2,75 @@
  * Static data for daily content in the LifeSprint application
  */
 
-// Daily thoughts with authors
-export interface DailyThought {
-  text: string;
-  author?: string;
-}
+import { DailyContent } from '../features/day/types/progress';
 
-export const dailyThoughts: DailyThought[] = [
-  { text: 'Я сильнее, чем я думаю!', author: 'Михаил Бурдасов' },
-  { text: 'Успех порождает успех!', author: 'Джон Кехо' },
-  { text: 'Поступай так, словно это сон. Действуй смело и не ищи оправданий.', author: 'Карлос Кастанеда' },
-  { text: 'Мы не можем исправить вчерашний день, но можем создать завтрашний.', author: 'Садхгуру' },
-  { text: 'Мы сами создаём свою удачу!', author: 'Михаил Бурдасов' },
-  { text: 'Дружите с людьми, которые желают вам лучшего.', author: 'Джордан Питерсон' },
-  { text: 'Утренние часы задают тон всему последующему дню.', author: 'Джон Кехо' },
-  { text: 'Я — свой собственный эксперимент. Я сама себе произведение искусства.', author: 'Мадонна' },
-  { text: 'Мы всегда получаем то, что сильно желаем!', author: 'Михаил Бурдасов' },
-  { text: 'Кавалерия не придёт — действуй сам!', author: 'Михаил Бурдасов' },
-  { text: 'Я — свой собственный эксперимент. Я сама себе произведение искусства.', author: 'Мадонна' },
-  { text: 'Даже небольшая перемена во взглядах способна открыть новые неограниченные возможности!', author: 'Джон Кехо' },
-  { text: 'Нет правильных решений. Есть ТВОИ РЕШЕНИЯ!', author: 'Михаил Бурдасов' },
-  { text: 'Мы всегда получаем то, что сильно желаем!', author: 'Михаил Бурдасов' },
-  { text: 'Хочешь быть счастливым? Действуй!', author: 'Михаил Бурдасов' },
-  { text: 'Сейчас — твоё время!', author: 'Михаил Бурдасов' },
-  { text: 'Мой успех зависит от меня самого!', author: 'Михаил Бурдасов' },
-  { text: 'Ищите успех везде, где можете его найти.', author: 'Джон Кехо' },
-  { text: 'Любая проблема — это замаскированная удача.', author: 'Бенджамин Франклин' },
-  { text: 'Простые решения — сложная жизнь, сложные решения — простая жизнь.', author: 'Джерзи Григорек' },
-  { text: 'Ты — то, что ты ешь.', author: 'Михаил Бурдасов' },
-  { text: 'Сегодня буква — завтра книга!', author: 'Михаил Бурдасов' },
-  { text: 'Хотя усилия не всегда приносят успех, потраченных зря усилий не бывает.', author: 'Михаил Бурдасов' },
-  { text: 'Идеи не работают, если ты не работаешь над ними.', author: 'Робин Шарма' },
-  { text: 'Мы то, что мы делаем постоянно.', author: 'Аристотель' },
-  { text: 'Зачастую сам акт измерения важнее, чем параметры, которые мы изменяем.', author: 'Тим Феррис' },
-  { text: 'Самый короткий путь к успеху: делай обыкновенные вещи необыкновенно.', author: 'Михаил Бурдасов' },
-  { text: 'Учиться нужно настолько быстро, чтобы каждый раз ужасаться тому, что мы делали полгода назад.', author: 'Илон Маск' }
+// Daily thoughts
+export const dailyThoughts = [
+  'Я сильнее, чем я думаю!', // Day 1
+  'Каждый день — это новая возможность стать лучше.', // Day 2
+  'Благодарность открывает двери к изобилию.', // Day 3
+  'Ясные цели ведут к ясным результатам.', // Day 4
+  'Мои достижения — это ступени к моему успеху.', // Day 5
+  'Практика делает совершенным.', // Day 6
+  'Утренние часы задают тон всему последующему дню.', // Day 7 (Reflection)
+  'Новые горизонты ждут тех, кто готов их увидеть.', // Day 8
+  'Внимательность к мелочам создает великие результаты.', // Day 9
+  'Моя энергия — мой самый ценный ресурс.', // Day 10
+  'Фокус на главном приводит к успеху.', // Day 11
+  'Баланс во всем — ключ к гармоничной жизни.', // Day 12
+  'Рост происходит за пределами зоны комфорта.', // Day 13
+  'Каждая неделя — это новая глава моей истории.', // Day 14 (Reflection)
+  'Преодоление трудностей делает нас сильнее.', // Day 15
+  'Радость можно найти в самых простых вещах.', // Day 16
+  'Моя сила в моей уверенности.', // Day 17
+  'Творчество — это свобода самовыражения.', // Day 18
+  'Связь с другими обогащает нашу жизнь.', // Day 19
+  'Гармония начинается внутри нас.', // Day 20
+  'Прошлое учит, будущее вдохновляет, настоящее действует.', // Day 21 (Reflection)
+  'Интеграция опыта ведет к мудрости.', // Day 22
+  'Мудрость приходит через опыт и размышления.', // Day 23
+  'Принятие себя — первый шаг к изменениям.', // Day 24
+  'Видение будущего направляет наши действия сегодня.', // Day 25
+  'Действие превращает мечты в реальность.', // Day 26
+  'Празднуйте свои победы, большие и малые.', // Day 27
+  'Завершение — это новое начало.', // Day 31 (Reflection)
 ];
 
 // Daily exercises
 export const dailyExercises = [
-  'Произнеси протяжно "А-У-М!"',
-  'Поиграй на губе!',
-  'Медленно, но широко улыбнись!',
-  'Почувствуй своё сердцебиение!',
-  '10 быстрых вдохов и выдохов!',
-  'Скажи 3 раза "Всё хорошо!"',
-  'Коснись тремя пальцами лба, носа и подбородка, а потом в обратном порядке.',
-  'Потанцуй!',
-  'Быстро улыбнись!',
-  'Покричи в подушку!',
-  'Потанцуй!',
-  'Попрыгай!',
-  'Попой!',
-  'Сосчитай от 1 до 17!',
-  'Похлопай в ладоши!',
-  'Потанцуй!',
-  'Задержи дыхание на 20 секунд!',
-  'Прислушайся!',
-  'Закрой глаза и отдохни минутку!',
-  'Посмейся!',
-  'Запиши себе напоминание: Сделать другому человеку приятное.',
-  'Постучи по чему-нибудь!',
-  'Постой на одной ноге!',
-  'Посмотри на богатство природы!',
-  'Крикни "Хееееей"!',
-  'Скажи "доброе утро" незнакомцу.',
-  'Скажи другу что-то приятное!',
-  'Крикни сам себе: УРА! УРА! УРА!'
+  'Произнеси протяжно "А-У-М".', // Day 1
+  'Сделай 10 глубоких вдохов и выдохов, концентрируясь на дыхании.', // Day 2
+  'Напиши от руки 3 вещи, за которые ты благодарен.', // Day 3
+  'Визуализируй свои цели на ближайший месяц в течение 5 минут.', // Day 4
+  'Запиши 3 своих достижения за последний год, которыми ты гордишься.', // Day 5
+  'Выполни 5-минутную медитацию осознанности.', // Day 6
+  'Коснись тремя пальцами лба, носа и подбородка, а потом в обратном порядке.', // Day 7 (Reflection)
+  'Нарисуй символ, который представляет твои стремления.', // Day 8
+  'Обрати внимание на 5 разных звуков вокруг тебя.', // Day 9
+  'Выполни 10 прыжков на месте для повышения энергии.', // Day 10
+  'Сосредоточься на одной задаче в течение 25 минут без отвлечений.', // Day 11
+  'Сделай 3-минутный перерыв для растяжки.', // Day 12
+  'Сделай что-то, что немного выходит за рамки твоей зоны комфорта.', // Day 13
+  'Нарисуй график своего настроения за прошедшую неделю.', // Day 14 (Reflection)
+  'Вспомни трудность, которую ты преодолел, и запиши уроки, которые ты извлек.', // Day 15
+  'Найди момент, чтобы насладиться чем-то простым: чашкой чая, закатом, музыкой.', // Day 16
+  'Встань в позу силы на 2 минуты (руки на бедрах, прямая спина, подбородок вверх).', // Day 17
+  'Создай что-то: нарисуй, напиши, сочини.', // Day 18
+  'Позвони или напиши сообщение кому-то, с кем давно не общался.', // Day 19
+  'Выполни 5-минутную медитацию на гармонию и баланс.', // Day 20
+  'Создай коллаж из изображений, представляющих твое прошлое, настоящее и будущее.', // Day 21 (Reflection)
+  'Запиши, как различные аспекты твоей жизни связаны между собой.', // Day 22
+  'Задай себе три глубоких вопроса и запиши ответы.', // Day 23
+  'Напиши письмо принятия самому себе.', // Day 24
+  'Создай доску визуализации своих целей.', // Day 25
+  'Выбери одну маленькую цель и сделай первый шаг к ее достижению прямо сейчас.', // Day 26
+  'Отпразднуй свои достижения за этот месяц любым приятным для тебя способом.', // Day 27
+  'Напиши письмо себе в будущее, которое откроешь через год.', // Day 31 (Reflection)
 ];
 
 // Motivational phrases for reflection days
 export const reflectionMotivationalPhrases = [
-  'Тебя ждут приключения! Продолжай', // Week 1
+  'Тебя ждут приключения!', // Week 1
   'Ты на правильном пути!', // Week 2
   'Твой потенциал безграничен!', // Week 3
   'Это только начало твоего удивительного пути!', // Week 4
@@ -108,41 +105,45 @@ export const audioFiles = [
   '/audio/day25.mp3', // Day 25
   '/audio/day26.mp3', // Day 26
   '/audio/day27.mp3', // Day 27
-  '/audio/day28.mp3', // Day 28 (Reflection)
+  '/audio/day31.mp3', // Day 31 (Reflection)
 ];
 
-// Step-by-step audio files for each day
-// Format: day{dayNumber}-{stepNumber}.mp3
-export const getStepAudioFile = (dayNumber: number, stepNumber: number): string => {
-  // Step 1 doesn't have audio
+// Get audio file for a specific step
+export const getStepAudioSrc = (dayNumber: number, stepNumber: number): string => {
+  // For regular days, we have audio for steps 2-6
+  // For reflection days, we have audio for steps 2-8
+  
+  // If step is 1, return empty string (no audio for step 1)
   if (stepNumber === 1) {
     return '';
   }
   
-  // Check if this day should have step-specific audio
-  // Days 1-6, 8-13, 15-20, 22-27 have step-specific audio
-  const hasStepAudio = (
-    (dayNumber >= 1 && dayNumber <= 6) || 
-    (dayNumber >= 8 && dayNumber <= 13) || 
-    (dayNumber >= 15 && dayNumber <= 20) || 
-    (dayNumber >= 22 && dayNumber <= 27)
-  );
-  
-  if (hasStepAudio) {
-    // For steps 2-6, return the corresponding step-specific audio file
-    // Step 2 uses audio file with index 1, step 3 uses index 2, etc.
-    const audioIndex = stepNumber - 1;
-    return `/audio/day${dayNumber}-${audioIndex}.mp3`;
-  } else {
-    // For reflection days (7, 14, 21, 28) and any other days, return the day-specific audio
-    return `/audio/day${dayNumber}.mp3`;
+  // Check if day is valid
+  if (dayNumber < 1 || dayNumber > 31) {
+    return '';
   }
+  
+  // Check if it's a reflection day
+  const isReflection = dayNumber % 7 === 0;
+  
+  // For regular days, check if step is valid (2-6)
+  if (!isReflection && (stepNumber < 2 || stepNumber > 6)) {
+    return '';
+  }
+  
+  // For reflection days, check if step is valid (2-8)
+  if (isReflection && (stepNumber < 2 || stepNumber > 8)) {
+    return '';
+  }
+  
+  // Return the audio file path
+  return `/audio/day${dayNumber}-${stepNumber - 1}.mp3`;
 };
 
 // Get content for a specific day
 export const getDailyContent = (dayNumber: number) => {
   const index = dayNumber - 1;
-  if (index < 0 || index >= 28) {
+  if (index < 0 || index >= 31) {
     return {
       thought: {
         text: 'День за пределами спринта',
@@ -150,44 +151,18 @@ export const getDailyContent = (dayNumber: number) => {
       },
       exercise: 'Нет упражнения',
       audioSrc: '',
+      withAudio: false,
     };
   }
   
   return {
-    thought: dailyThoughts[index],
+    thought: {
+      text: dailyThoughts[index],
+      author: undefined
+    },
     exercise: dailyExercises[index],
     audioSrc: audioFiles[index],
-  };
-};
-
-// Get content for a specific step of a day
-export const getStepContent = (dayNumber: number, stepNumber: number) => {
-  const index = dayNumber - 1;
-  if (index < 0 || index >= 28) {
-    return {
-      thought: {
-        text: 'День за пределами спринта',
-        author: undefined
-      },
-      exercise: 'Нет упражнения',
-      audioSrc: '',
-    };
-  }
-  
-  // For step 1, no audio
-  if (stepNumber === 1) {
-    return {
-      thought: dailyThoughts[index],
-      exercise: dailyExercises[index],
-      audioSrc: '',
-    };
-  }
-  
-  // For steps 2-6, return the corresponding content with step-specific audio
-  return {
-    thought: dailyThoughts[index],
-    exercise: dailyExercises[index],
-    audioSrc: getStepAudioFile(dayNumber, stepNumber),
+    withAudio: true,
   };
 };
 

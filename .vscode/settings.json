@@ -1,15 +1,15 @@
 {
-  "css.validate": false,
-  "less.validate": false,
-  "scss.validate": false,
+  "css.lint.unknownAtRules": "ignore",
+  "css.lint.vendorPrefix": "ignore",
+  "css.validate": true,
   "editor.quickSuggestions": {
     "strings": true
   },
   "tailwindCSS.includeLanguages": {
+    "plaintext": "html",
     "typescript": "javascript",
     "typescriptreact": "javascript"
   },
-  "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit"
-  }
-} 
+  "tailwindCSS.emmetCompletions": true,
+  "editor.inlineSuggest.enabled": true
+}
