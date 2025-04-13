@@ -20,6 +20,9 @@ import { ProfilePage } from '../features/profile/pages';
 import { SettingsPage } from '../features/settings/pages';
 import { DayPage, StepByStepDayPage } from '../features/day/pages';
 
+// Import components
+import { ProtectedRoute } from '../features/auth/components';
+
 // Import contexts
 import { UserProvider } from '../context/UserContext';
 import { ThemeProvider } from '../context/ThemeContext';
@@ -44,22 +47,71 @@ const App: React.FC = () => {
         <UserProvider>
           <ProgressProvider>
             <Routes>
-              {/* Auth routes */}
+              {/* Auth routes - accessible to everyone */}
               <Route path={ROUTES.LOGIN} element={<AuthPage />} />
               <Route path={ROUTES.REGISTER} element={<AuthPage />} />
               
-              {/* App routes */}
-              <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
-              <Route path={ROUTES.DAY} element={<DayPage />} />
-              <Route path={ROUTES.STEP_BY_STEP_DAY} element={<StepByStepDayPage />} />
-              <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
-              <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
+              {/* Protected app routes - only accessible when authenticated */}
+              <Route 
+                path={ROUTES.DASHBOARD} 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path={ROUTES.DAY} 
+                element={
+                  <ProtectedRoute>
+                    <DayPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path={ROUTES.STEP_BY_STEP_DAY} 
+                element={
+                  <ProtectedRoute>
+                    <StepByStepDayPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path={ROUTES.PROFILE} 
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path={ROUTES.SETTINGS} 
+                element={
+                  <ProtectedRoute>
+                    <SettingsPage />
+                  </ProtectedRoute>
+                } 
+              />
               
-              {/* Redirect to dashboard */}
-              <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+              {/* Redirect to dashboard - also protected */}
+              <Route 
+                path={ROUTES.HOME} 
+                element={
+                  <ProtectedRoute>
+                    <Navigate to={ROUTES.DASHBOARD} replace />
+                  </ProtectedRoute>
+                } 
+              />
               
-              {/* Fallback route */}
-              <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+              {/* Fallback route - also protected */}
+              <Route 
+                path="*" 
+                element={
+                  <ProtectedRoute>
+                    <Navigate to={ROUTES.DASHBOARD} replace />
+                  </ProtectedRoute>
+                } 
+              />
             </Routes>
           </ProgressProvider>
         </UserProvider>

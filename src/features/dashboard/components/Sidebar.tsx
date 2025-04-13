@@ -4,11 +4,12 @@
 
 import React, { useState, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaCalendarAlt, FaUser, FaBars, FaTimes, FaSun, FaMoon, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaCalendarAlt, FaUser, FaBars, FaTimes, FaSun, FaMoon, FaSignOutAlt, FaSignInAlt } from 'react-icons/fa';
 import { useTheme } from '../../../context/ThemeContext';
 import { useUser } from '../../../context/UserContext';
 import { useProgress } from '../../../features/day/context';
 import { getCurrentSprintDay } from '../../../core/utils/dateUtils';
+import { ROUTES } from '../../../shared/constants';
 
 /**
  * Sidebar component props
@@ -77,62 +78,77 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
         
         <nav className="px-2">
           <ul className="space-y-2">
-            <li>
-              <Link 
-                to="/" 
-                className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive('/')}`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <FaHome className="mr-3" />
-                <span>Главная</span>
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to={`/day/${currentCalendarDay}`} 
-                className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive(`/day/${currentCalendarDay}`)}`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <FaCalendarAlt className="mr-3" />
-                <span>Текущий день</span>
-              </Link>
-            </li>
-            <li>
-              {isAuthenticated ? (
-                <Link 
-                  to="/profile" 
-                  className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive('/profile')}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <FaUser className="mr-3" />
-                  <span>Профиль</span>
-                </Link>
-              ) : (
-                <Link 
-                  to="/auth" 
-                  className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive('/auth')}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <FaUser className="mr-3" />
-                  <span>Вход</span>
-                </Link>
-              )}
-            </li>
-            
-            {isAuthenticated && (
-              <li>
-                <button 
-                  onClick={() => {
-                    logout();
-                    setIsMobileMenuOpen(false);
-                    navigate('/auth');
-                  }}
-                  className="flex items-center w-full px-4 py-2 rounded-md transition-colors text-text-light-light dark:text-text-light-dark hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  <FaSignOutAlt className="mr-3" />
-                  <span>Выйти</span>
-                </button>
-              </li>
+            {/* Показываем ссылки на основные разделы только авторизованным пользователям */}
+            {isAuthenticated ? (
+              <>
+                <li>
+                  <Link 
+                    to="/" 
+                    className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive('/')}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <FaHome className="mr-3" />
+                    <span>Главная</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to={`/day/${currentCalendarDay}`} 
+                    className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive(`/day/${currentCalendarDay}`)}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <FaCalendarAlt className="mr-3" />
+                    <span>Текущий день</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/profile" 
+                    className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive('/profile')}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <FaUser className="mr-3" />
+                    <span>Профиль</span>
+                  </Link>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => {
+                      logout();
+                      setIsMobileMenuOpen(false);
+                      navigate(ROUTES.LOGIN);
+                    }}
+                    className="flex items-center w-full px-4 py-2 rounded-md transition-colors text-text-light-light dark:text-text-light-dark hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    <FaSignOutAlt className="mr-3" />
+                    <span>Выйти</span>
+                  </button>
+                </li>
+              </>
+            ) : (
+              <>
+                {/* Показываем только ссылку на вход для неавторизованных пользователей */}
+                <li>
+                  <Link 
+                    to={ROUTES.LOGIN}
+                    className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive(ROUTES.LOGIN)}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <FaSignInAlt className="mr-3" />
+                    <span>Вход</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to={ROUTES.REGISTER}
+                    className={`flex items-center px-4 py-2 rounded-md transition-colors ${isActive(ROUTES.REGISTER)}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <FaUser className="mr-3" />
+                    <span>Регистрация</span>
+                  </Link>
+                </li>
+              </>
             )}
           </ul>
         </nav>

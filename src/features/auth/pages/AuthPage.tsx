@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Sidebar from '../../../features/dashboard/components/Sidebar';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Button } from '../../../core/components';
 import { useUser } from '../../../context/UserContext';
 
@@ -16,6 +15,7 @@ interface FormData {
 
 const AuthPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, isLoading: authLoading, error: authError, login, register } = useUser();
   const [mode, setMode] = useState<AuthMode>('login');
   const [formData, setFormData] = useState<FormData>({
@@ -27,12 +27,14 @@ const AuthPage: React.FC = () => {
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // Перенаправление на главную, если пользователь уже авторизован
+  // Перенаправление после авторизации
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      // Проверяем, есть ли сохраненный путь, с которого пользователь был перенаправлен
+      const from = location.state?.from?.pathname || '/';
+      navigate(from);
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, location]);
 
   // Переключение между режимами входа и регистрации
   const toggleMode = () => {
@@ -119,9 +121,10 @@ const AuthPage: React.FC = () => {
 
   return (
     <div className="auth-page flex min-h-screen bg-background iphone11pro-fix">
-      <Sidebar />
-      
-      <div className="content flex-1 md:ml-64 p-4 md:p-8 flex justify-center items-center pt-16 md:pt-0 safe-area-inset">
+      <div className="content flex-1 p-4 md:p-8 flex justify-center items-center pt-16 md:pt-8 safe-area-inset">
+        <div className="absolute top-4 left-4">
+          <Link to="/" className="text-xl font-bold text-primary">LifeSprint</Link>
+        </div>
         <div className="auth-card bg-surface rounded-xl shadow-lg p-5 md:p-8 w-full max-w-md mx-auto">
           <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-center">
             {mode === 'login' ? 'Вход в аккаунт' : 'Регистрация'}
