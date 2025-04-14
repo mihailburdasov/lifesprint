@@ -12,7 +12,7 @@ interface DailyContent {
     author?: string;
   };
   exercise: string;
-  audioSrc: string;
+  audioSrc?: string; // Make audioSrc optional to match the imported type
   withAudio?: boolean;
 }
 

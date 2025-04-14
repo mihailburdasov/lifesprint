@@ -74,9 +74,26 @@ export class ProgressService {
   createDefaultProgress(): UserProgress {
     const startDate = this.getCurrentMonthSprintStart();
     const today = new Date();
-    const diffTime = today.getTime() - startDate.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    const currentDay = Math.min(Math.max(diffDays, 1), 31);
+    
+    // Проверяем, находится ли текущая дата в пределах спринта
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    const sprintYear = startDate.getFullYear();
+    const sprintMonth = startDate.getMonth();
+    
+    let currentDay;
+    
+    // Если текущий год и месяц совпадают с годом и месяцем спринта (апрель текущего года)
+    if (currentYear === sprintYear && currentMonth === sprintMonth) {
+      // Стандартный расчет для текущего месяца спринта
+      const diffTime = today.getTime() - startDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      currentDay = Math.min(Math.max(diffDays, 1), 31);
+    } else {
+      // Если мы находимся в другом месяце или году
+      // Используем текущий день месяца как номер дня спринта, но не больше 31
+      currentDay = Math.min(today.getDate(), 31);
+    }
     
     return {
       currentDay,

@@ -8,17 +8,17 @@ import { getDailyContent, getMotivationalPhrase } from '../../../data/dailyConte
 import { useContentService } from '../hooks/useContentService';
 
 interface DayParams {
-  dayId: string;
+  dayNumber: string;
   [key: string]: string;
 }
 
 const DayPage: React.FC = () => {
-  const { dayId } = useParams<DayParams>();
+  const { dayNumber: dayNumberParam } = useParams<DayParams>();
   const navigate = useNavigate();
   const { progress, updateDayProgress, updateWeekReflection, isReflectionDay: checkReflectionDay, getDayCompletion, isDayAccessible } = useProgress();
   const { formatDate, getDayTitle } = useContentService();
   
-  const dayNumber = parseInt(dayId || '1', 10);
+  const dayNumber = parseInt(dayNumberParam || '1', 10);
   const isReflection = checkReflectionDay(dayNumber);
   const weekNumber = Math.ceil(dayNumber / 7);
   const isAccessible = isDayAccessible(dayNumber);
