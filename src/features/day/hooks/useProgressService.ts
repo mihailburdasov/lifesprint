@@ -14,12 +14,16 @@ export const useProgressService = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load progress on mount
+  // Load progress on mount and update current day
   useEffect(() => {
     try {
       setIsLoading(true);
       const loadedProgress = progressService.loadProgress();
-      setProgress(loadedProgress);
+      
+      // Update current day based on the current date
+      const updatedProgress = progressService.updateCurrentDay(loadedProgress);
+      
+      setProgress(updatedProgress);
       setError(null);
     } catch (err) {
       setError('Failed to load progress data');
@@ -41,21 +45,28 @@ export const useProgressService = () => {
   // Update day progress
   const updateDayProgress = useCallback((dayNumber: number, data: Partial<DayProgress>) => {
     setProgress(prevProgress => {
-      return progressService.updateDayProgress(prevProgress, dayNumber, data);
+      const newProgress = progressService.updateDayProgress(prevProgress, dayNumber, data);
+      // Immediately save to localStorage to ensure data persistence
+      progressService.saveProgress(newProgress);
+      return newProgress;
     });
   }, []);
 
   // Update week reflection
   const updateWeekReflection = useCallback((weekNumber: number, data: Partial<WeekReflection>) => {
     setProgress(prevProgress => {
-      return progressService.updateWeekReflection(prevProgress, weekNumber, data);
+      const newProgress = progressService.updateWeekReflection(prevProgress, weekNumber, data);
+      // Immediately save to localStorage to ensure data persistence
+      progressService.saveProgress(newProgress);
+      return newProgress;
     });
   }, []);
 
   // Get day completion percentage
   const getDayCompletion = useCallback((dayNumber: number) => {
+    // Use the current progress state instead of loading from localStorage
     return progressService.getDayCompletion(progress, dayNumber);
-  }, [progress]);
+  }, [progress]); // Add progress as a dependency so it recalculates when progress changes
 
   // Check if a day is a reflection day
   const isReflectionDay = useCallback((dayNumber: number) => {
@@ -77,6 +88,14 @@ export const useProgressService = () => {
     return progressService.areTasksCompleted(progress, dayNumber);
   }, [progress]);
 
+  // Update current day based on the current date
+  const updateCurrentDay = useCallback(() => {
+    setProgress(prevProgress => {
+      const updatedProgress = progressService.updateCurrentDay(prevProgress);
+      return updatedProgress;
+    });
+  }, []);
+
   return {
     progress,
     isLoading,
@@ -87,6 +106,7 @@ export const useProgressService = () => {
     isReflectionDay,
     isDayAccessible,
     isWeekAccessible,
-    areTasksCompleted
+    areTasksCompleted,
+    updateCurrentDay
   };
 };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Sidebar } from '../../../features/dashboard/components';
 import { AudioPlayer, Button } from '../../../core/components';
@@ -17,6 +17,9 @@ const DayPage: React.FC = () => {
   const navigate = useNavigate();
   const { progress, updateDayProgress, updateWeekReflection, isReflectionDay: checkReflectionDay, getDayCompletion, isDayAccessible } = useProgress();
   const { formatDate, getDayTitle } = useContentService();
+  
+  // Add a counter to force re-render when reflection data changes
+  const [updateCounter, setUpdateCounter] = useState(0);
   
   const dayNumber = parseInt(dayNumberParam || '1', 10);
   const isReflection = checkReflectionDay(dayNumber);
@@ -100,10 +103,13 @@ const DayPage: React.FC = () => {
     
     if (type === 'self') {
       updateWeekReflection(weekNumber, { gratitudeSelf: value });
+      setUpdateCounter(prev => prev + 1); // Force re-render
     } else if (type === 'others') {
       updateWeekReflection(weekNumber, { gratitudeOthers: value });
+      setUpdateCounter(prev => prev + 1); // Force re-render
     } else if (type === 'world') {
       updateWeekReflection(weekNumber, { gratitudeWorld: value });
+      setUpdateCounter(prev => prev + 1); // Force re-render
     }
   };
   
@@ -113,6 +119,7 @@ const DayPage: React.FC = () => {
     const newAchievements = [...reflectionData.achievements];
     newAchievements[index] = value;
     updateWeekReflection(weekNumber, { achievements: newAchievements });
+    setUpdateCounter(prev => prev + 1); // Force re-render
   };
   
   const handleReflectionImprovementChange = (index: number, value: string) => {
@@ -121,6 +128,7 @@ const DayPage: React.FC = () => {
     const newImprovements = [...reflectionData.improvements];
     newImprovements[index] = value;
     updateWeekReflection(weekNumber, { improvements: newImprovements });
+    setUpdateCounter(prev => prev + 1); // Force re-render
   };
   
   const handleReflectionInsightChange = (index: number, value: string) => {
@@ -129,6 +137,7 @@ const DayPage: React.FC = () => {
     const newInsights = [...reflectionData.insights];
     newInsights[index] = value;
     updateWeekReflection(weekNumber, { insights: newInsights });
+    setUpdateCounter(prev => prev + 1); // Force re-render
   };
   
   const handleReflectionRuleChange = (index: number, value: string) => {
@@ -137,12 +146,14 @@ const DayPage: React.FC = () => {
     const newRules = [...reflectionData.rules];
     newRules[index] = value;
     updateWeekReflection(weekNumber, { rules: newRules });
+    setUpdateCounter(prev => prev + 1); // Force re-render
   };
   
   const handleReflectionExerciseComplete = () => {
     if (!reflectionData) return;
     
     updateWeekReflection(weekNumber, { exerciseCompleted: !reflectionData.exerciseCompleted });
+    setUpdateCounter(prev => prev + 1); // Force re-render
   };
   
   // Get daily content
@@ -154,7 +165,11 @@ const DayPage: React.FC = () => {
       <div className="day-content space-y-6 sm:space-y-8">
         {/* Thought of the day */}
         <div className="thought-of-day">
-          <h3 className="text-base sm:text-lg font-medium mb-2">#Мысльдня</h3>
+          <h3 className="text-base sm:text-lg font-medium mb-2">
+            {dailyContent.thought.author 
+              ? `#мысльдня от ${dailyContent.thought.author}:` 
+              : '#мысльдня'}
+          </h3>
           <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md italic text-sm sm:text-base">
             {dailyContent.thought.text}
           </div>
@@ -236,7 +251,7 @@ const DayPage: React.FC = () => {
         
         {/* Exercise */}
         <div className="exercise">
-          <h3 className="text-base sm:text-lg font-medium mb-2">#упражнение</h3>
+          <h3 className="text-base sm:text-lg font-medium mb-2">#упражнение_на_осознанность</h3>
           <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md mb-3 text-sm sm:text-base">
             {dailyContent.exercise}
           </div>
@@ -263,7 +278,11 @@ const DayPage: React.FC = () => {
       <div className="reflection-content space-y-6 sm:space-y-8">
         {/* Thought of the day */}
         <div className="thought-of-day">
-          <h3 className="text-base sm:text-lg font-medium mb-2">#Мысльдня</h3>
+          <h3 className="text-base sm:text-lg font-medium mb-2">
+            {dailyContent.thought.author 
+              ? `#мысльдня от ${dailyContent.thought.author}:` 
+              : '#мысльдня'}
+          </h3>
           <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md italic text-sm sm:text-base">
             {dailyContent.thought.text}
           </div>
@@ -312,7 +331,7 @@ const DayPage: React.FC = () => {
         
         {/* Weekly Results */}
         <div className="weekly-results">
-          <h3 className="text-base sm:text-lg font-medium mb-2">Подводим итоги недели</h3>
+          <h3 className="text-base sm:text-lg font-medium mb-2">Мои достижения</h3>
           <p className="text-sm text-text-light-light dark:text-text-light-dark mb-3">
             Что у меня получилось на этой неделе?
           </p>
@@ -332,6 +351,7 @@ const DayPage: React.FC = () => {
             ))}
           </div>
           
+          <h3 className="text-base sm:text-lg font-medium mb-2">Моя зона роста</h3>
           <p className="text-sm text-text-light-light dark:text-text-light-dark mb-3">
             Что я могу сделать лучше в следующий раз?
           </p>
@@ -491,15 +511,21 @@ const DayPage: React.FC = () => {
             
             <div className="mt-2 flex items-center">
               <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mr-3">
-                <div 
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium"
-                  style={{
-                    background: `conic-gradient(#4F46E5 ${getDayCompletion(dayNumber)}%, #f3f4f6 0)`,
-                    color: getDayCompletion(dayNumber) > 50 ? 'white' : 'inherit'
-                  }}
-                >
-                  {getDayCompletion(dayNumber)}%
-                </div>
+                {(() => {
+                  const dayCompletion = getDayCompletion(dayNumber);
+                  console.log(`Day ${dayNumber} completion: ${dayCompletion}%`);
+                  return (
+                    <div 
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium"
+                      style={{
+                        background: `conic-gradient(#4F46E5 ${dayCompletion}%, #f3f4f6 0)`,
+                        color: dayCompletion > 50 ? 'white' : 'inherit'
+                      }}
+                    >
+                      {dayCompletion}%
+                    </div>
+                  );
+                })()}
               </div>
               <div className="text-sm text-text-light-light dark:text-text-light-dark">
                 Прогресс дня

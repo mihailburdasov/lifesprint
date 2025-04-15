@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaCheckCircle, FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import { Sidebar } from '../../../features/dashboard/components';
@@ -10,7 +10,7 @@ import { useContentService } from '../../../features/day/hooks/useContentService
 import { useProgressService } from '../../../features/day/hooks/useProgressService';
 
 const Dashboard: React.FC = () => {
-  const { progress } = useProgress();
+  const { progress, updateCurrentDay } = useProgress();
   const { getDayCompletion, isReflectionDay, updateDayProgress, isDayAccessible, isWeekAccessible, areTasksCompleted } = useProgressService();
   const { formatDate, getDayTitle } = useContentService();
   
@@ -20,6 +20,24 @@ const Dashboard: React.FC = () => {
   const [isStepByStepOpen, setIsStepByStepOpen] = useState(false);
   const [isAttemptingClose, setIsAttemptingClose] = useState(false);
   const [attemptedEmptyTaskIndex, setAttemptedEmptyTaskIndex] = useState<number | null>(null);
+  // Add a counter to force re-render when progress data changes
+  const [updateCounter, setUpdateCounter] = useState(0);
+  
+  // Update current day when component mounts
+  useEffect(() => {
+    // Update current day based on the current date
+    updateCurrentDay();
+    console.log('Current day updated to:', progress.currentDay);
+  }, [updateCurrentDay, progress.currentDay]);
+  
+  // Force re-render every second to update progress circles
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setUpdateCounter(prev => prev + 1);
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
   
   // Get active week number
   const activeWeek = Math.ceil(safeProgress.currentDay / 7);
@@ -132,6 +150,8 @@ const Dashboard: React.FC = () => {
       dayDate.setDate(dayDate.getDate() + dayNumber - 1);
       
       const completion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
+      console.log(`Current reflection day ${dayNumber} completion: ${completion}%`);
+      console.log(`Reflection day ${dayNumber} completion: ${completion}%`);
       const isReflection = isReflectionDay ? isReflectionDay(dayNumber) : false;
       
       days.push(
@@ -158,15 +178,21 @@ const Dashboard: React.FC = () => {
           
           <div className="ml-2 flex-shrink-0">
             <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-              <div 
-                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium"
-                style={{
-                  background: `conic-gradient(#4F46E5 ${completion}%, #f3f4f6 0)`,
-                  color: completion > 50 ? 'white' : 'inherit'
-                }}
-              >
-                {completion}%
-              </div>
+              {(() => {
+                // Force re-calculation of completion with updateCounter
+                const currentCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
+                return (
+                  <div 
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium"
+                    style={{
+                      background: `conic-gradient(#4F46E5 ${currentCompletion}%, #f3f4f6 0)`,
+                      color: currentCompletion > 50 ? 'white' : 'inherit'
+                    }}
+                  >
+                    {currentCompletion}%
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -237,7 +263,142 @@ const Dashboard: React.FC = () => {
     const dayNumber = safeProgress.currentDay;
     const dayDate = new Date(safeProgress.startDate);
     dayDate.setDate(dayDate.getDate() + dayNumber - 1);
+    const isReflection = isReflectionDay(dayNumber);
     
+    // Если это день рефлексии
+    if (isReflection) {
+      const weekNumber = Math.ceil(dayNumber / 7);
+      const reflection = safeProgress.weekReflections[weekNumber] || {
+        gratitudeSelf: '',
+        gratitudeOthers: '',
+        gratitudeWorld: '',
+        achievements: ['', '', ''],
+        improvements: ['', '', ''],
+        insights: ['', '', ''],
+        rules: ['', '', ''],
+        exerciseCompleted: false
+      };
+      
+      const completion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
+      
+      return (
+        <div className="current-day bg-surface-light dark:bg-surface-dark rounded-xl shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+            <h2 className="text-lg sm:text-xl font-bold mb-2 sm:mb-0">
+              День {dayNumber} ({formatDate ? formatDate(dayDate) : dayDate.toLocaleDateString()})
+            </h2>
+            
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-100 flex items-center justify-center">
+              {(() => {
+                // Force re-calculation of completion with updateCounter
+                const currentCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
+                console.log(`Current reflection day ${dayNumber} completion: ${currentCompletion}%, updateCounter: ${updateCounter}`);
+                return (
+                  <div 
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm font-medium"
+                    style={{
+                      background: `conic-gradient(#4F46E5 ${currentCompletion}%, #f3f4f6 0)`,
+                      color: currentCompletion > 50 ? 'white' : 'inherit'
+                    }}
+                  >
+                    {currentCompletion}%
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+          
+          <div className="progress-indicators flex flex-col space-y-2 md:grid md:grid-cols-3 md:gap-4 md:space-y-0 mb-4">
+            <div className="flex-1">
+              <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Благодарности</div>
+              <div className="h-2 bg-gray-200 rounded-full">
+                <div 
+                  className="h-full bg-primary rounded-full"
+                  style={{ 
+                    width: `${Math.min(100, (
+                      (reflection.gratitudeSelf.trim() !== '' ? 33.3 : 0) +
+                      (reflection.gratitudeOthers.trim() !== '' ? 33.3 : 0) +
+                      (reflection.gratitudeWorld.trim() !== '' ? 33.3 : 0)
+                    ))}%` 
+                  }}
+                />
+              </div>
+            </div>
+            
+            <div className="flex-1">
+              <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Достижения</div>
+              <div className="h-2 bg-gray-200 rounded-full">
+                <div 
+                  className="h-full bg-primary rounded-full"
+                  style={{ 
+                    width: `${Math.min(100, (reflection.achievements.filter(a => a.trim() !== '').length / 3) * 100)}%` 
+                  }}
+                />
+              </div>
+            </div>
+            
+            <div className="flex-1">
+              <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Улучшения</div>
+              <div className="h-2 bg-gray-200 rounded-full">
+                <div 
+                  className="h-full bg-primary rounded-full"
+                  style={{ 
+                    width: `${Math.min(100, (reflection.improvements.filter(i => i.trim() !== '').length / 3) * 100)}%` 
+                  }}
+                />
+              </div>
+            </div>
+            
+            <div className="flex-1">
+              <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Озарения</div>
+              <div className="h-2 bg-gray-200 rounded-full">
+                <div 
+                  className="h-full bg-primary rounded-full"
+                  style={{ 
+                    width: `${Math.min(100, (reflection.insights.filter(i => i.trim() !== '').length / 3) * 100)}%` 
+                  }}
+                />
+              </div>
+            </div>
+            
+            <div className="flex-1">
+              <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Правила</div>
+              <div className="h-2 bg-gray-200 rounded-full">
+                <div 
+                  className="h-full bg-primary rounded-full"
+                  style={{ 
+                    width: `${Math.min(100, (reflection.rules.filter(r => r.trim() !== '').length / 3) * 100)}%` 
+                  }}
+                />
+              </div>
+            </div>
+            
+            <div className="flex-1">
+              <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Упражнение</div>
+              <div className="h-2 bg-gray-200 rounded-full">
+                <div 
+                  className="h-full bg-primary rounded-full"
+                  style={{ 
+                    width: `${reflection.exerciseCompleted ? 100 : 0}%` 
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <Button 
+              variant="primary"
+              onClick={() => setIsStepByStepOpen(true)}
+            >
+              Заполнить
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    
+    // Для обычных дней
     const dayProgress = safeProgress.days[dayNumber] || { 
       completed: false,
       gratitude: ['', '', ''],
@@ -260,15 +421,22 @@ const Dashboard: React.FC = () => {
           </h2>
           
           <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-100 flex items-center justify-center">
-            <div 
-              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm font-medium"
-              style={{
-                background: `conic-gradient(#4F46E5 ${completion}%, #f3f4f6 0)`,
-                color: completion > 50 ? 'white' : 'inherit'
-              }}
-            >
-              {completion}%
-            </div>
+            {(() => {
+              // Force re-calculation of completion with updateCounter
+              const currentCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
+              console.log(`Current regular day ${dayNumber} completion: ${currentCompletion}%, updateCounter: ${updateCounter}`);
+              return (
+                <div 
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm font-medium"
+                  style={{
+                    background: `conic-gradient(#4F46E5 ${currentCompletion}%, #f3f4f6 0)`,
+                    color: currentCompletion > 50 ? 'white' : 'inherit'
+                  }}
+                >
+                  {currentCompletion}%
+                </div>
+              );
+            })()}
           </div>
         </div>
         

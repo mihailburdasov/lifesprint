@@ -19,7 +19,8 @@ export const ProgressContext = createContext<ProgressContextType>({
   isWeekAccessible: () => false,
   getDayCompletion: () => 0,
   isLoading: false,
-  error: null
+  error: null,
+  updateCurrentDay: () => {}
 });
 
 // Provider component
@@ -35,7 +36,8 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     isReflectionDay,
     isDayAccessible,
     isWeekAccessible,
-    areTasksCompleted
+    areTasksCompleted,
+    updateCurrentDay
   } = useProgressService();
   
   return (
@@ -48,7 +50,8 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       isWeekAccessible,
       getDayCompletion,
       isLoading,
-      error
+      error,
+      updateCurrentDay
     }}>
       {children}
     </ProgressContext.Provider>

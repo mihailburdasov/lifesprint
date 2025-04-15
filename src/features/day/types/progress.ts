@@ -59,4 +59,5 @@ export interface ProgressContextType {
   isWeekAccessible: (weekNumber: number) => boolean;
   isLoading: boolean;
   error: string | null;
+  updateCurrentDay: () => void;
 }
