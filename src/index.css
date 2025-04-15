@@ -32,8 +32,61 @@
     @apply bg-surface-light dark:bg-surface-dark rounded-xl shadow-md p-4;
   }
   .input {
-    @apply border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-text-light dark:text-text-dark rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
-    font-size: 16px; /* Prevents iOS zoom on focus */
+    @apply border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-text-light dark:text-text-dark rounded-lg px-4 py-3 shadow-sm transition-all duration-200 ease-in-out focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary focus:shadow-md placeholder-gray-400 dark:placeholder-gray-500 !important;
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+  }
+  
+  /* Ensure input fields in day content have the correct styling */
+  .day-content input[type="text"], 
+  .step-content input[type="text"],
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="month"],
+  input[type="week"],
+  input[type="time"],
+  input[type="color"],
+  textarea {
+    @apply border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-text-light dark:text-text-dark rounded-lg px-4 py-3 shadow-sm transition-all duration-200 ease-in-out focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary focus:shadow-md placeholder-gray-400 dark:placeholder-gray-500 !important;
+  }
+  
+  /* Quote block styling */
+  .quote-block,
+  .thought-of-day .quote-block,
+  .exercise .quote-block,
+  [class*="Dialog"] .quote-block,
+  .step-content .quote-block {
+    @apply bg-primary-lighter dark:bg-gray-800 p-4 rounded-lg shadow-md border-l-4 border-primary italic relative pl-8 pr-6 mb-4 !important;
+    position: relative !important;
+    display: block !important;
+  }
+  
+  .quote-block::before,
+  .thought-of-day .quote-block::before,
+  .exercise .quote-block::before,
+  [class*="Dialog"] .quote-block::before,
+  .step-content .quote-block::before {
+    content: '"' !important;
+    @apply absolute left-3 top-2 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif !important;
+    display: block !important;
+    z-index: 1 !important;
+  }
+  
+  .quote-block::after,
+  .thought-of-day .quote-block::after,
+  .exercise .quote-block::after,
+  [class*="Dialog"] .quote-block::after,
+  .step-content .quote-block::after {
+    content: '"' !important;
+    @apply absolute right-3 bottom-0 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif !important;
+    display: block !important;
+    z-index: 1 !important;
   }
   .checkbox {
     @apply w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary;

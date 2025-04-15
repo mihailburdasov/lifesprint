@@ -8,11 +8,13 @@ import StepByStepDay from '../../../features/day/components/steps/StepByStepDay'
 import { Dialog } from '@headlessui/react';
 import { useContentService } from '../../../features/day/hooks/useContentService';
 import { useProgressService } from '../../../features/day/hooks/useProgressService';
+import { useTheme } from '../../../context/ThemeContext';
 
 const Dashboard: React.FC = () => {
   const { progress, updateCurrentDay } = useProgress();
-  const { getDayCompletion, isReflectionDay, updateDayProgress, isDayAccessible, isWeekAccessible, areTasksCompleted } = useProgressService();
+  const { getDayCompletion, isReflectionDay, updateDayProgress, /* isDayAccessible, */ isWeekAccessible, /* areTasksCompleted, */ isWeekComplete } = useProgressService();
   const { formatDate, getDayTitle } = useContentService();
+  const { theme } = useTheme();
   
   // Use the progress from context
   const safeProgress = progress;
@@ -22,6 +24,37 @@ const Dashboard: React.FC = () => {
   const [attemptedEmptyTaskIndex, setAttemptedEmptyTaskIndex] = useState<number | null>(null);
   // Add a counter to force re-render when progress data changes
   const [updateCounter, setUpdateCounter] = useState(0);
+  
+  // Add local state for current day goals
+  const currentDayNumber = safeProgress.currentDay;
+  const currentDayData = safeProgress.days[currentDayNumber] || { 
+    completed: false,
+    gratitude: ['', '', ''],
+    achievements: ['', '', ''],
+    goals: [
+      { text: '', completed: false },
+      { text: '', completed: false },
+      { text: '', completed: false }
+    ],
+    exerciseCompleted: false
+  };
+  const [currentDayGoals, setCurrentDayGoals] = useState(currentDayData.goals);
+  
+  // Update local state when progress changes
+  useEffect(() => {
+    const dayData = safeProgress.days[currentDayNumber] || { 
+      completed: false,
+      gratitude: ['', '', ''],
+      achievements: ['', '', ''],
+      goals: [
+        { text: '', completed: false },
+        { text: '', completed: false },
+        { text: '', completed: false }
+      ],
+      exerciseCompleted: false
+    };
+    setCurrentDayGoals(dayData.goals);
+  }, [safeProgress, currentDayNumber]);
   
   // Update current day when component mounts
   useEffect(() => {
@@ -106,7 +139,7 @@ const Dashboard: React.FC = () => {
         >
             <div className="flex items-center">
               <div className="flex-shrink-0 mr-4">
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm">
+                <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-sm dark:text-white">
                   {dayNumber}
                 </div>
               </div>
@@ -117,11 +150,11 @@ const Dashboard: React.FC = () => {
               </div>
               
               <div className="ml-2 flex-shrink-0">
-                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
                   <div 
                     className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium"
                     style={{
-                      background: `conic-gradient(#4F46E5 0%, #f3f4f6 0)`,
+                      background: `conic-gradient(#4F46E5 0%, ${theme === 'dark' ? '#374151' : '#f3f4f6'} 0)`,
                       color: 'inherit'
                     }}
                   >
@@ -149,9 +182,10 @@ const Dashboard: React.FC = () => {
       const dayDate = new Date(safeProgress.startDate);
       dayDate.setDate(dayDate.getDate() + dayNumber - 1);
       
-      const completion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
-      console.log(`Current reflection day ${dayNumber} completion: ${completion}%`);
-      console.log(`Reflection day ${dayNumber} completion: ${completion}%`);
+      // Получаем значение завершенности для логирования
+      const dayCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
+      console.log(`Current reflection day ${dayNumber} completion: ${dayCompletion}%`);
+      console.log(`Reflection day ${dayNumber} completion: ${dayCompletion}%`);
       const isReflection = isReflectionDay ? isReflectionDay(dayNumber) : false;
       
       days.push(
@@ -162,10 +196,10 @@ const Dashboard: React.FC = () => {
         >
         <div className="flex items-center">
           <div className="flex-shrink-0 mr-4">
-            {completion === 100 ? (
+            {dayCompletion === 100 ? (
               <FaCheckCircle className="text-green-500" size={20} />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm">
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-sm dark:text-white">
                 {dayNumber}
               </div>
             )}
@@ -177,7 +211,7 @@ const Dashboard: React.FC = () => {
           </div>
           
           <div className="ml-2 flex-shrink-0">
-            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
               {(() => {
                 // Force re-calculation of completion with updateCounter
                 const currentCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
@@ -185,7 +219,7 @@ const Dashboard: React.FC = () => {
                   <div 
                     className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium"
                     style={{
-                      background: `conic-gradient(#4F46E5 ${currentCompletion}%, #f3f4f6 0)`,
+                      background: `conic-gradient(#4F46E5 ${currentCompletion}%, ${theme === 'dark' ? '#374151' : '#f3f4f6'} 0)`,
                       color: currentCompletion > 50 ? 'white' : 'inherit'
                     }}
                   >
@@ -209,43 +243,21 @@ const Dashboard: React.FC = () => {
   
   // Handle closing the widget
   const handleCloseWidget = () => {
-    // Проверяем, все ли задачи либо пустые, либо выполненные
-    const dayProgress = safeProgress.days[safeProgress.currentDay] || { 
-      goals: [
-        { text: '', completed: false },
-        { text: '', completed: false },
-        { text: '', completed: false }
-      ]
-    };
-    
-    const allTasksCompletedOrEmpty = dayProgress.goals.every(goal => 
-      goal.text.trim() === '' || goal.completed
-    );
-    
-    if (allTasksCompletedOrEmpty) {
-      // Если все задачи выполнены или пустые, закрываем виджет
-      setIsStepByStepOpen(false);
-    } else {
-      // Если есть незавершенные задачи, показываем предупреждение
-      setIsAttemptingClose(true);
-    }
+    // Всегда закрываем виджет без проверки задач
+    setIsStepByStepOpen(false);
   };
   
   // Handle toggling task completion
   const handleGoalToggle = (dayNumber: number, index: number) => {
-    const dayProgress = safeProgress.days[dayNumber] || { 
-      completed: false,
-      gratitude: ['', '', ''],
-      achievements: ['', '', ''],
-      goals: [
-        { text: '', completed: false },
-        { text: '', completed: false },
-        { text: '', completed: false }
-      ],
-      exerciseCompleted: false
-    };
+    // Используем локальное состояние для текущего дня, иначе берем из глобального состояния
+    const isCurrentDay = dayNumber === currentDayNumber;
+    const goals = isCurrentDay ? currentDayGoals : (safeProgress.days[dayNumber]?.goals || [
+      { text: '', completed: false },
+      { text: '', completed: false },
+      { text: '', completed: false }
+    ]);
     
-    const goal = dayProgress.goals[index];
+    const goal = goals[index];
     
     // Если задача пустая и пытаемся отметить её как выполненную
     if (goal.text.trim() === '' && !goal.completed) {
@@ -253,9 +265,23 @@ const Dashboard: React.FC = () => {
       return;
     }
     
-    const newGoals = [...dayProgress.goals];
+    // Создаем новый массив задач с обновленным статусом
+    const newGoals = [...goals];
     newGoals[index] = { ...newGoals[index], completed: !newGoals[index].completed };
+    
+    // Обновляем локальное состояние для текущего дня
+    if (isCurrentDay) {
+      setCurrentDayGoals(newGoals);
+    }
+    
+    // Обновляем глобальное состояние
     updateDayProgress(dayNumber, { goals: newGoals });
+    
+    // Принудительно обновляем счетчик для перерисовки прогресса
+    setUpdateCounter(prev => prev + 1);
+    
+    console.log(`Task ${index + 1} toggled to ${!goal.completed ? 'completed' : 'incomplete'}`);
+    console.log(`New goals state:`, newGoals);
   };
   
   // Current day block
@@ -279,7 +305,8 @@ const Dashboard: React.FC = () => {
         exerciseCompleted: false
       };
       
-      const completion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
+      // Используем переменную dayCompletion для совместимости
+      const dayCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
       
       return (
         <div className="current-day bg-surface-light dark:bg-surface-dark rounded-xl shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
@@ -288,7 +315,7 @@ const Dashboard: React.FC = () => {
               День {dayNumber} ({formatDate ? formatDate(dayDate) : dayDate.toLocaleDateString()})
             </h2>
             
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-100 flex items-center justify-center">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
               {(() => {
                 // Force re-calculation of completion with updateCounter
                 const currentCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
@@ -297,7 +324,7 @@ const Dashboard: React.FC = () => {
                   <div 
                     className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm font-medium"
                     style={{
-                      background: `conic-gradient(#4F46E5 ${currentCompletion}%, #f3f4f6 0)`,
+                      background: `conic-gradient(#4F46E5 ${currentCompletion}%, ${theme === 'dark' ? '#374151' : '#f3f4f6'} 0)`,
                       color: currentCompletion > 50 ? 'white' : 'inherit'
                     }}
                   >
@@ -311,7 +338,7 @@ const Dashboard: React.FC = () => {
           <div className="progress-indicators flex flex-col space-y-2 md:grid md:grid-cols-3 md:gap-4 md:space-y-0 mb-4">
             <div className="flex-1">
               <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Благодарности</div>
-              <div className="h-2 bg-gray-200 rounded-full">
+              <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full">
                 <div 
                   className="h-full bg-primary rounded-full"
                   style={{ 
@@ -327,7 +354,7 @@ const Dashboard: React.FC = () => {
             
             <div className="flex-1">
               <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Достижения</div>
-              <div className="h-2 bg-gray-200 rounded-full">
+              <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full">
                 <div 
                   className="h-full bg-primary rounded-full"
                   style={{ 
@@ -339,7 +366,7 @@ const Dashboard: React.FC = () => {
             
             <div className="flex-1">
               <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Улучшения</div>
-              <div className="h-2 bg-gray-200 rounded-full">
+              <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full">
                 <div 
                   className="h-full bg-primary rounded-full"
                   style={{ 
@@ -351,7 +378,7 @@ const Dashboard: React.FC = () => {
             
             <div className="flex-1">
               <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Озарения</div>
-              <div className="h-2 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full">
                 <div 
                   className="h-full bg-primary rounded-full"
                   style={{ 
@@ -363,7 +390,7 @@ const Dashboard: React.FC = () => {
             
             <div className="flex-1">
               <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Правила</div>
-              <div className="h-2 bg-gray-200 rounded-full">
+              <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full">
                 <div 
                   className="h-full bg-primary rounded-full"
                   style={{ 
@@ -375,7 +402,7 @@ const Dashboard: React.FC = () => {
             
             <div className="flex-1">
               <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Упражнение</div>
-              <div className="h-2 bg-gray-200 rounded-full">
+              <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full">
                 <div 
                   className="h-full bg-primary rounded-full"
                   style={{ 
@@ -411,7 +438,8 @@ const Dashboard: React.FC = () => {
       exerciseCompleted: false
     };
     
-    const completion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
+    // Используем переменную dayCompletion для совместимости
+    const dayCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
     
     return (
       <div className="current-day bg-surface-light dark:bg-surface-dark rounded-xl shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
@@ -420,7 +448,7 @@ const Dashboard: React.FC = () => {
             День {dayNumber} ({formatDate ? formatDate(dayDate) : dayDate.toLocaleDateString()})
           </h2>
           
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-100 flex items-center justify-center">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
             {(() => {
               // Force re-calculation of completion with updateCounter
               const currentCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
@@ -429,7 +457,7 @@ const Dashboard: React.FC = () => {
                 <div 
                   className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm font-medium"
                   style={{
-                    background: `conic-gradient(#4F46E5 ${currentCompletion}%, #f3f4f6 0)`,
+                    background: `conic-gradient(#4F46E5 ${currentCompletion}%, ${theme === 'dark' ? '#374151' : '#f3f4f6'} 0)`,
                     color: currentCompletion > 50 ? 'white' : 'inherit'
                   }}
                 >
@@ -442,7 +470,7 @@ const Dashboard: React.FC = () => {
         
         <div className="tasks space-y-2 mb-4">
           <h3 className="font-medium">Задачи на день:</h3>
-          {dayProgress.goals.map((goal, index) => (
+          {currentDayGoals.map((goal, index) => (
             <div key={index} className="flex items-center">
               <input 
                 type="checkbox" 
@@ -460,7 +488,7 @@ const Dashboard: React.FC = () => {
         <div className="progress-indicators flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
           <div className="flex-1">
             <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Благодарность</div>
-            <div className="h-2 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full">
               <div 
                 className="h-full bg-primary rounded-full"
                 style={{ 
@@ -472,7 +500,7 @@ const Dashboard: React.FC = () => {
           
           <div className="flex-1">
             <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Достижения</div>
-            <div className="h-2 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full">
               <div 
                 className="h-full bg-primary rounded-full"
                 style={{ 
@@ -484,7 +512,7 @@ const Dashboard: React.FC = () => {
           
           <div className="flex-1">
             <div className="text-sm text-text-light-light dark:text-text-light-dark mb-1">Задачи</div>
-            <div className="h-2 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full">
               <div 
                 className="h-full bg-primary rounded-full"
                 style={{ 
@@ -529,7 +557,10 @@ const Dashboard: React.FC = () => {
                   className="week-header flex items-center justify-between p-4 cursor-pointer"
                   onClick={() => toggleWeek(weekNumber)}
                 >
-                  <h2 className="text-lg font-semibold">
+                  <h2 className="text-lg font-semibold flex items-center">
+                    {isWeekComplete(weekNumber) && (
+                      <FaCheckCircle className="text-green-500 mr-2" size={18} />
+                    )}
                     {weekNumber === 5 ? 'Бонус' : `Неделя ${weekNumber}`}
                   </h2>
                   <div className="flex items-center">

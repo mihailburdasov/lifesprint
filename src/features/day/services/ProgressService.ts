@@ -343,6 +343,32 @@ export class ProgressService {
   }
 
   /**
+   * Check if all days in a week are 100% complete
+   */
+  isWeekComplete(progress: UserProgress, weekNumber: number): boolean {
+    // Calculate the start and end day numbers for the week
+    const startDay = (weekNumber - 1) * 7 + 1;
+    const endDay = weekNumber * 7;
+    
+    // Check each day in the week
+    for (let dayNumber = startDay; dayNumber <= endDay; dayNumber++) {
+      // Skip days beyond the total days (31)
+      if (dayNumber > 31) break;
+      
+      // Get the completion percentage for the day
+      const completion = this.getDayCompletion(progress, dayNumber);
+      
+      // If any day is not 100% complete, return false
+      if (completion < 100) {
+        return false;
+      }
+    }
+    
+    // If we've checked all days and they're all 100% complete, return true
+    return true;
+  }
+
+  /**
    * Update the current day based on the current date
    */
   updateCurrentDay(progress: UserProgress): UserProgress {

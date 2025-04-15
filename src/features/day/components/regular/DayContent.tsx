@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useProgress } from '../../context/ProgressContext';
-import { formatDate, formatDateRussian } from '../../../../core/utils/dateUtils';
+import { /* formatDate, */ formatDateRussian } from '../../../../core/utils/dateUtils';
 import { getDailyContent, getMotivationalPhrase, getStepAudioSrc } from '../../../../data/dailyContent';
 import { Button, AudioPlayer } from '../../../../core/components';
 import { useContentService } from '../../hooks/useContentService';
@@ -16,6 +16,8 @@ interface DailyContent {
   withAudio?: boolean;
 }
 
+// Интерфейс используется для типизации данных, но не используется напрямую
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface DayProgress {
   completed: boolean;
   gratitude: string[];
@@ -54,6 +56,8 @@ const DayContent: React.FC<DayContentProps> = ({
   ]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [exerciseCompleted, setExerciseCompleted] = useState(false);
+  // State for tracking attempted empty task toggle
+  const [attemptedEmptyTaskIndex, setAttemptedEmptyTaskIndex] = useState<number | null>(null);
   
   const isReflection = checkReflectionDay(dayNumber);
   const weekNumber = Math.ceil(dayNumber / 7);
@@ -137,6 +141,14 @@ const DayContent: React.FC<DayContentProps> = ({
   };
   
   const handleGoalToggle = (index: number) => {
+    const goal = goals[index];
+    
+    // Если задача пустая и пытаемся отметить её как выполненную
+    if (goal.text.trim() === '' && !goal.completed) {
+      setAttemptedEmptyTaskIndex(index);
+      return;
+    }
+    
     const newGoals = [...goals];
     newGoals[index] = { ...newGoals[index], completed: !newGoals[index].completed };
     setGoals(newGoals);
@@ -241,16 +253,18 @@ const DayContent: React.FC<DayContentProps> = ({
             )}
             
             {step === 2 && (
-              <div className="thought-of-day">
-                <h3 className="text-base sm:text-lg font-medium mb-2">
-                  {dailyContent.thought.author 
-                    ? `#мысльдня от ${dailyContent.thought.author}:` 
-                    : '#мысльдня'}
-                </h3>
-                <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md italic text-sm sm:text-base">
-                  {dailyContent.thought.text}
+                <div className="thought-of-day">
+                  <h3 className="text-base sm:text-lg font-medium mb-2">
+                    {dailyContent.thought.author 
+                      ? `#мысльдня от ${dailyContent.thought.author}:` 
+                      : '#мысльдня'}
+                  </h3>
+                  <div className="bg-primary-lighter dark:bg-gray-800 p-4 rounded-lg shadow-md border-l-4 border-primary italic relative pl-8 pr-6 mb-4 text-sm sm:text-base">
+                    <span className="absolute left-3 top-2 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
+                    {dailyContent.thought.text}
+                    <span className="absolute right-3 bottom-0 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
+                  </div>
                 </div>
-              </div>
             )}
             
             {step === 3 && (
@@ -333,8 +347,10 @@ const DayContent: React.FC<DayContentProps> = ({
             {step === 6 && (
               <div className="exercise">
                 <h3 className="text-base sm:text-lg font-medium mb-2">#упражнение_на_осознанность</h3>
-                <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md mb-3 text-sm sm:text-base">
+                <div className="bg-primary-lighter dark:bg-gray-800 p-4 rounded-lg shadow-md border-l-4 border-primary italic relative pl-8 pr-6 mb-4 text-sm sm:text-base">
+                  <span className="absolute left-3 top-2 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
                   {dailyContent.exercise}
+                  <span className="absolute right-3 bottom-0 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
                 </div>
                 
                 <div className="flex items-center">
@@ -409,8 +425,10 @@ const DayContent: React.FC<DayContentProps> = ({
                     ? `#мысльдня от ${dailyContent.thought.author}:` 
                     : '#мысльдня'}
                 </h3>
-                <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md italic text-sm sm:text-base">
+                <div className="bg-primary-lighter dark:bg-gray-800 p-4 rounded-lg shadow-md border-l-4 border-primary italic relative pl-8 pr-6 mb-4 text-sm sm:text-base">
+                  <span className="absolute left-3 top-2 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
                   {dailyContent.thought.text}
+                  <span className="absolute right-3 bottom-0 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
                 </div>
               </div>
             )}
@@ -563,8 +581,10 @@ const DayContent: React.FC<DayContentProps> = ({
               <>
                 <div className="exercise">
                   <h3 className="text-base sm:text-lg font-medium mb-2">#упражнение_на_осознанность</h3>
-                  <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md mb-3 text-sm sm:text-base">
+                  <div className="bg-primary-lighter dark:bg-gray-800 p-4 rounded-lg shadow-md border-l-4 border-primary italic relative pl-8 pr-6 mb-4 text-sm sm:text-base">
+                    <span className="absolute left-3 top-2 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
                     {dailyContent.exercise}
+                    <span className="absolute right-3 bottom-0 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
                   </div>
                   
                   <div className="flex items-center">
@@ -662,6 +682,30 @@ const DayContent: React.FC<DayContentProps> = ({
   return (
     <div className="day-content">
       {renderContent()}
+      
+      {/* Предупреждение при попытке отметить пустую задачу как выполненную */}
+      {attemptedEmptyTaskIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="mx-auto max-w-md w-full bg-surface-light dark:bg-surface-dark rounded-xl shadow-lg overflow-hidden p-6">
+            <h3 className="text-lg font-medium mb-4">
+              Пустая задача
+            </h3>
+            
+            <p className="mb-6">
+              Нельзя отметить пустую задачу как выполненную. Пожалуйста, сначала заполните текст задачи.
+            </p>
+            
+            <div className="flex justify-end space-x-4">
+              <Button 
+                variant="primary" 
+                onClick={() => setAttemptedEmptyTaskIndex(null)}
+              >
+                Понятно
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -53,10 +53,10 @@ export const Input: React.FC<InputProps> = ({
         required={required}
         autoFocus={autoFocus}
         className={`
-          w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary
-          ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-primary'}
+          w-full px-4 py-3 border border-gray-200 rounded-lg shadow-sm transition-all duration-200 ease-in-out focus:outline-none focus:ring-1 focus:ring-primary focus:shadow-md
+          ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200 dark:border-gray-700 focus:border-primary'}
           ${disabled ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed' : 'bg-white dark:bg-gray-800'}
-          text-gray-900 dark:text-white
+          text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500
         `}
         {...rest}
       />

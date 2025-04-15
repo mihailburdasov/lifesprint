@@ -30,10 +30,10 @@ export const Button: React.FC<ButtonProps & { children: React.ReactNode }> = ({
   
   // Variant classes
   const variantClasses = {
-    primary: 'bg-primary text-white hover:bg-primary-dark active:bg-primary-darker disabled:bg-primary-light',
-    secondary: 'bg-secondary text-white hover:bg-secondary-dark active:bg-secondary-darker disabled:bg-secondary-light',
-    outline: 'bg-transparent border border-primary text-primary hover:bg-primary-light active:bg-primary-lighter disabled:border-primary-light disabled:text-primary-light',
-    text: 'bg-transparent text-primary hover:bg-primary-light active:bg-primary-lighter disabled:text-primary-light',
+    primary: 'bg-primary text-white hover:bg-primary-dark active:bg-primary-darker disabled:bg-primary-light dark:disabled:bg-gray-700 dark:disabled:text-gray-500',
+    secondary: 'bg-secondary text-white hover:bg-secondary-dark active:bg-secondary-darker disabled:bg-secondary-light dark:disabled:bg-gray-700 dark:disabled:text-gray-500',
+    outline: 'bg-transparent border border-primary text-primary dark:text-primary-light hover:bg-primary-light dark:hover:bg-gray-700 active:bg-primary-lighter disabled:border-primary-light disabled:text-primary-light dark:disabled:border-gray-600 dark:disabled:text-gray-500',
+    text: 'bg-transparent text-primary dark:text-primary-light hover:bg-primary-light dark:hover:bg-gray-700 active:bg-primary-lighter disabled:text-primary-light dark:disabled:text-gray-500',
   };
   
   // Combine classes

@@ -87,6 +87,11 @@ export const useProgressService = () => {
   const areTasksCompleted = useCallback((dayNumber: number) => {
     return progressService.areTasksCompleted(progress, dayNumber);
   }, [progress]);
+  
+  // Check if all days in a week are 100% complete
+  const isWeekComplete = useCallback((weekNumber: number) => {
+    return progressService.isWeekComplete(progress, weekNumber);
+  }, [progress]);
 
   // Update current day based on the current date
   const updateCurrentDay = useCallback(() => {
@@ -107,6 +112,7 @@ export const useProgressService = () => {
     isDayAccessible,
     isWeekAccessible,
     areTasksCompleted,
+    isWeekComplete,
     updateCurrentDay
   };
 };

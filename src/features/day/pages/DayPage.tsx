@@ -20,6 +20,8 @@ const DayPage: React.FC = () => {
   
   // Add a counter to force re-render when reflection data changes
   const [updateCounter, setUpdateCounter] = useState(0);
+  // State for tracking attempted empty task toggle
+  const [attemptedEmptyTaskIndex, setAttemptedEmptyTaskIndex] = useState<number | null>(null);
   
   const dayNumber = parseInt(dayNumberParam || '1', 10);
   const isReflection = checkReflectionDay(dayNumber);
@@ -88,6 +90,14 @@ const DayPage: React.FC = () => {
   };
   
   const handleGoalToggle = (index: number) => {
+    const goal = dayData.goals[index];
+    
+    // Если задача пустая и пытаемся отметить её как выполненную
+    if (goal.text.trim() === '' && !goal.completed) {
+      setAttemptedEmptyTaskIndex(index);
+      return;
+    }
+    
     const newGoals = [...dayData.goals];
     newGoals[index] = { ...newGoals[index], completed: !newGoals[index].completed };
     updateDayProgress(dayNumber, { goals: newGoals });
@@ -170,8 +180,10 @@ const DayPage: React.FC = () => {
               ? `#мысльдня от ${dailyContent.thought.author}:` 
               : '#мысльдня'}
           </h3>
-          <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md italic text-sm sm:text-base">
+          <div className="bg-primary-lighter dark:bg-gray-800 p-4 rounded-lg shadow-md border-l-4 border-primary italic relative pl-8 pr-6 mb-4 text-sm sm:text-base">
+            <span className="absolute left-3 top-2 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
             {dailyContent.thought.text}
+            <span className="absolute right-3 bottom-0 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
           </div>
         </div>
         
@@ -252,8 +264,10 @@ const DayPage: React.FC = () => {
         {/* Exercise */}
         <div className="exercise">
           <h3 className="text-base sm:text-lg font-medium mb-2">#упражнение_на_осознанность</h3>
-          <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md mb-3 text-sm sm:text-base">
+          <div className="bg-primary-lighter dark:bg-gray-800 p-4 rounded-lg shadow-md border-l-4 border-primary italic relative pl-8 pr-6 mb-4 text-sm sm:text-base">
+            <span className="absolute left-3 top-2 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
             {dailyContent.exercise}
+            <span className="absolute right-3 bottom-0 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
           </div>
           
           <div className="flex items-center">
@@ -283,8 +297,10 @@ const DayPage: React.FC = () => {
               ? `#мысльдня от ${dailyContent.thought.author}:` 
               : '#мысльдня'}
           </h3>
-          <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md italic text-sm sm:text-base">
+          <div className="bg-primary-lighter dark:bg-gray-800 p-4 rounded-lg shadow-md border-l-4 border-primary italic relative pl-8 pr-6 mb-4 text-sm sm:text-base">
+            <span className="absolute left-3 top-2 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
             {dailyContent.thought.text}
+            <span className="absolute right-3 bottom-0 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
           </div>
         </div>
         
@@ -420,9 +436,11 @@ const DayPage: React.FC = () => {
         
         {/* Exercise */}
         <div className="exercise">
-          <h3 className="text-base sm:text-lg font-medium mb-2">#упражнение</h3>
-          <div className="bg-gray-100 dark:bg-gray-800 p-3 sm:p-4 rounded-md mb-3 text-sm sm:text-base">
+          <h3 className="text-base sm:text-lg font-medium mb-2">#упражнение_на_осознанность</h3>
+          <div className="bg-primary-lighter dark:bg-gray-800 p-4 rounded-lg shadow-md border-l-4 border-primary italic relative pl-8 pr-6 mb-4 text-sm sm:text-base">
+            <span className="absolute left-3 top-2 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
             {dailyContent.exercise}
+            <span className="absolute right-3 bottom-0 text-3xl text-primary-dark dark:text-primary-light opacity-70 font-serif">"</span>
           </div>
           
           <div className="flex items-center">
@@ -552,6 +570,30 @@ const DayPage: React.FC = () => {
         </div>
         
         {isReflection ? renderReflectionDayContent() : renderRegularDayContent()}
+        
+        {/* Предупреждение при попытке отметить пустую задачу как выполненную */}
+        {attemptedEmptyTaskIndex !== null && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="mx-auto max-w-md w-full bg-surface-light dark:bg-surface-dark rounded-xl shadow-lg overflow-hidden p-6">
+              <h3 className="text-lg font-medium mb-4">
+                Пустая задача
+              </h3>
+              
+              <p className="mb-6">
+                Нельзя отметить пустую задачу как выполненную. Пожалуйста, сначала заполните текст задачи.
+              </p>
+              
+              <div className="flex justify-end space-x-4">
+                <Button 
+                  variant="primary" 
+                  onClick={() => setAttemptedEmptyTaskIndex(null)}
+                >
+                  Понятно
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Show "Go to Main" button only when the day is filled */}
         {((isReflection && reflectionData && 
