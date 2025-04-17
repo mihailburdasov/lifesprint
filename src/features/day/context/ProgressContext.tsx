@@ -20,7 +20,8 @@ export const ProgressContext = createContext<ProgressContextType>({
   getDayCompletion: () => 0,
   isLoading: false,
   error: null,
-  updateCurrentDay: () => {}
+  updateCurrentDay: () => {},
+  reloadProgress: () => {} // Add the new function to the default context
 });
 
 // Provider component
@@ -37,7 +38,8 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     isDayAccessible,
     isWeekAccessible,
     areTasksCompleted,
-    updateCurrentDay
+    updateCurrentDay,
+    reloadProgress // Add the new function from the hook
   } = useProgressService();
   
   return (
@@ -51,7 +53,8 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       getDayCompletion,
       isLoading,
       error,
-      updateCurrentDay
+      updateCurrentDay,
+      reloadProgress // Add the new function to the context value
     }}>
       {children}
     </ProgressContext.Provider>

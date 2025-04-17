@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { DayContent } from '../regular';
+import { useProgress } from '../../context/ProgressContext';
 
 interface StepByStepDayProps {
   dayNumber: number;
@@ -14,6 +15,16 @@ const StepByStepDay: React.FC<StepByStepDayProps> = ({
   onClose
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const { reloadProgress } = useProgress();
+  
+  // Reload progress from localStorage when component mounts or becomes visible
+  useEffect(() => {
+    if (isOpen) {
+      // This ensures we get the latest data from localStorage
+      reloadProgress();
+      console.log('Reloaded progress in StepByStepDay');
+    }
+  }, [isOpen, reloadProgress]);
   
   const handlePreviousStep = () => {
     setCurrentStep(prev => Math.max(1, prev - 1));

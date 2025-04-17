@@ -60,4 +60,5 @@ export interface ProgressContextType {
   isLoading: boolean;
   error: string | null;
   updateCurrentDay: () => void;
+  reloadProgress: () => void; // Add the new function to reload progress from localStorage
 }

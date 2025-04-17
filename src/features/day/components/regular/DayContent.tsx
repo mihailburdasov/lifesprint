@@ -45,7 +45,7 @@ const DayContent: React.FC<DayContentProps> = ({
   onPreviousStep,
   onNextStep
 }) => {
-  const { progress, updateDayProgress, updateWeekReflection, isReflectionDay: checkReflectionDay, isDayAccessible } = useProgress();
+  const { progress, updateDayProgress, updateWeekReflection, isReflectionDay: checkReflectionDay, isDayAccessible, reloadProgress } = useProgress();
   const { getDayTitle } = useContentService();
   const [gratitude, setGratitude] = useState<string[]>(['', '', '']);
   const [achievements, setAchievements] = useState<string[]>(['', '', '']);
@@ -98,7 +98,17 @@ const DayContent: React.FC<DayContentProps> = ({
   // Get daily content
   const dailyContent: DailyContent = getDailyContent(dayNumber);
   
+  // Reload progress from localStorage when component mounts
   useEffect(() => {
+    // This ensures we get the latest data from localStorage
+    reloadProgress();
+    console.log('Reloaded progress in DayContent');
+  }, [reloadProgress]);
+  
+  // Update local state when progress changes
+  // This is critical for task synchronization between dashboard and day page
+  useEffect(() => {
+    console.log('Progress changed in DayContent, updating local state');
     const newDayData = progress.days[dayNumber] || {
       completed: false,
       gratitude: ['', '', ''],
@@ -116,7 +126,9 @@ const DayContent: React.FC<DayContentProps> = ({
     setAchievements(newDayData.achievements);
     setGoals(newDayData.goals);
     setExerciseCompleted(newDayData.exerciseCompleted);
-  }, [dayNumber, progress.days]);
+    
+    console.log('Updated goals in DayContent:', newDayData.goals);
+  }, [dayNumber, progress]); // progress dependency ensures updates when tasks are toggled from main page
   
   // Handle regular day input changes
   const handleGratitudeChange = (index: number, value: string) => {
@@ -151,8 +163,15 @@ const DayContent: React.FC<DayContentProps> = ({
     
     const newGoals = [...goals];
     newGoals[index] = { ...newGoals[index], completed: !newGoals[index].completed };
-    setGoals(newGoals);
+    
+    // Сначала обновляем глобальное состояние
     updateDayProgress(dayNumber, { ...dayData, goals: newGoals });
+    
+    // Затем обновляем локальное состояние
+    setGoals(newGoals);
+    
+    console.log(`Task ${index + 1} toggled to ${!goal.completed ? 'completed' : 'incomplete'} in DayContent`);
+    console.log('Updated goals:', newGoals);
   };
   
   const handleExerciseComplete = () => {

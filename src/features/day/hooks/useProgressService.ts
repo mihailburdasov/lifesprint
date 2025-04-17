@@ -101,6 +101,22 @@ export const useProgressService = () => {
     });
   }, []);
 
+  // Add function to reload progress from localStorage
+  const reloadProgress = useCallback(() => {
+    try {
+      setIsLoading(true);
+      const loadedProgress = progressService.loadProgress();
+      setProgress(loadedProgress);
+      setError(null);
+      console.log('Progress reloaded from localStorage');
+    } catch (err) {
+      setError('Failed to reload progress data');
+      console.error('Error reloading progress:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   return {
     progress,
     isLoading,
@@ -113,6 +129,7 @@ export const useProgressService = () => {
     isWeekAccessible,
     areTasksCompleted,
     isWeekComplete,
-    updateCurrentDay
+    updateCurrentDay,
+    reloadProgress // Add the new function to the returned object
   };
 };

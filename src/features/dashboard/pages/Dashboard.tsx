@@ -53,7 +53,12 @@ const Dashboard: React.FC = () => {
       ],
       exerciseCompleted: false
     };
+    console.log('Progress changed, updating currentDayGoals from:', currentDayGoals);
+    console.log('To:', dayData.goals);
     setCurrentDayGoals(dayData.goals);
+    
+    // Принудительно обновляем счетчик для перерисовки прогресса
+    setUpdateCounter(prev => prev + 1);
   }, [safeProgress, currentDayNumber]);
   
   // Update current day when component mounts
@@ -269,19 +274,25 @@ const Dashboard: React.FC = () => {
     const newGoals = [...goals];
     newGoals[index] = { ...newGoals[index], completed: !newGoals[index].completed };
     
-    // Обновляем локальное состояние для текущего дня
-    if (isCurrentDay) {
-      setCurrentDayGoals(newGoals);
-    }
+    console.log(`Toggling task ${index + 1} to ${!goal.completed ? 'completed' : 'incomplete'}`);
+    console.log('Before update - currentDayGoals:', currentDayGoals);
     
-    // Обновляем глобальное состояние
+    // Сначала обновляем глобальное состояние
     updateDayProgress(dayNumber, { goals: newGoals });
     
+    // Затем обновляем локальное состояние для текущего дня
+    if (isCurrentDay) {
+      setCurrentDayGoals(newGoals);
+      console.log('After update - currentDayGoals will be set to:', newGoals);
+    }
+    
     // Принудительно обновляем счетчик для перерисовки прогресса
+    // Это важно для обновления прогресс-бара "Задачи"
     setUpdateCounter(prev => prev + 1);
     
-    console.log(`Task ${index + 1} toggled to ${!goal.completed ? 'completed' : 'incomplete'}`);
-    console.log(`New goals state:`, newGoals);
+    // Расчет процента выполнения для прогресс-бара
+    const completedTasksPercent = (newGoals.filter(g => g.completed).length / 3) * 100;
+    console.log(`Progress bar will be updated to: ${completedTasksPercent}%`);
   };
   
   // Current day block
@@ -478,7 +489,13 @@ const Dashboard: React.FC = () => {
                 onChange={() => handleGoalToggle(dayNumber, index)}
                 className="checkbox mr-3 cursor-pointer"
               />
-              <span className={goal.completed ? 'line-through text-text-light-light dark:text-text-light-dark' : ''}>
+              <span className={
+                goal.completed 
+                  ? 'line-through text-text-light-light dark:text-text-light-dark' 
+                  : goal.text.trim() === '' 
+                    ? 'text-gray-400 dark:text-gray-500' // Серый цвет для незаполненных задач
+                    : ''
+              }>
                 {goal.text || 'Задача не задана'}
               </span>
             </div>
@@ -517,8 +534,9 @@ const Dashboard: React.FC = () => {
                 className="h-full bg-primary rounded-full"
                 style={{ 
                   width: `${Math.min(100, 
-                    (dayProgress.goals.filter(g => g.text.trim() !== '').length * 10) + 
-                    (dayProgress.goals.filter(g => g.completed).length * 23.33)
+                    // Новая логика: 1 задача = 33.3%, 3 задачи = 100%
+                    // Используем currentDayGoals вместо dayProgress.goals для мгновенного обновления
+                    (currentDayGoals.filter(g => g.completed).length / 3) * 100
                   )}%` 
                 }}
               />

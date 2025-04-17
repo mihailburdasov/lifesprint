@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Sidebar } from '../../../features/dashboard/components';
 import { AudioPlayer, Button } from '../../../core/components';
@@ -15,11 +15,24 @@ interface DayParams {
 const DayPage: React.FC = () => {
   const { dayNumber: dayNumberParam } = useParams<DayParams>();
   const navigate = useNavigate();
-  const { progress, updateDayProgress, updateWeekReflection, isReflectionDay: checkReflectionDay, getDayCompletion, isDayAccessible } = useProgress();
+  const { progress, updateDayProgress, updateWeekReflection, isReflectionDay: checkReflectionDay, getDayCompletion, isDayAccessible, reloadProgress } = useProgress();
   const { formatDate, getDayTitle } = useContentService();
   
-  // Add a counter to force re-render when reflection data changes
+  // Add a counter to force re-render when progress data changes
   const [updateCounter, setUpdateCounter] = useState(0);
+  
+  // Reload progress from localStorage when component mounts
+  useEffect(() => {
+    // This ensures we get the latest data from localStorage
+    reloadProgress();
+    console.log('Reloaded progress in DayPage');
+  }, [reloadProgress]);
+  
+  // Force re-render when progress changes to ensure task completion status is updated
+  useEffect(() => {
+    // Increment counter to trigger re-render
+    setUpdateCounter(prev => prev + 1);
+  }, [progress]);
   // State for tracking attempted empty task toggle
   const [attemptedEmptyTaskIndex, setAttemptedEmptyTaskIndex] = useState<number | null>(null);
   
