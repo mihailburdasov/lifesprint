@@ -9,6 +9,7 @@ import { Dialog } from '@headlessui/react';
 import { useContentService } from '../../../features/day/hooks/useContentService';
 import { useProgressService } from '../../../features/day/hooks/useProgressService';
 import { useTheme } from '../../../context/ThemeContext';
+import { logger, LogContext, LogLevel } from '../../../core/services/LoggingService';
 
 const Dashboard: React.FC = () => {
   const { progress, updateCurrentDay } = useProgress();
@@ -53,8 +54,7 @@ const Dashboard: React.FC = () => {
       ],
       exerciseCompleted: false
     };
-    console.log('Progress changed, updating currentDayGoals from:', currentDayGoals);
-    console.log('To:', dayData.goals);
+    logger.dashboard('Progress changed, updating currentDayGoals', LogLevel.DEBUG);
     setCurrentDayGoals(dayData.goals);
     
     // Принудительно обновляем счетчик для перерисовки прогресса
@@ -65,14 +65,14 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     // Update current day based on the current date
     updateCurrentDay();
-    console.log('Current day updated to:', progress.currentDay);
+    logger.dashboard(`Current day updated to: ${progress.currentDay}`, LogLevel.INFO);
   }, [updateCurrentDay, progress.currentDay]);
   
-  // Force re-render every second to update progress circles
+  // Force re-render every 5 seconds to update progress circles
   useEffect(() => {
     const interval = setInterval(() => {
       setUpdateCounter(prev => prev + 1);
-    }, 1000);
+    }, 5000); // Changed from 1000 to 5000 (5 seconds)
     
     return () => clearInterval(interval);
   }, []);
@@ -189,8 +189,7 @@ const Dashboard: React.FC = () => {
       
       // Получаем значение завершенности для логирования
       const dayCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
-      console.log(`Current reflection day ${dayNumber} completion: ${dayCompletion}%`);
-      console.log(`Reflection day ${dayNumber} completion: ${dayCompletion}%`);
+      logger.dashboard(`Reflection day ${dayNumber} completion: ${dayCompletion}%`, LogLevel.DEBUG);
       const isReflection = isReflectionDay ? isReflectionDay(dayNumber) : false;
       
       days.push(
@@ -252,8 +251,11 @@ const Dashboard: React.FC = () => {
     setIsStepByStepOpen(false);
   };
   
+  // State for tracking loading state of task toggle operations
+  const [savingTaskToggle, setSavingTaskToggle] = useState<{ day: number, index: number } | null>(null);
+  
   // Handle toggling task completion
-  const handleGoalToggle = (dayNumber: number, index: number) => {
+  const handleGoalToggle = async (dayNumber: number, index: number) => {
     // Используем локальное состояние для текущего дня, иначе берем из глобального состояния
     const isCurrentDay = dayNumber === currentDayNumber;
     const goals = isCurrentDay ? currentDayGoals : (safeProgress.days[dayNumber]?.goals || [
@@ -270,29 +272,40 @@ const Dashboard: React.FC = () => {
       return;
     }
     
-    // Создаем новый массив задач с обновленным статусом
-    const newGoals = [...goals];
-    newGoals[index] = { ...newGoals[index], completed: !newGoals[index].completed };
-    
-    console.log(`Toggling task ${index + 1} to ${!goal.completed ? 'completed' : 'incomplete'}`);
-    console.log('Before update - currentDayGoals:', currentDayGoals);
-    
-    // Сначала обновляем глобальное состояние
-    updateDayProgress(dayNumber, { goals: newGoals });
-    
-    // Затем обновляем локальное состояние для текущего дня
-    if (isCurrentDay) {
-      setCurrentDayGoals(newGoals);
-      console.log('After update - currentDayGoals will be set to:', newGoals);
+    try {
+      // Создаем новый массив задач с обновленным статусом
+      const newGoals = [...goals];
+      newGoals[index] = { ...newGoals[index], completed: !newGoals[index].completed };
+      
+      logger.dashboard(`Toggling task ${index + 1} to ${!goal.completed ? 'completed' : 'incomplete'}`, LogLevel.DEBUG);
+      logger.dashboard('Before update - currentDayGoals', LogLevel.DEBUG);
+      
+      // Сначала обновляем локальное состояние для мгновенной обратной связи
+      if (isCurrentDay) {
+        setCurrentDayGoals(newGoals);
+        logger.dashboard('After update - currentDayGoals updated', LogLevel.DEBUG);
+      }
+      
+      // Затем обновляем глобальное состояние
+      setSavingTaskToggle({ day: dayNumber, index });
+      await updateDayProgress(dayNumber, { goals: newGoals });
+      
+      // Принудительно обновляем счетчик для перерисовки прогресса
+      // Это важно для обновления прогресс-бара "Задачи"
+      setUpdateCounter(prev => prev + 1);
+      
+      // Расчет процента выполнения для прогресс-бара
+      const completedTasksPercent = (newGoals.filter(g => g.completed).length / 3) * 100;
+      logger.dashboard(`Progress bar updated to: ${completedTasksPercent}%`, LogLevel.DEBUG);
+    } catch (error) {
+      logger.dashboard('Error toggling task', LogLevel.ERROR, error);
+      // Revert to previous state if there's an error
+      if (isCurrentDay) {
+        setCurrentDayGoals([...goals]);
+      }
+    } finally {
+      setSavingTaskToggle(null);
     }
-    
-    // Принудительно обновляем счетчик для перерисовки прогресса
-    // Это важно для обновления прогресс-бара "Задачи"
-    setUpdateCounter(prev => prev + 1);
-    
-    // Расчет процента выполнения для прогресс-бара
-    const completedTasksPercent = (newGoals.filter(g => g.completed).length / 3) * 100;
-    console.log(`Progress bar will be updated to: ${completedTasksPercent}%`);
   };
   
   // Current day block
@@ -330,7 +343,7 @@ const Dashboard: React.FC = () => {
               {(() => {
                 // Force re-calculation of completion with updateCounter
                 const currentCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
-                console.log(`Current reflection day ${dayNumber} completion: ${currentCompletion}%, updateCounter: ${updateCounter}`);
+                logger.dashboard(`Current reflection day ${dayNumber} completion: ${currentCompletion}%, updateCounter: ${updateCounter}`, LogLevel.DEBUG);
                 return (
                   <div 
                     className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm font-medium"
@@ -463,7 +476,7 @@ const Dashboard: React.FC = () => {
             {(() => {
               // Force re-calculation of completion with updateCounter
               const currentCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
-              console.log(`Current regular day ${dayNumber} completion: ${currentCompletion}%, updateCounter: ${updateCounter}`);
+              logger.dashboard(`Current regular day ${dayNumber} completion: ${currentCompletion}%, updateCounter: ${updateCounter}`, LogLevel.DEBUG);
               return (
                 <div 
                   className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm font-medium"

@@ -8,16 +8,21 @@ import { DayProgress, WeekReflection, UserProgress, DailyContent } from '../../.
  * Progress service interface
  */
 export interface IProgressService {
-  loadProgress(): UserProgress;
-  saveProgress(progress: UserProgress): void;
+  loadProgress(userId?: string): Promise<UserProgress>;
+  saveProgress(progress: UserProgress, userId?: string): Promise<void>;
   createDefaultProgress(): UserProgress;
-  updateDayProgress(progress: UserProgress, dayNumber: number, data: Partial<DayProgress>): UserProgress;
-  updateWeekReflection(progress: UserProgress, weekNumber: number, data: Partial<WeekReflection>): UserProgress;
+  updateDayProgress(progress: UserProgress, dayNumber: number, data: Partial<DayProgress>, userId?: string): Promise<UserProgress>;
+  updateWeekReflection(progress: UserProgress, weekNumber: number, data: Partial<WeekReflection>, userId?: string): Promise<UserProgress>;
   getDayCompletion(progress: UserProgress, dayNumber: number): number;
   isReflectionDay(dayNumber: number): boolean;
   isDayAccessible(dayNumber: number): boolean;
   isWeekAccessible(weekNumber: number): boolean;
   areTasksCompleted(progress: UserProgress, dayNumber: number): boolean;
+  isWeekComplete(progress: UserProgress, weekNumber: number): boolean;
+  updateCurrentDay(progress: UserProgress, userId?: string): Promise<UserProgress>;
+  syncProgressWithSupabase(userId: string): Promise<UserProgress>;
+  loadProgressFromSupabase(userId: string): Promise<UserProgress | null>;
+  saveProgressToSupabase(userId: string, progress: UserProgress): Promise<void>;
 }
 
 /**

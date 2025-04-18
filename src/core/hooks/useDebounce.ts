@@ -17,11 +17,15 @@ export function useDebounce<T>(value: T, delay: number): T {
   useEffect(() => {
     // Set up a timer to update the debounced value after the specified delay
     const timer = setTimeout(() => {
+      console.log('Debounce timer completed, updating value');
       setDebouncedValue(value);
     }, delay);
     
+    console.log('Debounce timer started/reset');
+    
     // Clean up the timer if the value or delay changes
     return () => {
+      console.log('Debounce timer cleared');
       clearTimeout(timer);
     };
   }, [value, delay]);

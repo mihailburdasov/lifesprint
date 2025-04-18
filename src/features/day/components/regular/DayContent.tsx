@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useProgress } from '../../context/ProgressContext';
 import { /* formatDate, */ formatDateRussian } from '../../../../core/utils/dateUtils';
 import { getDailyContent, getMotivationalPhrase, getStepAudioSrc } from '../../../../data/dailyContent';
 import { Button, AudioPlayer } from '../../../../core/components';
 import { useContentService } from '../../hooks/useContentService';
+import { logger, LogLevel } from '../../../../core/services/LoggingService';
+import { useDebounce } from '../../../../core/hooks/useDebounce';
 
 // Define interfaces locally
 interface DailyContent {
@@ -45,7 +47,7 @@ const DayContent: React.FC<DayContentProps> = ({
   onPreviousStep,
   onNextStep
 }) => {
-  const { progress, updateDayProgress, updateWeekReflection, isReflectionDay: checkReflectionDay, isDayAccessible, reloadProgress } = useProgress();
+  const { progress, updateDayProgress, updateWeekReflection, isReflectionDay: checkReflectionDay, isDayAccessible, reloadProgress, isSyncing, needsSync } = useProgress();
   const { getDayTitle } = useContentService();
   const [gratitude, setGratitude] = useState<string[]>(['', '', '']);
   const [achievements, setAchievements] = useState<string[]>(['', '', '']);
@@ -98,17 +100,25 @@ const DayContent: React.FC<DayContentProps> = ({
   // Get daily content
   const dailyContent: DailyContent = getDailyContent(dayNumber);
   
-  // Reload progress from localStorage when component mounts
+  // Reload progress when component mounts
   useEffect(() => {
-    // This ensures we get the latest data from localStorage
-    reloadProgress();
-    console.log('Reloaded progress in DayContent');
+    // This ensures we get the latest data
+    const loadData = async () => {
+      try {
+        await reloadProgress();
+        logger.dayContent('Данные прогресса загружены в DayContent');
+      } catch (error) {
+        logger.dayContent('Ошибка загрузки прогресса:', LogLevel.ERROR, error);
+      }
+    };
+    
+    loadData();
   }, [reloadProgress]);
   
   // Update local state when progress changes
   // This is critical for task synchronization between dashboard and day page
   useEffect(() => {
-    console.log('Progress changed in DayContent, updating local state');
+    logger.dayContent('Обновление локального состояния в DayContent', LogLevel.DEBUG);
     const newDayData = progress.days[dayNumber] || {
       completed: false,
       gratitude: ['', '', ''],
@@ -126,33 +136,80 @@ const DayContent: React.FC<DayContentProps> = ({
     setAchievements(newDayData.achievements);
     setGoals(newDayData.goals);
     setExerciseCompleted(newDayData.exerciseCompleted);
-    
-    console.log('Updated goals in DayContent:', newDayData.goals);
   }, [dayNumber, progress]); // progress dependency ensures updates when tasks are toggled from main page
   
-  // Handle regular day input changes
-  const handleGratitudeChange = (index: number, value: string) => {
-    const newGratitude = [...gratitude];
-    newGratitude[index] = value;
-    setGratitude(newGratitude);
-    updateDayProgress(dayNumber, { ...dayData, gratitude: newGratitude });
+  // Create refs for input fields
+  const inputRefs = useRef<{
+    gratitude: (HTMLInputElement | null)[];
+    achievements: (HTMLInputElement | null)[];
+    goals: (HTMLInputElement | null)[];
+  }>({
+    gratitude: [null, null, null],
+    achievements: [null, null, null],
+    goals: [null, null, null]
+  });
+  
+  // State for tracking saving status
+  const [savingStatus, setSavingStatus] = useState<{
+    type: 'gratitude' | 'achievement' | 'goal' | 'goalToggle' | 'exercise' | null;
+    index: number | null;
+    saving: boolean;
+  }>({ type: null, index: null, saving: false });
+  
+  // Use debounce hook for saving data
+  const debouncedSave = useDebounce((type: string, index: number, value: string) => {
+    if (!value) return;
+    
+    logger.dayContent(`Сохранение ${type} ${index}:`, LogLevel.DEBUG, value);
+    
+    // Set saving status
+    setSavingStatus({ type: type as any, index, saving: true });
+    
+    // Create updated data based on type
+    let updateData: Partial<DayProgress> = {};
+    
+    if (type === 'gratitude') {
+      const newGratitude = [...gratitude];
+      newGratitude[index] = value;
+      updateData = { gratitude: newGratitude };
+    } else if (type === 'achievement') {
+      const newAchievements = [...achievements];
+      newAchievements[index] = value;
+      updateData = { achievements: newAchievements };
+    } else if (type === 'goal') {
+      const newGoals = [...goals];
+      newGoals[index] = { ...newGoals[index], text: value };
+      updateData = { goals: newGoals };
+    }
+    
+    // Force sync for non-empty values
+    const forceSync = value.trim() !== '';
+    
+    // Update progress
+    updateDayProgress(dayNumber, updateData, forceSync)
+      .finally(() => {
+        setSavingStatus({ type: null, index: null, saving: false });
+      });
+  }, 500); // 500ms debounce
+  
+  // Handle input changes with debounce
+  const handleInputChange = (type: 'gratitude' | 'achievement' | 'goal', index: number) => {
+    // Get current value from ref
+    const input = type === 'gratitude' 
+      ? inputRefs.current.gratitude[index]
+      : type === 'achievement'
+        ? inputRefs.current.achievements[index]
+        : inputRefs.current.goals[index];
+    
+    if (input) {
+      const value = input.value;
+      debouncedSave(type, index, value);
+    }
   };
   
-  const handleAchievementChange = (index: number, value: string) => {
-    const newAchievements = [...achievements];
-    newAchievements[index] = value;
-    setAchievements(newAchievements);
-    updateDayProgress(dayNumber, { ...dayData, achievements: newAchievements });
-  };
+  // No unused variables or functions here
   
-  const handleGoalChange = (index: number, value: string) => {
-    const newGoals = [...goals];
-    newGoals[index] = { ...newGoals[index], text: value };
-    setGoals(newGoals);
-    updateDayProgress(dayNumber, { ...dayData, goals: newGoals });
-  };
-  
-  const handleGoalToggle = (index: number) => {
+  const handleGoalToggle = async (index: number) => {
     const goal = goals[index];
     
     // Если задача пустая и пытаемся отметить её как выполненную
@@ -161,73 +218,224 @@ const DayContent: React.FC<DayContentProps> = ({
       return;
     }
     
-    const newGoals = [...goals];
-    newGoals[index] = { ...newGoals[index], completed: !newGoals[index].completed };
-    
-    // Сначала обновляем глобальное состояние
-    updateDayProgress(dayNumber, { ...dayData, goals: newGoals });
-    
-    // Затем обновляем локальное состояние
-    setGoals(newGoals);
-    
-    console.log(`Task ${index + 1} toggled to ${!goal.completed ? 'completed' : 'incomplete'} in DayContent`);
-    console.log('Updated goals:', newGoals);
-  };
-  
-  const handleExerciseComplete = () => {
-    updateDayProgress(dayNumber, { exerciseCompleted: !dayData.exerciseCompleted });
-  };
-  
-  
-  // Handle reflection day input changes
-  const handleReflectionGratitudeChange = (type: 'self' | 'others' | 'world', value: string) => {
-    if (!reflectionData) return;
-    
-    if (type === 'self') {
-      updateWeekReflection(weekNumber, { gratitudeSelf: value });
-    } else if (type === 'others') {
-      updateWeekReflection(weekNumber, { gratitudeOthers: value });
-    } else if (type === 'world') {
-      updateWeekReflection(weekNumber, { gratitudeWorld: value });
+    try {
+      const newGoals = [...goals];
+      newGoals[index] = { ...newGoals[index], completed: !newGoals[index].completed };
+      
+      // Сначала обновляем локальное состояние для мгновенной обратной связи
+      setGoals(newGoals);
+      
+      // Затем обновляем глобальное состояние
+      setSavingStatus({ type: 'goalToggle', index, saving: true });
+      
+      // Always force sync for goal completion changes - this is important data
+      await updateDayProgress(dayNumber, { ...dayData, goals: newGoals }, true);
+      
+      logger.dayContent(`Задача ${index + 1} отмечена как ${!goal.completed ? 'выполненная' : 'невыполненная'}`);
+    } catch (error) {
+      logger.dayContent('Ошибка при изменении статуса задачи:', LogLevel.ERROR, error);
+      // Revert to previous state if there's an error
+      setGoals([...goals]);
+    } finally {
+      setSavingStatus({ type: null, index: null, saving: false });
     }
   };
   
-  const handleReflectionAchievementChange = (index: number, value: string) => {
-    if (!reflectionData) return;
-    
-    const newAchievements = [...reflectionData.achievements];
-    newAchievements[index] = value;
-    updateWeekReflection(weekNumber, { achievements: newAchievements });
+  // Remove unused variable
+  
+  const handleExerciseComplete = async () => {
+    try {
+      setSavingStatus({ type: 'exercise', index: 0, saving: true });
+      // Always force sync for exercise completion - this is important data
+      await updateDayProgress(dayNumber, { exerciseCompleted: !dayData.exerciseCompleted }, true);
+    } catch (error) {
+      logger.dayContent('Ошибка при сохранении статуса упражнения:', LogLevel.ERROR, error);
+    } finally {
+      setSavingStatus({ type: null, index: null, saving: false });
+    }
   };
   
-  const handleReflectionImprovementChange = (index: number, value: string) => {
+  
+  // State for tracking loading state of reflection operations
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [savingReflectionGratitude, setSavingReflectionGratitude] = useState<string | null>(null);
+  
+  // Handle reflection day input changes with debounce
+  const handleReflectionGratitudeBlur = async (type: 'self' | 'others' | 'world', e: React.FocusEvent<HTMLInputElement>) => {
     if (!reflectionData) return;
     
-    const newImprovements = [...reflectionData.improvements];
-    newImprovements[index] = value;
-    updateWeekReflection(weekNumber, { improvements: newImprovements });
+    // Get value directly from the event target
+    const newValue = e.target.value;
+    
+    try {
+      setSavingReflectionGratitude(type);
+      
+      // Add a small delay before saving to avoid conflicts with typing
+      setTimeout(() => {
+        // Force sync for non-empty values
+        const forceSync = newValue.trim() !== '';
+        
+        if (type === 'self') {
+          updateWeekReflection(weekNumber, { gratitudeSelf: newValue }, forceSync)
+            .finally(() => {
+              setSavingReflectionGratitude(null);
+            });
+        } else if (type === 'others') {
+          updateWeekReflection(weekNumber, { gratitudeOthers: newValue }, forceSync)
+            .finally(() => {
+              setSavingReflectionGratitude(null);
+            });
+        } else if (type === 'world') {
+          updateWeekReflection(weekNumber, { gratitudeWorld: newValue }, forceSync)
+            .finally(() => {
+              setSavingReflectionGratitude(null);
+            });
+        }
+      }, 100);
+    } catch (error) {
+      logger.dayContent('Ошибка при сохранении благодарности в рефлексии:', LogLevel.ERROR, error);
+      setSavingReflectionGratitude(null);
+    }
   };
   
-  const handleReflectionInsightChange = (index: number, value: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [savingReflectionAchievement, setSavingReflectionAchievement] = useState<number | null>(null);
+  
+  const handleReflectionAchievementBlur = async (index: number, e: React.FocusEvent<HTMLInputElement>) => {
     if (!reflectionData) return;
     
-    const newInsights = [...reflectionData.insights];
-    newInsights[index] = value;
-    updateWeekReflection(weekNumber, { insights: newInsights });
+    // Get value directly from the event target
+    const newValue = e.target.value;
+    
+    try {
+      setSavingReflectionAchievement(index);
+      
+      // Create a new array with the updated value
+      const newAchievements = [...reflectionData.achievements];
+      newAchievements[index] = newValue;
+      
+      // Add a small delay before saving to avoid conflicts with typing
+      setTimeout(() => {
+        // Force sync for non-empty values
+        const forceSync = newValue.trim() !== '';
+        updateWeekReflection(weekNumber, { achievements: newAchievements }, forceSync)
+          .finally(() => {
+            setSavingReflectionAchievement(null);
+          });
+      }, 100);
+    } catch (error) {
+      logger.dayContent('Ошибка при сохранении достижения в рефлексии:', LogLevel.ERROR, error);
+      setSavingReflectionAchievement(null);
+    }
   };
   
-  const handleReflectionRuleChange = (index: number, value: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [savingReflectionImprovement, setSavingReflectionImprovement] = useState<number | null>(null);
+  
+  const handleReflectionImprovementBlur = async (index: number, e: React.FocusEvent<HTMLInputElement>) => {
     if (!reflectionData) return;
     
-    const newRules = [...reflectionData.rules];
-    newRules[index] = value;
-    updateWeekReflection(weekNumber, { rules: newRules });
+    // Get value directly from the event target
+    const newValue = e.target.value;
+    
+    try {
+      setSavingReflectionImprovement(index);
+      
+      // Create a new array with the updated value
+      const newImprovements = [...reflectionData.improvements];
+      newImprovements[index] = newValue;
+      
+      // Add a small delay before saving to avoid conflicts with typing
+      setTimeout(() => {
+        // Force sync for non-empty values
+        const forceSync = newValue.trim() !== '';
+        updateWeekReflection(weekNumber, { improvements: newImprovements }, forceSync)
+          .finally(() => {
+            setSavingReflectionImprovement(null);
+          });
+      }, 100);
+    } catch (error) {
+      logger.dayContent('Ошибка при сохранении области улучшения в рефлексии:', LogLevel.ERROR, error);
+      setSavingReflectionImprovement(null);
+    }
   };
   
-  const handleReflectionExerciseComplete = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [savingReflectionInsight, setSavingReflectionInsight] = useState<number | null>(null);
+  
+  const handleReflectionInsightBlur = async (index: number, e: React.FocusEvent<HTMLInputElement>) => {
     if (!reflectionData) return;
     
-    updateWeekReflection(weekNumber, { exerciseCompleted: !reflectionData.exerciseCompleted });
+    // Get value directly from the event target
+    const newValue = e.target.value;
+    
+    try {
+      setSavingReflectionInsight(index);
+      
+      // Create a new array with the updated value
+      const newInsights = [...reflectionData.insights];
+      newInsights[index] = newValue;
+      
+      // Add a small delay before saving to avoid conflicts with typing
+      setTimeout(() => {
+        // Force sync for non-empty values
+        const forceSync = newValue.trim() !== '';
+        updateWeekReflection(weekNumber, { insights: newInsights }, forceSync)
+          .finally(() => {
+            setSavingReflectionInsight(null);
+          });
+      }, 100);
+    } catch (error) {
+      logger.dayContent('Ошибка при сохранении озарения в рефлексии:', LogLevel.ERROR, error);
+      setSavingReflectionInsight(null);
+    }
+  };
+  
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [savingReflectionRule, setSavingReflectionRule] = useState<number | null>(null);
+  
+  const handleReflectionRuleBlur = async (index: number, e: React.FocusEvent<HTMLInputElement>) => {
+    if (!reflectionData) return;
+    
+    // Get value directly from the event target
+    const newValue = e.target.value;
+    
+    try {
+      setSavingReflectionRule(index);
+      
+      // Create a new array with the updated value
+      const newRules = [...reflectionData.rules];
+      newRules[index] = newValue;
+      
+      // Add a small delay before saving to avoid conflicts with typing
+      setTimeout(() => {
+        // Force sync for non-empty values
+        const forceSync = newValue.trim() !== '';
+        updateWeekReflection(weekNumber, { rules: newRules }, forceSync)
+          .finally(() => {
+            setSavingReflectionRule(null);
+          });
+      }, 100);
+    } catch (error) {
+      logger.dayContent('Ошибка при сохранении правила в рефлексии:', LogLevel.ERROR, error);
+      setSavingReflectionRule(null);
+    }
+  };
+  
+  const [savingReflectionExercise, setSavingReflectionExercise] = useState<boolean>(false);
+  
+  const handleReflectionExerciseComplete = async () => {
+    if (!reflectionData) return;
+    
+    try {
+      setSavingReflectionExercise(true);
+      // Always force sync for exercise completion - this is important data
+      await updateWeekReflection(weekNumber, { exerciseCompleted: !reflectionData.exerciseCompleted }, true);
+    } catch (error) {
+      logger.dayContent('Ошибка при сохранении статуса упражнения в рефлексии:', LogLevel.ERROR, error);
+    } finally {
+      setSavingReflectionExercise(false);
+    }
   };
   
   // Render regular day step
@@ -297,13 +505,21 @@ const DayContent: React.FC<DayContentProps> = ({
                   {dayData.gratitude.map((item, index) => (
                     <div key={index} className="flex items-center">
                       <span className="mr-2">🙏</span>
-                      <input
-                        type="text"
-                        value={item}
-                        onChange={(e) => handleGratitudeChange(index, e.target.value)}
-                        placeholder="Я благодарю за"
-                        className="input flex-1"
-                      />
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          defaultValue={gratitude[index]}
+                          ref={el => inputRefs.current.gratitude[index] = el}
+                          onChange={() => handleInputChange('gratitude', index)}
+                          placeholder="Я благодарю за"
+                          className="input w-full"
+                        />
+                        {savingStatus.type === 'gratitude' && savingStatus.index === index && savingStatus.saving && (
+                          <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">
+                            Сохранение...
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -321,13 +537,21 @@ const DayContent: React.FC<DayContentProps> = ({
                   {dayData.achievements.map((item, index) => (
                     <div key={index} className="flex items-center">
                       <span className="mr-2">😎</span>
-                      <input
-                        type="text"
-                        value={item}
-                        onChange={(e) => handleAchievementChange(index, e.target.value)}
-                        placeholder="Я горжусь собой"
-                        className="input flex-1"
-                      />
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          defaultValue={achievements[index]}
+                          ref={el => inputRefs.current.achievements[index] = el}
+                          onChange={() => handleInputChange('achievement', index)}
+                          placeholder="Я горжусь собой"
+                          className="input w-full"
+                        />
+                        {savingStatus.type === 'achievement' && savingStatus.index === index && savingStatus.saving && (
+                          <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">
+                            Сохранение...
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -350,13 +574,22 @@ const DayContent: React.FC<DayContentProps> = ({
                         onChange={() => handleGoalToggle(index)}
                         className="checkbox mr-3"
                       />
-                      <input
-                        type="text"
-                        value={goal.text}
-                        onChange={(e) => handleGoalChange(index, e.target.value)}
-                        placeholder={`Моя ${index + 1} задача`}
-                        className="input flex-1"
-                      />
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          defaultValue={goals[index].text}
+                          ref={el => inputRefs.current.goals[index] = el}
+                          onChange={() => handleInputChange('goal', index)}
+                          placeholder={`Моя ${index + 1} задача`}
+                          className="input w-full"
+                        />
+                        {(savingStatus.type === 'goal' && savingStatus.index === index && savingStatus.saving) || 
+                         (savingStatus.type === 'goalToggle' && savingStatus.index === index && savingStatus.saving) ? (
+                          <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">
+                            Сохранение...
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -464,8 +697,8 @@ const DayContent: React.FC<DayContentProps> = ({
                     <span className="mr-2">🙏</span>
                     <input
                       type="text"
-                      value={reflectionData.gratitudeSelf}
-                      onChange={(e) => handleReflectionGratitudeChange('self', e.target.value)}
+                      defaultValue={reflectionData.gratitudeSelf}
+                      onBlur={(e) => handleReflectionGratitudeBlur('self', e)}
                       placeholder="Я благодарю себя за"
                       className="input flex-1"
                     />
@@ -474,8 +707,8 @@ const DayContent: React.FC<DayContentProps> = ({
                     <span className="mr-2">🙏</span>
                     <input
                       type="text"
-                      value={reflectionData.gratitudeOthers}
-                      onChange={(e) => handleReflectionGratitudeChange('others', e.target.value)}
+                      defaultValue={reflectionData.gratitudeOthers}
+                      onBlur={(e) => handleReflectionGratitudeBlur('others', e)}
                       placeholder="Я благодарю окружающих за"
                       className="input flex-1"
                     />
@@ -484,8 +717,8 @@ const DayContent: React.FC<DayContentProps> = ({
                     <span className="mr-2">🙏</span>
                     <input
                       type="text"
-                      value={reflectionData.gratitudeWorld}
-                      onChange={(e) => handleReflectionGratitudeChange('world', e.target.value)}
+                      defaultValue={reflectionData.gratitudeWorld}
+                      onBlur={(e) => handleReflectionGratitudeBlur('world', e)}
                       placeholder="Я благодарю мир за"
                       className="input flex-1"
                     />
@@ -507,8 +740,8 @@ const DayContent: React.FC<DayContentProps> = ({
                       <span className="mr-2 text-green-500">✓</span>
                       <input
                         type="text"
-                        value={item}
-                        onChange={(e) => handleReflectionAchievementChange(index, e.target.value)}
+                        defaultValue={item}
+                        onBlur={(e) => handleReflectionAchievementBlur(index, e)}
                         placeholder="У меня получилось"
                         className="input flex-1"
                       />
@@ -531,8 +764,8 @@ const DayContent: React.FC<DayContentProps> = ({
                       <span className="mr-2 text-red-500">?</span>
                       <input
                         type="text"
-                        value={item}
-                        onChange={(e) => handleReflectionImprovementChange(index, e.target.value)}
+                        defaultValue={item}
+                        onBlur={(e) => handleReflectionImprovementBlur(index, e)}
                         placeholder="Я могу сделать лучше"
                         className="input flex-1"
                       />
@@ -557,8 +790,8 @@ const DayContent: React.FC<DayContentProps> = ({
                         <span className="mr-2 text-primary">!</span>
                         <input
                           type="text"
-                          value={item}
-                          onChange={(e) => handleReflectionInsightChange(index, e.target.value)}
+                          defaultValue={item}
+                          onBlur={(e) => handleReflectionInsightBlur(index, e)}
                           placeholder={`Моё ${ordinals[index]} озарение`}
                           className="input flex-1"
                         />
@@ -584,8 +817,8 @@ const DayContent: React.FC<DayContentProps> = ({
                         <span className="mr-2 text-blue-500">📘</span>
                         <input
                           type="text"
-                          value={item}
-                          onChange={(e) => handleReflectionRuleChange(index, e.target.value)}
+                          defaultValue={item}
+                          onBlur={(e) => handleReflectionRuleBlur(index, e)}
                           placeholder={`Моё ${ordinals[index]} новое правило`}
                           className="input flex-1"
                         />
@@ -723,6 +956,13 @@ const DayContent: React.FC<DayContentProps> = ({
               </Button>
             </div>
           </div>
+        </div>
+      )}
+      
+      {/* Индикатор состояния синхронизации */}
+      {(isSyncing || needsSync) && (
+        <div className="fixed bottom-4 right-4 bg-primary text-white px-4 py-2 rounded-lg shadow-lg text-sm opacity-80 z-10">
+          {isSyncing ? 'Синхронизация...' : 'Изменения будут синхронизированы в течение 15 секунд'}
         </div>
       )}
     </div>

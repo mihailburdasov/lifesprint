@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { AuthService } from '../features/auth/services/AuthService';
+import { progressService } from '../features/day/services/ProgressService';
 
 // Определение типов для пользователя
 export interface User {
@@ -31,7 +33,11 @@ interface UserContextType {
   register: (data: RegisterData) => Promise<void>;
   login: (data: LoginData) => Promise<void>;
   logout: () => void;
-  logoutFromAllDevices: () => void;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
+  registrationCompleted: boolean;
+  registrationEmail: string;
+  completeRegistration: () => void;
 }
 
 // Создание контекста
@@ -42,19 +48,31 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [registrationCompleted, setRegistrationCompleted] = useState<boolean>(false);
+  const [registrationEmail, setRegistrationEmail] = useState<string>('');
 
   // Проверка наличия пользователя при загрузке
   useEffect(() => {
-    const storedUser = localStorage.getItem('lifesprint_user');
-    if (storedUser) {
+    const loadUser = async () => {
+      setIsLoading(true);
       try {
-        setUser(JSON.parse(storedUser));
+        const authUser = await AuthService.getCurrentUser();
+        if (authUser) {
+          setUser({
+            id: authUser.id,
+            name: authUser.name || '',
+            email: authUser.email,
+            telegramNickname: authUser.telegramNickname,
+          });
+        }
       } catch (e) {
-        console.error('Ошибка при парсинге данных пользователя:', e);
-        localStorage.removeItem('lifesprint_user');
+        console.error('Ошибка при загрузке пользователя:', e);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+
+    loadUser();
   }, []);
 
   // Регистрация пользователя
@@ -63,27 +81,39 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     
     try {
-      // Имитация запроса к API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const authUser = await AuthService.signUp(
+        data.email,
+        data.password,
+        data.name,
+        data.telegramNickname
+      );
       
-      // В реальном приложении здесь был бы запрос к API для регистрации
-      // Генерируем уникальный ID для пользователя (в реальном приложении это делал бы сервер)
-      const newUser: User = {
-        id: Date.now().toString(),
-        name: data.name,
-        email: data.email,
-        telegramNickname: data.telegramNickname
-      };
-      
-      // Сохраняем пользователя в localStorage (в реальном приложении использовали бы токены)
-      localStorage.setItem('lifesprint_user', JSON.stringify(newUser));
-      setUser(newUser);
-    } catch (e) {
-      setError('Ошибка при регистрации. Пожалуйста, попробуйте снова.');
+      if (authUser) {
+        // Вместо установки пользователя, отмечаем, что регистрация завершена
+        // и сохраняем email для возможной повторной отправки письма
+        setRegistrationCompleted(true);
+        setRegistrationEmail(data.email);
+        
+        // Не устанавливаем пользователя, так как он должен подтвердить email
+        // setUser({
+        //   id: authUser.id,
+        //   name: authUser.name || '',
+        //   email: authUser.email,
+        //   telegramNickname: authUser.telegramNickname,
+        // });
+      }
+    } catch (e: any) {
+      setError(e.message || 'Ошибка при регистрации. Пожалуйста, попробуйте снова.');
       console.error('Ошибка регистрации:', e);
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  // Сброс состояния регистрации
+  const completeRegistration = () => {
+    setRegistrationCompleted(false);
+    setRegistrationEmail('');
   };
 
   // Вход пользователя
@@ -92,27 +122,51 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     
     try {
-      // Имитация запроса к API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const authUser = await AuthService.signIn(data.email, data.password);
       
-      // В реальном приложении здесь был бы запрос к API для входа
-      // Для демонстрации просто проверяем, что email содержит @ и пароль не пустой
-      if (!data.email.includes('@') || !data.password) {
-        throw new Error('Неверные учетные данные');
+      if (authUser) {
+        setUser({
+          id: authUser.id,
+          name: authUser.name || '',
+          email: authUser.email,
+          telegramNickname: authUser.telegramNickname,
+        });
+        
+        // Загрузка данных пользователя после успешного входа
+        if (authUser.id) {
+          let retryCount = 0;
+          const maxRetries = 3;
+          const syncData = async () => {
+            try {
+              await progressService.fetchUserData(authUser.id);
+              // Если синхронизация успешна, сбрасываем ошибку
+              if (error && error.includes('синхронизации')) {
+                setError(null);
+              }
+            } catch (syncError) {
+              console.error(`Ошибка синхронизации данных при входе (попытка ${retryCount + 1}/${maxRetries}):`, syncError);
+              
+              if (retryCount < maxRetries - 1) {
+                // Повторяем попытку с экспоненциальной задержкой
+                retryCount++;
+                const delay = 1000 * Math.pow(2, retryCount); // 2, 4, 8 секунд
+                setTimeout(syncData, delay);
+                
+                // Уведомляем пользователя о повторной попытке
+                setError(`Проблема с синхронизацией данных. Повторная попытка ${retryCount}/${maxRetries - 1}...`);
+              } else {
+                // Уведомляем пользователя о проблеме с синхронизацией, но не блокируем вход
+                setError('Вход выполнен успешно, но возникла проблема с синхронизацией данных. Ваши данные будут синхронизированы позже.');
+              }
+            }
+          };
+          
+          // Запускаем процесс синхронизации
+          syncData();
+        }
       }
-      
-      // Создаем тестового пользователя (в реальном приложении получали бы от сервера)
-      const loggedInUser: User = {
-        id: '1',
-        name: 'Тестовый пользователь',
-        email: data.email
-      };
-      
-      // Сохраняем пользователя в localStorage
-      localStorage.setItem('lifesprint_user', JSON.stringify(loggedInUser));
-      setUser(loggedInUser);
-    } catch (e) {
-      setError('Неверный email или пароль.');
+    } catch (e: any) {
+      setError(e.message || 'Неверный email или пароль.');
       console.error('Ошибка входа:', e);
     } finally {
       setIsLoading(false);
@@ -120,16 +174,45 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Выход пользователя
-  const logout = (): void => {
-    localStorage.removeItem('lifesprint_user');
-    setUser(null);
+  const logout = async (): Promise<void> => {
+    try {
+      await AuthService.signOut();
+      setUser(null);
+    } catch (e) {
+      console.error('Ошибка выхода:', e);
+    }
   };
 
-  // Выход со всех устройств
-  const logoutFromAllDevices = (): void => {
-    // В реальном приложении здесь был бы запрос к API для инвалидации всех токенов
-    localStorage.removeItem('lifesprint_user');
-    setUser(null);
+  // Сброс пароля
+  const resetPassword = async (email: string): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      await AuthService.resetPassword(email);
+    } catch (e: any) {
+      setError(e.message || 'Ошибка при сбросе пароля. Пожалуйста, попробуйте снова.');
+      console.error('Ошибка сброса пароля:', e);
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Обновление пароля
+  const updatePassword = async (password: string): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      await AuthService.updatePassword(password);
+    } catch (e: any) {
+      setError(e.message || 'Ошибка при обновлении пароля. Пожалуйста, попробуйте снова.');
+      console.error('Ошибка обновления пароля:', e);
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -142,7 +225,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         login,
         logout,
-        logoutFromAllDevices
+        resetPassword,
+        updatePassword,
+        registrationCompleted,
+        registrationEmail,
+        completeRegistration
       }}
     >
       {children}

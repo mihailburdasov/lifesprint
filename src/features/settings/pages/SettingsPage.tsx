@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../../features/dashboard/components/Sidebar';
 import { useUser } from '../../../context/UserContext';
+import { ROUTES } from '../../../shared/constants';
+import { supabase } from '../../../core/services/supabase';
+import SyncButton from '../../day/components/SyncButton';
 
 interface ProfileFormData {
   name: string;
@@ -11,7 +14,7 @@ interface ProfileFormData {
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, logoutFromAllDevices } = useUser();
+  const { user, isAuthenticated, isLoading, logout } = useUser();
   
   const [formData, setFormData] = useState<ProfileFormData>({
     name: user?.name || '',
@@ -26,7 +29,7 @@ const SettingsPage: React.FC = () => {
   // Перенаправляем на страницу входа, если пользователь не авторизован
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
-      navigate('/auth');
+      navigate(ROUTES.LOGIN);
     }
   }, [isAuthenticated, isLoading, navigate]);
   
@@ -45,8 +48,28 @@ const SettingsPage: React.FC = () => {
     setIsSaving(true);
     
     try {
-      // Здесь будет запрос к API для обновления данных
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Имитация запроса
+      if (!user?.id) {
+        throw new Error('Пользователь не найден');
+      }
+      
+      // Обновление профиля в Supabase
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: formData.name,
+          email: formData.email,
+          telegram_nickname: formData.telegramNickname
+        })
+        .eq('id', user.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Обновление локального состояния пользователя
+      // Это важно, чтобы изменения отображались сразу
+      // Обычно это делается через контекст, но для простоты обновим страницу
+      window.location.reload();
       
       setMessage({
         text: 'Профиль успешно обновлен',
@@ -197,23 +220,31 @@ const SettingsPage: React.FC = () => {
           <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold mb-4">Настройки аккаунта</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <h3 className="text-base font-medium mb-2">Выход со всех устройств</h3>
+                <h3 className="text-base font-medium mb-2">Синхронизация данных</h3>
                 <p className="text-sm text-text-light mb-2">
-                  Завершите все активные сессии на всех устройствах, где вы вошли в аккаунт.
+                  Синхронизируйте ваши данные между устройствами.
+                </p>
+                <SyncButton className="mt-2" />
+              </div>
+              
+              <div>
+                <h3 className="text-base font-medium mb-2">Выход из системы</h3>
+                <p className="text-sm text-text-light mb-2">
+                  Завершите текущую сессию и выйдите из аккаунта.
                 </p>
                 <button
                   type="button"
                   onClick={() => {
-                    if (window.confirm('Вы уверены, что хотите выйти со всех устройств? Вам придется войти заново на каждом устройстве.')) {
-                      logoutFromAllDevices();
-                      navigate('/auth');
+                    if (window.confirm('Вы уверены, что хотите выйти из системы?')) {
+                      logout();
+                      navigate(ROUTES.LOGIN);
                     }
                   }}
                   className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
-                  Выйти со всех устройств
+                  Выйти из системы
                 </button>
               </div>
             </div>

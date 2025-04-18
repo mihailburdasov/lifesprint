@@ -17,12 +17,20 @@ const StepByStepDay: React.FC<StepByStepDayProps> = ({
   const [currentStep, setCurrentStep] = useState(1);
   const { reloadProgress } = useProgress();
   
-  // Reload progress from localStorage when component mounts or becomes visible
+  // Reload progress when component mounts or becomes visible
   useEffect(() => {
     if (isOpen) {
-      // This ensures we get the latest data from localStorage
-      reloadProgress();
-      console.log('Reloaded progress in StepByStepDay');
+      // This ensures we get the latest data
+      const loadData = async () => {
+        try {
+          await reloadProgress();
+          console.log('Reloaded progress in StepByStepDay');
+        } catch (error) {
+          console.error('Error reloading progress in StepByStepDay:', error);
+        }
+      };
+      
+      loadData();
     }
   }, [isOpen, reloadProgress]);
   

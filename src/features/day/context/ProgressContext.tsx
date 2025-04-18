@@ -12,16 +12,22 @@ export const ProgressContext = createContext<ProgressContextType>({
     totalDays: 31,
     startDate: new Date().toISOString()
   },
-  updateDayProgress: () => {},
-  updateWeekReflection: () => {},
+  updateDayProgress: async () => {},
+  updateWeekReflection: async () => {},
   isReflectionDay: () => false,
   isDayAccessible: () => false,
   isWeekAccessible: () => false,
   getDayCompletion: () => 0,
   isLoading: false,
+  isSyncing: false,
+  needsSync: false,
   error: null,
-  updateCurrentDay: () => {},
-  reloadProgress: () => {} // Add the new function to the default context
+  updateCurrentDay: async () => {},
+  reloadProgress: async () => {},
+  forceSyncWithServer: async () => false,
+  checkSupabaseData: async () => null,
+  syncUserData: async () => false,
+  lastSyncTimestamp: 0
 });
 
 // Provider component
@@ -30,6 +36,8 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const {
     progress,
     isLoading,
+    isSyncing,
+    needsSync,
     error,
     updateDayProgress,
     updateWeekReflection,
@@ -37,9 +45,14 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     isReflectionDay,
     isDayAccessible,
     isWeekAccessible,
-    areTasksCompleted,
+    // areTasksCompleted is not used in this component
     updateCurrentDay,
-    reloadProgress // Add the new function from the hook
+    reloadProgress,
+    forceSyncWithServer,
+    checkSupabaseData,
+    syncUserData,
+    lastSyncTimestamp
+    // fetchUpdates is not used in this component
   } = useProgressService();
   
   return (
@@ -52,9 +65,15 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       isWeekAccessible,
       getDayCompletion,
       isLoading,
+      isSyncing,
+      needsSync,
       error,
       updateCurrentDay,
-      reloadProgress // Add the new function to the context value
+      reloadProgress,
+      forceSyncWithServer,
+      checkSupabaseData,
+      syncUserData,
+      lastSyncTimestamp
     }}>
       {children}
     </ProgressContext.Provider>

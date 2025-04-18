@@ -14,7 +14,7 @@ import { useLocalStorage } from '../core/hooks';
 import { ScrollToTop } from '../core/components';
 
 // Import pages from features
-import { AuthPage } from '../features/auth/pages';
+import { AuthPage, UpdatePasswordPage, EmailConfirmationPage } from '../features/auth/pages';
 import { Dashboard } from '../features/dashboard/pages';
 import { ProfilePage } from '../features/profile/pages';
 import { SettingsPage } from '../features/settings/pages';
@@ -50,6 +50,9 @@ const App: React.FC = () => {
               {/* Auth routes - accessible to everyone */}
               <Route path={ROUTES.LOGIN} element={<AuthPage />} />
               <Route path={ROUTES.REGISTER} element={<AuthPage />} />
+              <Route path={ROUTES.RESET_PASSWORD} element={<AuthPage />} />
+              <Route path={ROUTES.UPDATE_PASSWORD} element={<UpdatePasswordPage />} />
+              <Route path={ROUTES.EMAIL_CONFIRMATION} element={<EmailConfirmationPage />} />
               
               {/* Protected app routes - only accessible when authenticated */}
               <Route 

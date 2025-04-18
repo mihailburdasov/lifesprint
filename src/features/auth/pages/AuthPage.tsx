@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
 import { Button } from '../../../core/components';
 import { useUser } from '../../../context/UserContext';
+import { ROUTES } from '../../../shared/constants';
 
 // Типы для формы авторизации
-type AuthMode = 'login' | 'register';
+type AuthMode = 'login' | 'register' | 'resetPassword';
 
 interface FormData {
   email: string;
@@ -16,8 +17,9 @@ interface FormData {
 const AuthPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, isLoading: authLoading, error: authError, login, register } = useUser();
+  const { isAuthenticated, error: authError, login, register, resetPassword, registrationCompleted } = useUser();
   const [mode, setMode] = useState<AuthMode>('login');
+  const [resetSent, setResetSent] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
@@ -27,7 +29,7 @@ const AuthPage: React.FC = () => {
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // Перенаправление после авторизации
+  // Перенаправление после авторизации или регистрации
   useEffect(() => {
     if (isAuthenticated) {
       // Проверяем, есть ли сохраненный путь, с которого пользователь был перенаправлен
@@ -35,11 +37,17 @@ const AuthPage: React.FC = () => {
       navigate(from);
     }
   }, [isAuthenticated, navigate, location]);
+  
+  // Перенаправление на страницу подтверждения email после регистрации
+  if (registrationCompleted) {
+    return <Navigate to={ROUTES.EMAIL_CONFIRMATION} />;
+  }
 
-  // Переключение между режимами входа и регистрации
-  const toggleMode = () => {
-    setMode(mode === 'login' ? 'register' : 'login');
+  // Переключение между режимами
+  const toggleMode = (newMode: AuthMode) => {
+    setMode(newMode);
     setErrors({});
+    setResetSent(false);
   };
 
   // Обработка изменений в полях формы
@@ -70,10 +78,10 @@ const AuthPage: React.FC = () => {
       newErrors.email = 'Некорректный email';
     }
     
-    // Проверка пароля
-    if (!formData.password) {
+    // Проверка пароля (только для входа и регистрации)
+    if ((mode === 'login' || mode === 'register') && !formData.password) {
       newErrors.password = 'Пароль обязателен';
-    } else if (formData.password.length < 6) {
+    } else if ((mode === 'login' || mode === 'register') && formData.password.length < 6) {
       newErrors.password = 'Пароль должен содержать минимум 6 символов';
     }
     
@@ -104,13 +112,16 @@ const AuthPage: React.FC = () => {
           email: formData.email,
           password: formData.password
         });
-      } else {
+      } else if (mode === 'register') {
         await register({
           name: formData.name || '',
           email: formData.email,
           password: formData.password,
           telegramNickname: formData.telegramNickname
         });
+      } else if (mode === 'resetPassword') {
+        await resetPassword(formData.email);
+        setResetSent(true);
       }
     } catch (error) {
       console.error('Ошибка авторизации:', error);
@@ -127,7 +138,7 @@ const AuthPage: React.FC = () => {
         </div>
         <div className="auth-card bg-surface rounded-xl shadow-lg p-5 md:p-8 w-full max-w-md mx-auto">
           <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-center">
-            {mode === 'login' ? 'Вход в аккаунт' : 'Регистрация'}
+            {mode === 'login' ? 'Вход в аккаунт' : mode === 'register' ? 'Регистрация' : 'Восстановление пароля'}
           </h1>
           
           <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
@@ -186,23 +197,25 @@ const AuthPage: React.FC = () => {
               )}
             </div>
             
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-text-light mb-1">
-                Пароль
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={`input w-full h-11 text-base ${errors.password ? 'border-red-500' : ''}`}
-                placeholder="Введите ваш пароль"
-              />
-              {errors.password && (
-                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-              )}
-            </div>
+            {(mode === 'login' || mode === 'register') && (
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-text-light mb-1">
+                  Пароль
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`input w-full h-11 text-base ${errors.password ? 'border-red-500' : ''}`}
+                  placeholder="Введите ваш пароль"
+                />
+                {errors.password && (
+                  <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                )}
+              </div>
+            )}
             
             <div className="pt-3">
               <Button
@@ -211,7 +224,13 @@ const AuthPage: React.FC = () => {
                 disabled={isLoading}
                 className="w-full mt-2"
               >
-                {isLoading ? 'Загрузка...' : mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
+                {isLoading 
+                  ? 'Загрузка...' 
+                  : mode === 'login' 
+                    ? 'Войти' 
+                    : mode === 'register' 
+                      ? 'Зарегистрироваться' 
+                      : 'Отправить инструкции'}
               </Button>
             </div>
           </form>
@@ -222,23 +241,58 @@ const AuthPage: React.FC = () => {
             </div>
           )}
           
+          {resetSent && (
+            <div className="mt-3 md:mt-4 p-3 bg-green-100 text-green-700 rounded-md text-sm">
+              Инструкции по восстановлению пароля отправлены на ваш email.
+            </div>
+          )}
+          
           <div className="mt-4 md:mt-6 text-center">
-            <p className="text-text-light">
-              {mode === 'login' ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}
-              <button
-                type="button"
-                onClick={toggleMode}
-                className="ml-2 text-primary hover:underline focus:outline-none min-h-[44px] inline-flex items-center"
-              >
-                {mode === 'login' ? 'Зарегистрироваться' : 'Войти'}
-              </button>
-            </p>
+            {mode === 'login' && (
+              <p className="text-text-light">
+                Нет аккаунта?
+                <button
+                  type="button"
+                  onClick={() => toggleMode('register')}
+                  className="ml-2 text-primary hover:underline focus:outline-none min-h-[44px] inline-flex items-center"
+                >
+                  Зарегистрироваться
+                </button>
+              </p>
+            )}
+            
+            {mode === 'register' && (
+              <p className="text-text-light">
+                Уже есть аккаунт?
+                <button
+                  type="button"
+                  onClick={() => toggleMode('login')}
+                  className="ml-2 text-primary hover:underline focus:outline-none min-h-[44px] inline-flex items-center"
+                >
+                  Войти
+                </button>
+              </p>
+            )}
+            
+            {mode === 'resetPassword' && (
+              <p className="text-text-light">
+                Вспомнили пароль?
+                <button
+                  type="button"
+                  onClick={() => toggleMode('login')}
+                  className="ml-2 text-primary hover:underline focus:outline-none min-h-[44px] inline-flex items-center"
+                >
+                  Войти
+                </button>
+              </p>
+            )}
           </div>
           
           {mode === 'login' && (
             <div className="mt-3 md:mt-4 text-center">
               <button
                 type="button"
+                onClick={() => toggleMode('resetPassword')}
                 className="text-sm text-primary hover:underline focus:outline-none min-h-[44px] inline-flex items-center justify-center px-2"
               >
                 Забыли пароль?
