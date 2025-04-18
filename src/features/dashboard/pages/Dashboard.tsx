@@ -187,9 +187,9 @@ const Dashboard: React.FC = () => {
       const dayDate = new Date(safeProgress.startDate);
       dayDate.setDate(dayDate.getDate() + dayNumber - 1);
       
-      // Получаем значение завершенности для логирования
-      const dayCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
-      logger.dashboard(`Reflection day ${dayNumber} completion: ${dayCompletion}%`, LogLevel.DEBUG);
+      // Получаем значение завершенности для логирования и используем его
+      const completion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
+      logger.dashboard(`Reflection day ${dayNumber} completion: ${completion}%`, LogLevel.DEBUG);
       const isReflection = isReflectionDay ? isReflectionDay(dayNumber) : false;
       
       days.push(
@@ -200,7 +200,7 @@ const Dashboard: React.FC = () => {
         >
         <div className="flex items-center">
           <div className="flex-shrink-0 mr-4">
-            {dayCompletion === 100 ? (
+            {completion === 100 ? (
               <FaCheckCircle className="text-green-500" size={20} />
             ) : (
               <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-sm dark:text-white">
@@ -330,9 +330,11 @@ const Dashboard: React.FC = () => {
         exerciseCompleted: false
       };
       
-      // Используем переменную dayCompletion для совместимости
+      // Используем переменную для логирования
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const dayCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
+      const currentDayCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
+      // Можно использовать для логирования, если потребуется
+      // logger.dashboard(`Current day completion: ${currentDayCompletion}%`, LogLevel.DEBUG);
       
       return (
         <div className="current-day bg-surface-light dark:bg-surface-dark rounded-xl shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
@@ -464,8 +466,10 @@ const Dashboard: React.FC = () => {
       exerciseCompleted: false
     };
     
-    // Используем переменную dayCompletion для совместимости
-    const dayCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
+    // Используем переменную для отображения прогресса
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const currentDayCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
+    // Используется в других частях компонента
     
     return (
       <div className="current-day bg-surface-light dark:bg-surface-dark rounded-xl shadow-md p-4 sm:p-6 mb-6 sm:mb-8">

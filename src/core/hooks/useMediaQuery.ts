@@ -2,7 +2,7 @@
  * useMediaQuery hook
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 /**
  * A hook for detecting if a media query matches
@@ -10,25 +10,25 @@ import { useState, useEffect } from 'react';
  * @returns Whether the media query matches
  */
 export function useMediaQuery(query: string): boolean {
-  // Initialize with the current match state
-  const getMatches = (): boolean => {
+  // Initialize with the current match state - wrapped in useCallback to avoid recreating on every render
+  const getMatches = useCallback((): boolean => {
     // Prevent build error "window is undefined" but keep working
     if (typeof window !== 'undefined') {
       return window.matchMedia(query).matches;
     }
     return false;
-  };
+  }, [query]);
 
   // State to store the match result
   const [matches, setMatches] = useState<boolean>(getMatches);
 
-  // Handle change event
-  function handleChange() {
-    setMatches(getMatches());
-  }
-
   // Listen for changes
   useEffect(() => {
+    // Handle change event - moved inside useEffect to avoid dependency issues
+    function handleChange() {
+      setMatches(getMatches());
+    }
+    
     const matchMedia = window.matchMedia(query);
 
     // Triggered at the first client-side load and if query changes
@@ -53,7 +53,7 @@ export function useMediaQuery(query: string): boolean {
         matchMedia.removeEventListener('change', handleChange);
       }
     };
-  }, [query, handleChange]);
+  }, [query, getMatches]); // Include getMatches in the dependencies
 
   return matches;
 }
