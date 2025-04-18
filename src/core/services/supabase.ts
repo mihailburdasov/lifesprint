@@ -37,6 +37,10 @@ export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
       'Accept-Encoding': 'gzip, deflate, br',  // Accept compressed responses
       'Prefer': 'return=representation'  // Request full representation of data
     }
+  },
+  // Add specific settings for the PostgREST client
+  db: {
+    schema: 'public'
   }
 });
 

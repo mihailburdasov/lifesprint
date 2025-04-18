@@ -315,7 +315,7 @@ export class ProgressService {
     logger.debug("Supabase request details", LogContext.SYNC, {
       url: `${process.env.REACT_APP_SUPABASE_URL}/rest/v1/user_progress`,
       headers: {
-        'Accept': '*/*',
+        'Accept': 'application/json',
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
