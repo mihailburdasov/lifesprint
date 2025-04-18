@@ -311,6 +311,17 @@ export class ProgressService {
       weekReflectionsCount: Object.keys(progress.weekReflections).length
     });
     
+    // Add detailed request logging
+    logger.debug("Supabase request details", LogContext.SYNC, {
+      url: `${process.env.REACT_APP_SUPABASE_URL}/rest/v1/user_progress`,
+      headers: {
+        'Accept': '*/*',
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
+    
     // Add timestamp for when this data was last updated
     const timestamp = new Date().toISOString();
     

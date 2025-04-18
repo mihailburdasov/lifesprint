@@ -29,8 +29,10 @@ export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
   },
   global: {
     headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
+      'Accept': '*/*',  // More permissive Accept header
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',  // Prevent caching
+      'Pragma': 'no-cache'  // For older browsers
     }
   }
 });
@@ -44,9 +46,11 @@ export const getSupabaseUrl = (path: string, userId?: string) => {
     headers: {
       'apikey': supabaseAnonKey,
       'Authorization': `Bearer ${supabaseAnonKey}`,
-      'Accept': 'application/json',
+      'Accept': '*/*',  // More permissive Accept header
       'Content-Type': 'application/json',
-      'Prefer': 'return=representation'
+      'Prefer': 'return=representation',
+      'Cache-Control': 'no-cache',  // Prevent caching
+      'Pragma': 'no-cache'  // For older browsers
     }
   };
 };
