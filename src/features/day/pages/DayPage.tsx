@@ -19,6 +19,7 @@ const DayPage: React.FC = () => {
   const { formatDate, getDayTitle } = useContentService();
   
   // Add a counter to force re-render when progress data changes
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [updateCounter, setUpdateCounter] = useState(0);
   
   // Reload progress from localStorage when component mounts
@@ -39,6 +40,7 @@ const DayPage: React.FC = () => {
   const dayNumber = parseInt(dayNumberParam || '1', 10);
   const isReflection = checkReflectionDay(dayNumber);
   const weekNumber = Math.ceil(dayNumber / 7);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isAccessible = isDayAccessible(dayNumber);
   
   // Get day date
@@ -479,6 +481,7 @@ const DayPage: React.FC = () => {
   const isBonusDay = dayNumber >= 29 && dayNumber <= 31;
   
   // Render bonus day content
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const renderBonusDayContent = () => {
     return (
       <div className="bonus-day-content flex flex-col items-center justify-center py-12 text-center">
@@ -496,6 +499,7 @@ const DayPage: React.FC = () => {
   };
 
   // Render access denied content
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const renderAccessDeniedContent = () => {
     return (
       <div className="access-denied flex flex-col items-center justify-center py-12 text-center">

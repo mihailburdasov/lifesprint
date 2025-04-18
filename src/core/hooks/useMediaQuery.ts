@@ -53,7 +53,7 @@ export function useMediaQuery(query: string): boolean {
         matchMedia.removeEventListener('change', handleChange);
       }
     };
-  }, [query]);
+  }, [query, handleChange]);
 
   return matches;
 }

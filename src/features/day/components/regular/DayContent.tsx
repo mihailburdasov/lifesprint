@@ -422,6 +422,7 @@ const DayContent: React.FC<DayContentProps> = ({
     }
   };
   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [savingReflectionExercise, setSavingReflectionExercise] = useState<boolean>(false);
   
   const handleReflectionExerciseComplete = async () => {

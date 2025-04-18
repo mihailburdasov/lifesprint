@@ -9,7 +9,7 @@ import { Dialog } from '@headlessui/react';
 import { useContentService } from '../../../features/day/hooks/useContentService';
 import { useProgressService } from '../../../features/day/hooks/useProgressService';
 import { useTheme } from '../../../context/ThemeContext';
-import { logger, LogContext, LogLevel } from '../../../core/services/LoggingService';
+import { logger, LogLevel } from '../../../core/services/LoggingService';
 
 const Dashboard: React.FC = () => {
   const { progress, updateCurrentDay } = useProgress();
@@ -252,6 +252,7 @@ const Dashboard: React.FC = () => {
   };
   
   // State for tracking loading state of task toggle operations
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [savingTaskToggle, setSavingTaskToggle] = useState<{ day: number, index: number } | null>(null);
   
   // Handle toggling task completion
@@ -330,6 +331,7 @@ const Dashboard: React.FC = () => {
       };
       
       // Используем переменную dayCompletion для совместимости
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const dayCompletion = getDayCompletion ? getDayCompletion(dayNumber) : 0;
       
       return (

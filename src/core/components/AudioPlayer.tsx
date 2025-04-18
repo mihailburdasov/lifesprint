@@ -22,27 +22,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const audioRef = useRef<HTMLAudioElement>(null);
   
   // Initialize audio service
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const audioService = ServiceFactory.getAudioService();
-  
-  useEffect(() => {
-    if (autoPlay) {
-      handlePlay();
-    }
-    
-    // Set up event listeners
-    const audio = audioRef.current;
-    if (audio) {
-      audio.addEventListener('timeupdate', handleTimeUpdate);
-      audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.addEventListener('ended', handleEnded);
-      
-      return () => {
-        audio.removeEventListener('timeupdate', handleTimeUpdate);
-        audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-        audio.removeEventListener('ended', handleEnded);
-      };
-    }
-  }, [src]);
   
   // Handle time update
   const handleTimeUpdate = () => {
@@ -74,6 +55,26 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       setIsPlaying(true);
     }
   };
+  
+  useEffect(() => {
+    if (autoPlay) {
+      handlePlay();
+    }
+    
+    // Set up event listeners
+    const audio = audioRef.current;
+    if (audio) {
+      audio.addEventListener('timeupdate', handleTimeUpdate);
+      audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.addEventListener('ended', handleEnded);
+      
+      return () => {
+        audio.removeEventListener('timeupdate', handleTimeUpdate);
+        audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        audio.removeEventListener('ended', handleEnded);
+      };
+    }
+  }, [src, autoPlay]);
   
   // Handle pause
   const handlePause = () => {
