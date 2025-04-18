@@ -9,61 +9,34 @@
       }
     }
   ],
-  "routes": [
-    {
-      "src": "/static/(.*)",
-      "headers": {
-        "cache-control": "public, max-age=31536000, immutable"
-      },
-      "dest": "/static/$1"
-    },
-    {
-      "src": "/audio/(.*)",
-      "headers": {
-        "cache-control": "public, max-age=31536000, immutable"
-      },
-      "dest": "/audio/$1"
-    },
-    {
-      "src": "/favicon.ico",
-      "dest": "/favicon.ico"
-    },
-    {
-      "src": "/manifest.json",
-      "dest": "/manifest.json"
-    },
-    {
-      "src": "/robots.txt",
-      "dest": "/robots.txt"
-    },
-    {
-      "src": "/(.*)",
-      "headers": {
-        "cache-control": "s-maxage=1, stale-while-revalidate=59"
-      },
-      "dest": "/index.html"
-    }
+  "rewrites": [
+    { "source": "/static/(.*)", "destination": "/static/$1" },
+    { "source": "/audio/(.*)", "destination": "/audio/$1" },
+    { "source": "/favicon.ico", "destination": "/favicon.ico" },
+    { "source": "/manifest.json", "destination": "/manifest.json" },
+    { "source": "/robots.txt", "destination": "/robots.txt" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
+      "source": "/static/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/audio/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "Accept",
-          "value": "*/*"
-        },
-        {
-          "key": "Content-Type",
-          "value": "application/json"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "no-cache"
-        },
-        {
-          "key": "Pragma",
-          "value": "no-cache"
-        }
+        { "key": "Accept", "value": "*/*" },
+        { "key": "Content-Type", "value": "application/json" },
+        { "key": "Cache-Control", "value": "no-cache" },
+        { "key": "Pragma", "value": "no-cache" }
       ]
     },
     {
