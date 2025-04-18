@@ -62,7 +62,11 @@ if (process.env.NODE_ENV === 'development') {
 
 // Add a function to get a fetch-compatible URL with proper headers
 export const getSupabaseUrl = (path: string, userId?: string) => {
-  const url = `${supabaseUrl}${path}${userId ? `?user_id=eq.${userId}` : ''}`;
+  // Check if the path already contains query parameters
+  const hasQueryParams = path.includes('?');
+  
+  // Use the appropriate separator (? or &) based on whether query params already exist
+  const url = `${supabaseUrl}${path}${userId ? `${hasQueryParams ? '&' : '?'}user_id=eq.${userId}` : ''}`;
   
   return {
     url,

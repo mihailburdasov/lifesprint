@@ -265,6 +265,7 @@ export const useProgressService = () => {
         
         try {
           // Get the URL and headers for Supabase
+          // Use the correct path without query parameters
           const { url, headers } = getSupabaseUrl('/rest/v1/user_progress', user.id);
           
           // Create a Blob with the data and proper content type
