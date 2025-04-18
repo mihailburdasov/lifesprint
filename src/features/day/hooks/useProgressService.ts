@@ -31,7 +31,11 @@ export const useProgressService = () => {
       try {
         setIsSyncing(true);
         logger.info('Принудительная синхронизация с сервером');
-        await progressService.saveToServer(progress, user.id);
+        
+        // Get current progress from localStorage to avoid dependency cycle
+        const currentProgress = await progressService.loadProgress(user?.id);
+        
+        await progressService.saveToServer(currentProgress, user.id);
         const syncedProgress = await progressService.syncProgressWithSupabase(user.id);
         setProgress(syncedProgress);
         setNeedsSync(false);
@@ -55,7 +59,7 @@ export const useProgressService = () => {
       }
     }
     return false;
-  }, [progress, user?.id]);
+  }, [user?.id]); // Remove progress from dependencies to avoid infinite loop
   
   // Fetch updates since last sync
   const fetchUpdates = useCallback(async () => {
@@ -69,7 +73,9 @@ export const useProgressService = () => {
       
       // If there are updates, apply them
       if (Object.keys(updates).length > 0) {
-        const updatedProgress = progressService.applyUpdates(progress, updates);
+        // Get current progress from localStorage to avoid dependency cycle
+        const currentProgress = await progressService.loadProgress(user?.id);
+        const updatedProgress = progressService.applyUpdates(currentProgress, updates);
         setProgress(updatedProgress);
         setLastSyncTimestamp(Date.now());
         logger.success('Обновления успешно применены');
@@ -81,10 +87,10 @@ export const useProgressService = () => {
     } finally {
       setIsSyncing(false);
     }
-  }, [user?.id, lastSyncTimestamp, progress]);
+  }, [user?.id, lastSyncTimestamp]); // Remove progress from dependencies to avoid infinite loop
   
   // Handle real-time updates
-  const handleRealtimeUpdate = useCallback((payload: any) => {
+  const handleRealtimeUpdate = useCallback(async (payload: any) => {
     if (!user?.id) return;
     
     logger.info('Получено обновление в реальном времени', LogContext.SYNC, payload);
@@ -93,12 +99,14 @@ export const useProgressService = () => {
       // Fetch updates if another device performed a full sync
       fetchUpdates();
     } else if (payload.data) {
+      // Get current progress from localStorage to avoid dependency cycle
+      const currentProgress = await progressService.loadProgress(user?.id);
       // Apply updates directly if they are included in the payload
-      const updatedProgress = progressService.applyUpdates(progress, payload.data);
+      const updatedProgress = progressService.applyUpdates(currentProgress, payload.data);
       setProgress(updatedProgress);
       setLastSyncTimestamp(Date.now());
     }
-  }, [user?.id, progress, fetchUpdates]);
+  }, [user?.id, fetchUpdates]); // Remove progress from dependencies to avoid infinite loop
   
   // Fetch full user data
   const syncUserData = useCallback(async (): Promise<boolean> => {
@@ -418,13 +426,15 @@ export const useProgressService = () => {
   // Update current day based on the current date
   const updateCurrentDay = useCallback(async () => {
     try {
-      const updatedProgress = await progressService.updateCurrentDay(progress, user?.id);
+      // Use a local copy of progress to avoid dependency cycle
+      const currentProgress = await progressService.loadProgress(user?.id);
+      const updatedProgress = await progressService.updateCurrentDay(currentProgress, user?.id);
       setProgress(updatedProgress);
     } catch (err) {
       console.error('Error updating current day:', err);
       setError('Failed to update current day');
     }
-  }, [progress, user?.id]);
+  }, [user?.id]); // Remove progress from dependencies to avoid infinite loop
 
   // Add function to reload progress from Supabase/localStorage
   const reloadProgress = useCallback(async () => {

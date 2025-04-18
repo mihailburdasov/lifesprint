@@ -61,12 +61,13 @@ const Dashboard: React.FC = () => {
     setUpdateCounter(prev => prev + 1);
   }, [safeProgress, currentDayNumber]);
   
-  // Update current day when component mounts
+  // Update current day only when component mounts
   useEffect(() => {
     // Update current day based on the current date
     updateCurrentDay();
     logger.dashboard(`Current day updated to: ${progress.currentDay}`, LogLevel.INFO);
-  }, [updateCurrentDay, progress.currentDay]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [updateCurrentDay]); // Removed progress.currentDay to prevent infinite loop
   
   // Force re-render every 5 seconds to update progress circles
   useEffect(() => {
