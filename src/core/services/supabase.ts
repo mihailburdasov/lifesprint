@@ -29,12 +29,13 @@ export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
   },
   global: {
     headers: {
-      'Accept': '*/*',  // More permissive Accept header
+      'Accept': 'application/json',  // Specific Accept header for JSON responses
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache',  // Prevent caching
       'Pragma': 'no-cache',  // For older browsers
       'Accept-Profile': 'public',  // Specify the Postgres schema
-      'Accept-Encoding': 'gzip, deflate, br'  // Accept compressed responses
+      'Accept-Encoding': 'gzip, deflate, br',  // Accept compressed responses
+      'Prefer': 'return=representation'  // Request full representation of data
     }
   }
 });
@@ -44,12 +45,13 @@ if (process.env.NODE_ENV === 'development') {
   console.log('Supabase configuration:', {
     url: supabaseUrl,
     headers: {
-      'Accept': '*/*',
+      'Accept': 'application/json',
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache',
       'Pragma': 'no-cache',
       'Accept-Profile': 'public',
-      'Accept-Encoding': 'gzip, deflate, br'
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Prefer': 'return=representation'
     }
   });
 }
@@ -63,7 +65,7 @@ export const getSupabaseUrl = (path: string, userId?: string) => {
     headers: {
       'apikey': supabaseAnonKey,
       'Authorization': `Bearer ${supabaseAnonKey}`,
-      'Accept': '*/*',  // More permissive Accept header
+      'Accept': 'application/json',  // Specific Accept header for JSON responses
       'Content-Type': 'application/json',
       'Prefer': 'return=representation',
       'Cache-Control': 'no-cache',  // Prevent caching
@@ -80,7 +82,7 @@ export const fetchFromSupabase = async (path: string, options = {}) => {
   const headers = {
     'apikey': supabaseAnonKey || '',
     'Authorization': `Bearer ${supabaseAnonKey || ''}`,
-    'Accept': '*/*',
+    'Accept': 'application/json',  // Specific Accept header for JSON responses
     'Content-Type': 'application/json',
     'Prefer': 'return=representation',
     'Cache-Control': 'no-cache',
