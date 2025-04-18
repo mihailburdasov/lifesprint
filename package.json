@@ -2,6 +2,7 @@
   "name": "lifesprint",
   "version": "0.1.0",
   "private": true,
+  "homepage": "/",
   "dependencies": {
     "@headlessui/react": "^2.2.1",
     "@supabase/supabase-js": "^2.49.4",
