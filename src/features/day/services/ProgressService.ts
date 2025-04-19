@@ -144,44 +144,39 @@ export class ProgressService {
    * Load progress from Supabase
    */
   async loadProgressFromSupabase(userId: string): Promise<UserProgress | null> {
-    // Очищаем userId от возможных суффиксов типа ':1'
     const cleanedUserId = String(userId).split(':')[0];
-    logger.debug("Очищенный userId для запроса Supabase", LogContext.SYNC, { original: userId, cleaned: cleanedUserId });
+    logger.debug("Очищенный userId для запроса Supabase", LogContext.SYNC, {
+      original: userId,
+      cleaned: cleanedUserId,
+    });
 
-    // Используем Supabase client с правильными заголовками
     const { data, error } = await supabase
       .from('user_progress')
-      .select('*')
-      .eq('user_id', cleanedUserId) // <--- Используем очищенный cleanedUserId здесь
-      .single();
+      .select('*', { head: false }) // это важно!
+      .eq('user_id', cleanedUserId)
+      .single()
+      .throwOnError();
 
-    if (error) {
-      // Если запись не найдена, возвращаем null (это не ошибка)
-      if (error.code === 'PGRST116') {
-        logger.debug("Данные не найдены в Supabase для пользователя", LogContext.SYNC, cleanedUserId);
-        return null;
-      }
-      throw error;
+    if (!data) {
+      logger.debug("Данные не найдены в Supabase для пользователя", LogContext.SYNC, cleanedUserId);
+      return null;
     }
 
-    if (!data) return null;
-
-    // Преобразуем формат базы данных в формат UserProgress
-    const progress = {
+    const progress: UserProgress = {
       currentDay: data.current_day,
       days: data.days || {},
       weekReflections: data.week_reflections || {},
       completedDays: data.completed_days,
       totalDays: data.total_days,
       startDate: data.start_date,
-      lastUpdated: data.updated_at || new Date().toISOString()
+      lastUpdated: data.updated_at || new Date().toISOString(),
     };
 
     logger.debug("Загружены данные из Supabase", LogContext.SYNC, {
       userId: cleanedUserId,
       currentDay: progress.currentDay,
       daysCount: Object.keys(progress.days).length,
-      lastUpdated: progress.lastUpdated
+      lastUpdated: progress.lastUpdated,
     });
 
     return progress;
