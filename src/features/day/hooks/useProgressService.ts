@@ -266,7 +266,9 @@ export const useProgressService = () => {
         try {
           // Get the URL and headers for Supabase
           // Use the correct path without query parameters
-          const { url, headers } = getSupabaseUrl('/rest/v1/user_progress', user.id);
+          // Ensure we're using a clean string value of the user ID without any ":1" suffix
+          const userId = String(user.id).split(':')[0]; // Remove any ":1" suffix if present
+          const { url, headers } = getSupabaseUrl('/rest/v1/user_progress', userId);
           
           // Create a Blob with the data and proper content type
           const blob = new Blob([JSON.stringify(dbProgress)], { 
