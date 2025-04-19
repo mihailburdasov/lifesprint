@@ -1,0 +1,14 @@
+diff --git a/node_modules/@supabase/auth-js/src/lib/fetch.ts b/node_modules/@supabase/auth-js/src/lib/fetch.ts
+index 014e9b2..284fd4c 100644
+--- a/node_modules/@supabase/auth-js/src/lib/fetch.ts
++++ b/node_modules/@supabase/auth-js/src/lib/fetch.ts
+@@ -212,7 +212,8 @@ export function _sessionResponse(data: any): AuthResponse {
+     session = { ...data }
+ 
+     if (!data.expires_at) {
+-      session.expires_at = expiresAt(data.expires_in)
++      // Use non-null assertion to tell TypeScript that session is not null here
++      (session as any).expires_at = expiresAt(data.expires_in)
+     }
+   }
+ 
