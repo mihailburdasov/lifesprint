@@ -117,52 +117,56 @@ export class ProgressService {
    * Update the current day in a progress object based on the current date
    */
   private updateCurrentDayInProgress(progress: UserProgress): UserProgress {
-    // Update currentDay based on the current date
-    const startDate = new Date(progress.startDate);
-    const today = new Date();
-    
-    // Check if the current date is within the sprint
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-    const sprintYear = startDate.getFullYear();
-    const sprintMonth = startDate.getMonth();
-    
-    if (currentYear === sprintYear && currentMonth === sprintMonth) {
-      // Standard calculation for the current month of the sprint
-      const diffTime = today.getTime() - startDate.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-      progress.currentDay = Math.min(Math.max(diffDays, 1), 31);
-    } else {
-      // If we are in a different month or year
-      progress.currentDay = Math.min(today.getDate(), 31);
-    }
-    
-    return progress;
-  }
+        // Update currentDay based on the current date
+        const startDate = new Date(progress.startDate);
+        const today = new Date();
+        
+        // Check if the current date is within the sprint
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth();
+        const sprintYear = startDate.getFullYear();
+        const sprintMonth = startDate.getMonth();
+        
+        if (currentYear === sprintYear && currentMonth === sprintMonth) {
+          // Standard calculation for the current month of the sprint
+          const diffTime = today.getTime() - startDate.getTime();
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+          progress.currentDay = Math.min(Math.max(diffDays, 1), 31);
+        } else {
+          // If we are in a different month or year
+          progress.currentDay = Math.min(today.getDate(), 31);
+        }
+        
+        return progress;
+      }
   
   /**
    * Load progress from Supabase
    */
   async loadProgressFromSupabase(userId: string): Promise<UserProgress | null> {
-    // Use the Supabase client with proper headers
+    // Очищаем userId от возможных суффиксов типа ':1'
+    const cleanedUserId = String(userId).split(':')[0];
+    logger.debug("Очищенный userId для запроса Supabase", LogContext.SYNC, { original: userId, cleaned: cleanedUserId });
+
+    // Используем Supabase client с правильными заголовками
     const { data, error } = await supabase
       .from('user_progress')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', cleanedUserId) // <--- Используем очищенный cleanedUserId здесь
       .single();
-    
+
     if (error) {
-      // If no record found, return null (not an error)
+      // Если запись не найдена, возвращаем null (это не ошибка)
       if (error.code === 'PGRST116') {
-        logger.debug("Данные не найдены в Supabase для пользователя", LogContext.SYNC, userId);
+        logger.debug("Данные не найдены в Supabase для пользователя", LogContext.SYNC, cleanedUserId);
         return null;
       }
       throw error;
     }
-    
+
     if (!data) return null;
-    
-    // Convert from database format to UserProgress format
+
+    // Преобразуем формат базы данных в формат UserProgress
     const progress = {
       currentDay: data.current_day,
       days: data.days || {},
@@ -172,14 +176,14 @@ export class ProgressService {
       startDate: data.start_date,
       lastUpdated: data.updated_at || new Date().toISOString()
     };
-    
+
     logger.debug("Загружены данные из Supabase", LogContext.SYNC, {
-      userId,
+      userId: cleanedUserId,
       currentDay: progress.currentDay,
       daysCount: Object.keys(progress.days).length,
       lastUpdated: progress.lastUpdated
     });
-    
+
     return progress;
   }
 
@@ -751,7 +755,7 @@ export class ProgressService {
    */
   getDayCompletion(progress: UserProgress, dayNumber: number): number {
     const dayProgress = progress.days[dayNumber];
-
+    
     // For regular days
     if (!this.isReflectionDay(dayNumber)) {
       // Check if dayProgress exists
