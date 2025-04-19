@@ -1,8 +1,34 @@
 diff --git a/node_modules/@supabase/auth-js/src/lib/fetch.ts b/node_modules/@supabase/auth-js/src/lib/fetch.ts
-index 014e9b2..284fd4c 100644
+index 014e9b2..f9efeb1 100644
 --- a/node_modules/@supabase/auth-js/src/lib/fetch.ts
 +++ b/node_modules/@supabase/auth-js/src/lib/fetch.ts
-@@ -212,7 +212,8 @@ export function _sessionResponse(data: any): AuthResponse {
+@@ -108,13 +108,23 @@ const _getRequestParams = (
+   parameters?: FetchParameters,
+   body?: object
+ ) => {
+-  const params: { [k: string]: any } = { method, headers: options?.headers || {} }
++  const params: { [k: string]: any } = { 
++    method, 
++    headers: { 
++      'Accept': 'application/json', // Add Accept header
++      ...options?.headers || {} 
++    } 
++  }
+ 
+   if (method === 'GET') {
+     return params
+   }
+ 
+-  params.headers = { 'Content-Type': 'application/json;charset=UTF-8', ...options?.headers }
++  params.headers = { 
++    'Accept': 'application/json', // Add Accept header
++    'Content-Type': 'application/json;charset=UTF-8', 
++    ...options?.headers 
++  }
+   params.body = JSON.stringify(body)
+   return { ...params, ...parameters }
+ }
+@@ -212,7 +222,8 @@ export function _sessionResponse(data: any): AuthResponse {
      session = { ...data }
  
      if (!data.expires_at) {
