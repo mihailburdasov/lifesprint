@@ -34,3 +34,13 @@ If you encounter 406 (Not Acceptable) errors with Supabase:
 2. Copy `.env.example` to `.env` and fill in your Supabase credentials
 3. Run `npm install` to install dependencies
 4. Run `npm start` to start the development server
+
+### TypeScript Patches
+
+The project includes patches for TypeScript errors in the Supabase Auth library. These patches are not applied automatically during installation to avoid deployment issues on Vercel.
+
+To apply the patches locally:
+1. Run `npm run apply-patches` after installation
+2. This will apply the patches in the `patches/` directory to fix TypeScript errors
+
+Note: The patches are not needed for the application to function correctly, as the necessary headers are already included in the Supabase client configuration in `src/core/services/supabase.ts`.
